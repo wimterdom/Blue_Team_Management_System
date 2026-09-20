@@ -12,10 +12,10 @@ services:
     container_name: btms
     restart: unless-stopped
 
-    # 預設只綁在本機介面。要讓同網段的同仁直接連，改成 "8080:8080"；
+    # 預設讓同網段的同仁直接連，若要只綁在本機，改成 "127.0.0.1:8080:8080"；
     # 啟用 tls profile 時則交由 Caddy 對外，此處可整段移除。
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
 
     environment:
       # 未設定 BTMS_ADMIN_PASSWORD 時，首次啟動會產生隨機密碼並印在
