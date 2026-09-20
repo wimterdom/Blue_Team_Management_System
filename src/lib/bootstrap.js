@@ -105,7 +105,7 @@ export async function loadDemoData(log) {
     return { loaded: false, reason: 'missing_file' };
   }
 
-  const demo = JSON.parse(readFileSync(file, 'utf8'));
+  const demo = rebaseDates(JSON.parse(readFileSync(file, 'utf8')), log);
   const now = nowIso();
   const counts = {};
 
@@ -153,6 +153,54 @@ export async function loadDemoData(log) {
     `另建立 ${userCount} 個示範帳號（皆為停用狀態、無密碼，需由管理員啟用並設定密碼）`,
   );
   return { loaded: true, counts, users: userCount };
+}
+
+/**
+ * 把示範資料的日期平移到今天。
+ *
+ * 原型裡所有時間都以「執行當下」往回推算，抽成 JSON 之後就定住了；
+ * 若不平移，示範環境過一陣子就會變成「本週新增 0 件」、趨勢圖全空，
+ * 看起來像壞掉。這裡依 generatedAt 與今天的差額，把所有
+ * 'YYYY-MM-DD' 與 'YYYY-MM-DD HH:MM' 形式的字串整批位移相同天數，
+ * 事件之間的相對先後因此完全保持不變。
+ */
+function rebaseDates(demo, log) {
+  const from = demo.generatedAt;
+  if (!from) return demo;
+
+  const day = 86_400_000;
+  const base = Date.parse(`${from}T00:00:00Z`);
+  const today = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const shift = Math.round((today - base) / day);
+  if (!Number.isFinite(shift) || shift === 0) return demo;
+
+  const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+  const DATE_TIME = /^(\d{4}-\d{2}-\d{2})([ T].*)$/;
+
+  const move = iso => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + shift);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const walk = v => {
+    if (typeof v === 'string') {
+      if (DATE_ONLY.test(v)) return move(v);
+      const m = DATE_TIME.exec(v);
+      if (m) return move(m[1]) + m[2];
+      return v;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = walk(x);
+      return out;
+    }
+    return v;
+  };
+
+  log.info(`示範資料的日期自 ${from} 平移 ${shift} 天，對齊今天`);
+  return walk(demo);
 }
 
 export async function runBootstrap(log) {

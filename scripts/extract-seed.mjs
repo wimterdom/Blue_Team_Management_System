@@ -2,10 +2,11 @@
 /**
  * 從 UI 原型 (prototype.html) 抽出示範資料與參照資料，輸出成 seed/*.json。
  *
- * 原型把所有資料都寫成模組頂端的 const 宣告，這支腳本把「資料區」
- * （模組開頭到 PERSISTENCE 區塊之前）切出來，在 node:vm 沙箱裡求值，
+ * UI 來源把所有資料都寫成模組頂端的 const 宣告，這支腳本把「資料區」
+ * （模組開頭到資料存取層之前）切出來，在 node:vm 沙箱裡求值，
  * 再把需要的集合 dump 成 JSON。如此資料只有一份來源，不必人工複製。
  *
+ *   node scripts/extract-seed.mjs            # 預設讀 client/index.html
  *   node scripts/extract-seed.mjs ../prototype.html
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -15,20 +16,29 @@ import vm from 'node:vm';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
-const srcPath = resolve(process.cwd(), process.argv[2] || '../prototype.html');
+const srcPath = process.argv[2]
+  ? resolve(process.cwd(), process.argv[2])
+  : resolve(root, 'client/index.html');
 
 const html = readFileSync(srcPath, 'utf8');
 const mStart = html.indexOf('<script type="module">');
 if (mStart < 0) throw new Error('prototype.html 找不到 <script type="module">');
 const body = html.slice(mStart + '<script type="module">'.length);
 
-// 資料區結束於持久化區塊的註解標題
-const endMarker = 'PERSISTENCE';
-const endIdx = body.indexOf(endMarker);
-if (endIdx < 0) throw new Error('找不到 PERSISTENCE 區塊，無法界定資料區');
-// 回退到該註解區塊的起始 /*
-const blockStart = body.lastIndexOf('/* ===', endIdx);
-const dataRegion = body.slice(0, blockStart);
+/* 資料區的結尾：目前的 UI 來源是資料存取層的佔位符；
+   若餵進來的是改造前的原型，則落在 PERSISTENCE 註解區塊。兩者都支援。 */
+function dataRegionOf(text) {
+  const placeholder = text.indexOf('/*__BTMS_DATALAYER__*/');
+  if (placeholder >= 0) return text.slice(0, placeholder);
+
+  const legacy = text.indexOf('PERSISTENCE');
+  if (legacy >= 0) {
+    const blockStart = text.lastIndexOf('/* ===', legacy);
+    return text.slice(0, blockStart);
+  }
+  throw new Error('找不到資料區的結尾標記（/*__BTMS_DATALAYER__*/ 或 PERSISTENCE）');
+}
+const dataRegion = dataRegionOf(body);
 
 // 資料區只碰到 matchMedia 與 documentElement，給最小 shim 即可求值
 const sandbox = {
@@ -100,6 +110,10 @@ const demoUsers = Object.fromEntries(
 );
 
 const demo = {
+  // 原型的日期都以「執行當下」為基準推算，抽成 JSON 後就凍結了。
+  // 記下抽取日期，載入時據此把整份資料平移到當天，示範環境才不會
+  // 隨著時間過去變成「本週新增 0 件」。
+  generatedAt: new Date().toISOString().slice(0, 10),
   users: demoUsers,
   cases: out.CASES,
   detail: out.DETAIL,
