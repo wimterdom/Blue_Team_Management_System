@@ -46,7 +46,8 @@ function pwScore(v){
   if(!v) return 0;
   let n = 0;
   const len = [...v].length;
-  const cjk = /[㐀-鿿]/.test(v);
+  // 用 \u 逃脫而非字面字元：若頁面被以非 UTF-8 解讀，字面範圍會變成亂碼而丟出 SyntaxError
+  const cjk = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/.test(v);
   if(len >= (cjk ? 6 : 12)) n++;
   if(len >= (cjk ? 9 : 16)) n++;
   if(/[a-z]/.test(v) && /[A-Z]/.test(v) || cjk) n++;

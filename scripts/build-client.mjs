@@ -129,4 +129,17 @@ if (found.length) {
   }
   process.exit(1);
 }
-console.log('檢查通過：正式版輸出不含示範資料與任何密碼。');
+/* ---- 驗證：正規表示式的字元類不得含非 ASCII 字面字元 ----
+   頁面若被當成 Latin-1 解讀，字面範圍會變成亂碼而在解析階段就丟出
+   SyntaxError，整個模組不執行。一律要求寫成 \uXXXX 逃脫。 */
+const NON_ASCII_CLASS = /\/\[[^\]\n]*[^\x00-\x7F][^\]\n]*\]/g;
+for (const [name, text] of [['public/index.html', server], ['dist/demo.html', demo]]) {
+  const hits = text.match(NON_ASCII_CLASS);
+  if (hits) {
+    console.error(`\n${name} 的正規表示式字元類含非 ASCII 字面字元，請改用 \\uXXXX 逃脫：`);
+    for (const h of [...new Set(hits)].slice(0, 5)) console.error(`  - ${h}`);
+    process.exit(1);
+  }
+}
+
+console.log('檢查通過：正式版輸出不含示範資料與任何密碼；兩份輸出皆不受頁面編碼影響。');

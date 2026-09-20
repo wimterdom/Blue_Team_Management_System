@@ -2615,7 +2615,8 @@ function pwScore(v){
   if(!v) return 0;
   let n = 0;
   const len = [...v].length;
-  const cjk = /[㐀-鿿]/.test(v);
+  // 用 \u 逃脫而非字面字元：若頁面被以非 UTF-8 解讀，字面範圍會變成亂碼而丟出 SyntaxError
+  const cjk = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/.test(v);
   if(len >= (cjk ? 6 : 12)) n++;
   if(len >= (cjk ? 9 : 16)) n++;
   if(/[a-z]/.test(v) && /[A-Z]/.test(v) || cjk) n++;
@@ -5430,7 +5431,7 @@ const osFamily = os => !os ? '未填' : /Windows Server/i.test(os) ? 'Windows Se
   : /FortiOS|IOS|PAN-OS|DSM/i.test(os) ? '網通／儲存設備' : '其他';
 const assetIncomplete = a => !a.os || !(ADETAIL[a.id]?.services||[]).length;
 /* 製造商國別直接從欄位字串判讀，不另設旗標——資料一改，標註就跟著改 */
-const vendorCountry = a => (String(a.vendor||'').match(/[（(]\s*([^）)]+?)\s*[）)]\s*$/)||[,''])[1];
+const vendorCountry = a => (String(a.vendor||'').match(/[\uff08(]\s*([^\uff09)]+?)\s*[\uff09)]\s*$/)||[,''])[1];
 const isPrcVendor   = a => /中國|中国|中華人民共和國|PRC|China/i.test(vendorCountry(a));
 function allAssetTags(){
   const m=new Map();
