@@ -1,0 +1,35 @@
+# 藍隊管理系統 — HTTPS 反向代理
+#
+# 搭配 docker compose --profile tls up -d 使用。
+# 網域由 .env 的 BTMS_DOMAIN 指定。
+
+{$BTMS_DOMAIN} {
+	# 有公開網域且主機可從外部連入 80/443 時，Caddy 會自動申請並續期
+	# Let's Encrypt 憑證。內網部署請把上面這行改成主機名稱，並取消下一行註解，
+	# 改用 Caddy 自簽的內部憑證（需在各用戶端信任 Caddy 的根憑證）。
+	# tls internal
+
+	encode zstd gzip
+
+	# SSE 是長連線，必須關閉緩衝，否則即時更新會被卡住
+	@sse path /api/v1/events
+	reverse_proxy @sse btms:8080 {
+		flush_interval -1
+	}
+
+	reverse_proxy btms:8080
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

@@ -1,0 +1,74 @@
+# 藍隊管理系統 — Docker Compose 部署
+#
+#   docker compose up -d                    以 HTTP 啟動（內網部署）
+#   docker compose --profile tls up -d      另起 Caddy 提供 HTTPS
+#
+# 單純只要跑起來、不想管 compose 的話，README 的「一行指令」章節有 docker run 版本。
+
+services:
+  btms:
+    build: .
+    image: btms:1.0.0
+    container_name: btms
+    restart: unless-stopped
+
+    # 預設只綁在本機介面。要讓同網段的同仁直接連，改成 "8080:8080"；
+    # 啟用 tls profile 時則交由 Caddy 對外，此處可整段移除。
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    environment:
+      # 未設定 BTMS_ADMIN_PASSWORD 時，首次啟動會產生隨機密碼並印在
+      # docker logs btms 裡。要自行指定請寫在 .env（已列入 .gitignore）。
+      BTMS_ADMIN_USER: ${BTMS_ADMIN_USER:-admin}
+      BTMS_ADMIN_PASSWORD: ${BTMS_ADMIN_PASSWORD:-}
+      BTMS_SEED_DEMO: ${BTMS_SEED_DEMO:-false}
+      BTMS_COOKIE_SECURE: ${BTMS_COOKIE_SECURE:-false}
+      BTMS_TRUST_PROXY: ${BTMS_TRUST_PROXY:-false}
+      BTMS_LOG_LEVEL: ${BTMS_LOG_LEVEL:-info}
+
+    volumes:
+      # 資料庫、附件與備份都在這裡。移機時整個磁碟區搬走即可。
+      - btms-data:/data
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/v1/readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    # 內網服務不需要 root，也不需要寫入根檔案系統
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # 需要 HTTPS 時才啟用：docker compose --profile tls up -d
+  # Caddy 會自動向 Let's Encrypt 申請並續期憑證（主機需能從外部連入 80/443）。
+  # 內網或無公開網域的環境請改用 Caddyfile 裡的內部憑證設定。
+  caddy:
+    image: caddy:2-alpine
+    container_name: btms-caddy
+    restart: unless-stopped
+    profiles: ["tls"]
+    depends_on:
+      - btms
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BTMS_DOMAIN: ${BTMS_DOMAIN:-btms.example.local}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  btms-data:
+  caddy-data:
+  caddy-config:

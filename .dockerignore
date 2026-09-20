@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.github
+dist
+data
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
+tests
+*.md
+!docs/*.md
+public/__probe.html
+.DS_Store
