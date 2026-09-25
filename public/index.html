@@ -1213,6 +1213,101 @@ textarea.inp{resize:vertical; min-height:150px; line-height:1.8; font-family:var
 .livedot i{width:6px; height:6px; border-radius:50%; background:var(--good)}
 .livedot[data-state="off"] i{background:var(--warning)}
 
+/* ============================================================
+   列印版面（PDF 匯出）
+   畫面上的一切都不印，只印 #print-root。
+   ============================================================ */
+#print-root{display:none}
+
+@media print{
+  body[data-printing] > *{display:none !important}
+  body[data-printing] > #print-root{display:block !important}
+  body[data-printing]{background:#fff; margin:0}
+
+  @page{size:A4; margin:16mm 14mm}
+
+  #print-root{
+    color:#111; background:#fff;
+    font-family:var(--sans); font-size:10.5pt; line-height:1.65;
+  }
+  #print-root .p-head{
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1.5pt solid #1f4e79; padding-bottom:6pt; margin-bottom:14pt;
+  }
+  #print-root .p-brand{display:flex; align-items:center; gap:6pt;
+    font-weight:700; font-size:11pt; color:#1f4e79}
+  #print-root .p-mark svg{width:13pt; height:13pt; stroke:#1f4e79; fill:none; stroke-width:2;
+    display:block}
+  #print-root .p-when{font-size:8.5pt; color:#555}
+
+  #print-root .p-title{font-size:17pt; line-height:1.35; margin:0 0 3pt; font-weight:700}
+  #print-root .p-sub{font-size:9.5pt; color:#555; margin:0 0 12pt;
+    font-family:var(--mono)}
+
+  #print-root .p-meta{width:100%; border-collapse:collapse; margin-bottom:14pt;
+    font-size:9pt; break-inside:avoid}
+  #print-root .p-meta th{
+    width:16%; text-align:left; vertical-align:top; padding:3.5pt 6pt;
+    background:#f2f5f8; color:#1f4e79; font-weight:600; border:0.5pt solid #d6dde4;
+  }
+  #print-root .p-meta td{width:34%; padding:3.5pt 6pt; border:0.5pt solid #d6dde4;
+    vertical-align:top; word-break:break-word}
+
+  #print-root .p-sec{margin-bottom:13pt; break-inside:auto}
+  #print-root .p-sec h2{
+    font-size:11.5pt; font-weight:700; color:#1f4e79;
+    border-bottom:0.5pt solid #c8d3dc; padding-bottom:3pt; margin:0 0 7pt;
+    break-after:avoid;
+  }
+  #print-root .p-body{font-size:10pt}
+  #print-root .p-body p{margin:0 0 6pt}
+  #print-root .p-body ul,#print-root .p-body ol{margin:0 0 6pt; padding-left:16pt}
+  #print-root .p-body li{margin-bottom:2.5pt}
+  #print-root .p-body h1,#print-root .p-body h2,#print-root .p-body h3{
+    font-size:10.5pt; font-weight:700; margin:9pt 0 4pt; break-after:avoid}
+  #print-root .p-body code{font-family:var(--mono); font-size:9pt;
+    background:#f2f5f8; padding:0.5pt 2.5pt; border-radius:2pt}
+  #print-root .p-body pre{background:#f7f9fb; border:0.5pt solid #d6dde4;
+    padding:6pt; font-size:8.5pt; overflow:visible; white-space:pre-wrap;
+    break-inside:avoid}
+  #print-root .p-body blockquote{margin:0 0 6pt; padding-left:8pt;
+    border-left:2pt solid #c8d3dc; color:#444}
+  #print-root .p-body table{width:100%; border-collapse:collapse; font-size:9pt;
+    margin:0 0 6pt}
+  #print-root .p-body th,#print-root .p-body td{
+    border:0.5pt solid #d6dde4; padding:3pt 5pt; text-align:left; vertical-align:top}
+  #print-root .p-body th{background:#f2f5f8}
+
+  #print-root .p-tbl{width:100%; border-collapse:collapse; font-size:8.8pt}
+  #print-root .p-tbl th{background:#f2f5f8; color:#1f4e79; font-weight:600;
+    border:0.5pt solid #d6dde4; padding:3.5pt 5pt; text-align:left}
+  #print-root .p-tbl td{border:0.5pt solid #d6dde4; padding:3.5pt 5pt;
+    vertical-align:top; word-break:break-word}
+  #print-root .p-tbl tr{break-inside:avoid}
+  #print-root .p-empty{font-size:9pt; color:#777; margin:0}
+
+  #print-root .p-shots{display:grid; grid-template-columns:1fr 1fr; gap:8pt}
+  #print-root .p-shots figure{margin:0; break-inside:avoid}
+  #print-root .p-shots img{width:100%; border:0.5pt solid #d6dde4}
+  #print-root .p-noimg{border:0.5pt dashed #c8d3dc; padding:14pt; text-align:center;
+    color:#888; font-size:8.5pt}
+  #print-root .p-shots figcaption{font-size:8pt; color:#555; margin-top:2.5pt}
+
+  #print-root .p-foot{margin-top:16pt; padding-top:6pt; border-top:0.5pt solid #d6dde4;
+    font-size:8pt; color:#777}
+}
+
+/* ---- 匯入對話框 ---- */
+.dropzone{
+  display:flex; align-items:center; gap:11px; padding:18px 16px;
+  border:1.5px dashed var(--rule-2); border-radius:8px; cursor:pointer;
+  background:var(--surface-2); transition:border-color .15s, background .15s;
+}
+.dropzone:hover,.dropzone[data-over]{border-color:var(--accent); background:var(--accent-wash)}
+.dropzone svg{width:20px; height:20px; stroke:var(--ink-3); fill:none; stroke-width:1.7}
+.imp-sum{display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-top:14px}
+.spec-tbl th,.spec-tbl td{padding:5px 8px; font-size:12px; vertical-align:top}
+
 </style>
 
 <div id="app"></div>
@@ -2568,6 +2663,1160 @@ function resetDemoData() {
 }
 
 /* ============================================================
+   匯出與匯入
+   ------------------------------------------------------------
+   報告 → PDF（走瀏覽器列印）
+   圖表 → PNG（SVG 轉 canvas）
+   資產 → XLSX（自行組出 OOXML，不依賴任何外部函式庫）
+   資產 ← CSV（含範本下載與匯入前預覽）
+
+   為何 PDF 走列印而不是產生 PDF 位元組：本系統的報告是繁體中文，
+   要自行輸出 PDF 就得內嵌一套中日韓字型（完整 Noto Sans TC 約 8 MB），
+   映像檔與每份輸出都會因此變大，排版品質還不如瀏覽器本身。
+   交給瀏覽器列印則中文字型完美、Markdown 與圖表照常呈現、零相依。
+   使用者在列印對話框選「另存為 PDF」即得檔案。
+   ============================================================ */
+
+/* ---------- 下載 ---------- */
+
+/**
+ * 交付檔案給使用者。
+ *
+ * 正式部署是一般網頁，`<a download>` 正常運作。
+ * 展示版嵌在 Artifact 檢視器的沙箱 iframe 裡，任何由頁面發起的下載都會被
+ * 擋掉且不發出錯誤，所以這裡不假裝成功——改為明說並提供可行的替代做法。
+ */
+function saveBlob(blob, filename, { text = null } = {}) {
+  if (STORE.mode !== 'server') return demoDeliver(blob, filename, text);
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+  toast(`已匯出 ${filename}`);
+}
+
+/** 展示版的替代交付方式：圖片直接顯示供另存，文字提供複製。 */
+function demoDeliver(blob, filename, text) {
+  const isImage = blob.type.startsWith('image/');
+  const body = el('div', {},
+    el('p', { style: 'font-size:12.5px;line-height:1.75;color:var(--ink-2);margin-bottom:12px' },
+      '展示版嵌在檢視器的沙箱中，瀏覽器不允許頁面直接下載檔案。' +
+      '正式部署沒有這個限制，同一個按鈕會直接存成 ' +
+      el('b', {}, filename).textContent + '。'));
+
+  if (isImage) {
+    const img = el('img', {
+      src: URL.createObjectURL(blob),
+      alt: filename,
+      style: 'max-width:100%;border:1px solid var(--rule);border-radius:6px;display:block',
+    });
+    body.append(
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);margin-bottom:10px' },
+        '圖片已產生於下方，可在圖上按右鍵「另存圖片」取得 PNG：'),
+      img);
+  } else if (text != null) {
+    const ta = el('textarea', {
+      class: 'inp', readonly: true, style: 'min-height:200px;font-family:var(--mono);font-size:11px',
+    }, text);
+    body.append(
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);margin-bottom:8px' }, '內容如下，可全選複製：'),
+      ta,
+      el('button', {
+        class: 'btn', style: 'margin-top:10px',
+        onclick: () => copyText(text, '已複製到剪貼簿'),
+      }, el('span', { html: svgIcon(I.copy) }), '複製到剪貼簿'));
+  } else {
+    body.append(
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2)' },
+        `${filename} 是二進位檔案，無法在此顯示。請在正式部署環境操作此功能。`));
+  }
+
+  openModal(`匯出 ${filename}`, body);
+}
+
+/** 共用的簡易對話框。 */
+function openModal(title, bodyNode, width = 560) {
+  const modal = el('div', { class: 'modal', style: `max-width:${width}px` },
+    el('div', { class: 'modal-head' },
+      el('h3', {}, title),
+      el('button', { class: 'iconbtn', onclick: closeOverlay, html: svgIcon(I.close), title: '關閉' })),
+    el('div', { class: 'modal-body' }, bodyNode),
+    el('div', { class: 'modal-foot' },
+      el('span', { class: 'spacer' }),
+      el('button', { class: 'btn btn-primary', onclick: closeOverlay }, '關閉')));
+  const ov = $('#overlay');
+  ov.innerHTML = '';
+  ov.append(el('div', { class: 'scrim', onclick: e => { if (e.target === e.currentTarget) closeOverlay(); } }, modal));
+  return modal;
+}
+
+const stampSlug = () => nowStamp().replace(/[: ]/g, '-');
+
+/* ============================================================
+   PDF — 瀏覽器列印
+   ============================================================ */
+
+/**
+ * 以列印方式輸出一份報告。
+ *
+ * 畫面上的詳情頁含分頁、按鈕與可收合區塊，直接印出來並不好看，
+ * 因此各系統另外提供一份「列印版」結構：標頭 + 中繼資料表 + 若干段落。
+ */
+function printDoc({ title, subtitle, meta = [], sections = [] }) {
+  const root = el('div', { id: 'print-root' },
+    el('div', { class: 'p-head' },
+      el('div', { class: 'p-brand' },
+        el('span', { class: 'p-mark', html: `<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${I.shield}</svg>` }),
+        el('span', {}, '藍隊管理系統')),
+      el('div', { class: 'p-when' }, `匯出時間 ${nowStamp()}　匯出者 ${USERS[S.me]?.name || S.me}`)),
+
+    el('h1', { class: 'p-title' }, title),
+    subtitle ? el('p', { class: 'p-sub' }, subtitle) : null,
+
+    meta.length
+      ? el('table', { class: 'p-meta' },
+          el('tbody', {}, ...chunk(meta, 2).map(pair => el('tr', {},
+            ...pair.flatMap(([k, v]) => [el('th', {}, k), el('td', {}, v ?? '—')]),
+            ...(pair.length === 1 ? [el('th', {}, ''), el('td', {}, '')] : [])))))
+      : null,
+
+    ...sections.filter(Boolean).map(sec => el('section', { class: 'p-sec' },
+      el('h2', {}, sec.heading),
+      typeof sec.body === 'string'
+        ? el('div', { class: 'p-body', html: md(sec.body) })
+        : sec.body)),
+
+    el('div', { class: 'p-foot' },
+      `本文件由藍隊管理系統於 ${nowStamp()} 匯出，內容以系統內的最新版本為準。`));
+
+  document.body.append(root);
+  document.body.dataset.printing = '1';
+
+  const cleanup = () => {
+    delete document.body.dataset.printing;
+    root.remove();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+
+  try {
+    window.print();
+  } catch (e) {
+    cleanup();
+    toast('這個環境不允許開啟列印對話框');
+    return;
+  }
+  // Safari 等瀏覽器不一定會送出 afterprint，補一個逾時清理
+  setTimeout(() => { if (document.body.dataset.printing) cleanup(); }, 60000);
+  toast('請在列印對話框選擇「另存為 PDF」');
+}
+
+const chunk = (arr, n) => {
+  const out = [];
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+};
+
+/** 把一組物件陣列排成列印用的表格。 */
+function printTable(headers, rows) {
+  if (!rows.length) return el('p', { class: 'p-empty' }, '（無資料）');
+  return el('table', { class: 'p-tbl' },
+    el('thead', {}, el('tr', {}, ...headers.map(h => el('th', {}, h)))),
+    el('tbody', {}, ...rows.map(r => el('tr', {}, ...r.map(c => el('td', {}, c ?? '—'))))));
+}
+
+/* ============================================================
+   PNG — SVG 轉點陣圖
+   ============================================================ */
+
+/**
+ * 把畫面上的 SVG 轉成 PNG。
+ *
+ * 兩個必須處理的地方：
+ *   1. 圖表顏色全部走 CSS 變數，SVG 一旦脫離文件就解析不到，
+ *      因此先把每個節點的實際呈現色寫成行內屬性。
+ *   2. 匯出的是目前的完整內容，不受畫面上縮放與平移影響，
+ *      所以改用 viewBox 的原始尺寸，並清掉暫時的 transform。
+ */
+async function svgToPng(svg, filename, { scale = 2, background = null } = {}) {
+  if (!svg) return toast('找不到可匯出的圖表');
+
+  const clone = svg.cloneNode(true);
+  inlinePaint(svg, clone);
+
+  /* 取景範圍。
+     可平移的圖（拓撲）畫布只有視窗那麼大，內容卻延伸到視窗外，
+     直接拿 width/height 當 viewBox 會把圖裁掉一大半。改量測內容本身的
+     邊界框，匯出的就是完整的圖，與畫面上當下平移到哪裡無關。 */
+  const pan = svg.querySelector('[data-pan]');
+  let x = 0;
+  let y = 0;
+  let w;
+  let h;
+
+  if (pan) {
+    const pad = 24;
+    let bb = null;
+    try { bb = pan.getBBox(); } catch { /* 未顯示的元素量不到 */ }
+    if (bb && bb.width && bb.height) {
+      x = bb.x - pad; y = bb.y - pad;
+      w = bb.width + pad * 2; h = bb.height + pad * 2;
+    }
+  }
+  if (!w || !h) {
+    const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+    w = vb.length === 4 && vb[2] ? vb[2] : svg.clientWidth || 1200;
+    h = vb.length === 4 && vb[3] ? vb[3] : svg.clientHeight || 700;
+  }
+
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  clone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+  clone.setAttribute('width', w);
+  clone.setAttribute('height', h);
+  // 匯出整張圖，不沿用畫面上的平移縮放
+  clone.querySelectorAll('[data-pan]').forEach(n => n.removeAttribute('transform'));
+
+  const bg = background
+    || getComputedStyle(document.body).getPropertyValue('--surface').trim()
+    || '#ffffff';
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+
+  const img = new Image();
+  const loaded = new Promise((res, rej) => {
+    img.onload = () => res();
+    img.onerror = () => rej(new Error('SVG 轉換失敗'));
+  });
+  img.src = url;
+
+  try {
+    await Promise.race([
+      loaded,
+      new Promise((_, rj) => setTimeout(() => rj(new Error('轉換逾時')), 8000)),
+    ]);
+  } catch (e) {
+    return toast('圖表匯出失敗：' + e.message);
+  }
+
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(w * scale);
+  cv.height = Math.round(h * scale);
+  const cx = cv.getContext('2d');
+  cx.fillStyle = bg;
+  cx.fillRect(0, 0, cv.width, cv.height);
+  cx.drawImage(img, 0, 0, cv.width, cv.height);
+
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+  if (!blob) return toast('圖表匯出失敗');
+  saveBlob(blob, filename);
+}
+
+/** 逐節點把實際呈現的顏色與字型寫成行內屬性，脫離文件後才畫得出來。 */
+function inlinePaint(src, dst) {
+  const PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap',
+    'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity',
+    'font-family', 'font-size', 'font-weight', 'text-anchor', 'letter-spacing'];
+  const a = [src, ...src.querySelectorAll('*')];
+  const b = [dst, ...dst.querySelectorAll('*')];
+  for (let i = 0; i < a.length; i += 1) {
+    if (!b[i]) break;
+    const cs = getComputedStyle(a[i]);
+    for (const p of PROPS) {
+      const v = cs.getPropertyValue(p);
+      if (v && v !== 'none' && v !== 'normal') b[i].setAttribute(p, v.trim());
+    }
+    b[i].removeAttribute('class');
+    b[i].removeAttribute('style');
+  }
+}
+
+/* ============================================================
+   XLSX — 自行組出 OOXML
+   ============================================================ */
+
+const xmlEsc = s => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+  // XML 1.0 不接受這些控制字元，留著會讓 Excel 判定檔案毀損
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+
+const colName = n => {
+  let s = '';
+  for (let i = n; i >= 0; i = Math.floor(i / 26) - 1) s = String.fromCharCode(65 + (i % 26)) + s;
+  return s;
+};
+
+/**
+ * 產生 .xlsx。
+ *
+ * 只用到 OOXML 的最小子集：單一工作表、行內字串、粗體標題列、
+ * 凍結首列與自動篩選。不引入外部函式庫——正式版的 CSP 只允許自家資源，
+ * 而這點需求用不著一整套試算表程式庫。
+ */
+function buildXlsx({ sheetName = '工作表1', columns, rows }) {
+  const nCols = columns.length;
+  const cell = (r, c, value) => {
+    const ref = `${colName(c)}${r}`;
+    if (value === null || value === undefined || value === '') return `<c r="${ref}" s="${r === 1 ? 1 : 0}"/>`;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return `<c r="${ref}" s="${r === 1 ? 1 : 0}"><v>${value}</v></c>`;
+    }
+    return `<c r="${ref}" t="inlineStr" s="${r === 1 ? 1 : 0}">` +
+           `<is><t xml:space="preserve">${xmlEsc(value)}</t></is></c>`;
+  };
+
+  const header = `<row r="1">${columns.map((c, i) => cell(1, i, c.label)).join('')}</row>`;
+  const body = rows.map((row, ri) =>
+    `<row r="${ri + 2}">${columns.map((_, ci) => cell(ri + 2, ci, row[ci])).join('')}</row>`).join('');
+
+  const dim = `A1:${colName(nCols - 1)}${rows.length + 1}`;
+  const cols = `<cols>${columns.map((c, i) =>
+    `<col min="${i + 1}" max="${i + 1}" width="${c.width || 18}" customWidth="1"/>`).join('')}</cols>`;
+
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dim}"/>
+<sheetViews><sheetView workbookViewId="0" tabSelected="1">
+<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>
+</sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${cols}
+<sheetData>${header}${body}</sheetData>
+<autoFilter ref="${dim}"/>
+</worksheet>`;
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="2">
+<font><sz val="11"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+</fonts>
+<fills count="3">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="2">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+  const files = [
+    ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`],
+    ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`],
+    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="${xmlEsc(sheetName).slice(0, 31)}" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`],
+    ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`],
+    ['xl/styles.xml', styles],
+    ['xl/worksheets/sheet1.xml', sheet],
+  ];
+
+  return zipStore(files);
+}
+
+/* ---------- ZIP（僅 store，不壓縮） ---------- */
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    let c = i;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i += 1) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/**
+ * 組出 ZIP 容器。一律採 store（不壓縮）——xlsx 內容量很小，
+ * 省下 deflate 實作換來的是完全可預期的輸出。
+ */
+function zipStore(files) {
+  const enc = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+
+  const u16 = n => [n & 0xFF, (n >> 8) & 0xFF];
+  const u32 = n => [n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >>> 24) & 0xFF];
+
+  for (const [name, content] of files) {
+    const nameBytes = enc.encode(name);
+    const data = enc.encode(content);
+    const crc = crc32(data);
+
+    const local = new Uint8Array([
+      0x50, 0x4b, 0x03, 0x04,
+      ...u16(20), ...u16(0), ...u16(0),
+      ...u16(0), ...u16(0),                 // 時間／日期留 0
+      ...u32(crc), ...u32(data.length), ...u32(data.length),
+      ...u16(nameBytes.length), ...u16(0),
+    ]);
+    parts.push(local, nameBytes, data);
+
+    central.push(new Uint8Array([
+      0x50, 0x4b, 0x01, 0x02,
+      ...u16(20), ...u16(20), ...u16(0), ...u16(0),
+      ...u16(0), ...u16(0),
+      ...u32(crc), ...u32(data.length), ...u32(data.length),
+      ...u16(nameBytes.length), ...u16(0), ...u16(0),
+      ...u16(0), ...u16(0), ...u32(0),
+      ...u32(offset),
+    ]), nameBytes);
+
+    offset += local.length + nameBytes.length + data.length;
+  }
+
+  const centralSize = central.reduce((n, p) => n + p.length, 0);
+  const end = new Uint8Array([
+    0x50, 0x4b, 0x05, 0x06,
+    ...u16(0), ...u16(0),
+    ...u16(files.length), ...u16(files.length),
+    ...u32(centralSize), ...u32(offset),
+    ...u16(0),
+  ]);
+
+  return new Blob([...parts, ...central, end],
+    { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+/* ============================================================
+   CSV
+   ============================================================ */
+
+const csvCell = v => {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+/** 前置 BOM，Excel 開啟才不會把 UTF-8 中文判成亂碼。 */
+function buildCsv(headers, rows) {
+  return '﻿' + [headers, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+
+/**
+ * 解析 CSV。逐字元掃描而非 split(',')——欄位值裡的逗號、換行與
+ * 跳脫雙引號都必須正確處理，資產的用途說明常常就含逗號。
+ */
+function parseCsv(text) {
+  const src = text.replace(/^﻿/, '');
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+  let i = 0;
+
+  while (i < src.length) {
+    const ch = src[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (src[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += ch; i += 1; continue;
+    }
+    if (ch === '"') { quoted = true; i += 1; continue; }
+    if (ch === ',') { row.push(field); field = ''; i += 1; continue; }
+    if (ch === '\r') { i += 1; continue; }
+    if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; i += 1; continue; }
+    field += ch; i += 1;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+
+  // 略過完全空白的行
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+/* ============================================================
+   各系統的匯出動作與資產 CSV 匯入
+   ============================================================ */
+
+const userName = id => USERS[id]?.name || id || '—';
+const joinTags = t => (t || []).join('、') || '—';
+
+/* ---------- 獵補案件簿：調查報告 PDF ---------- */
+function exportCasePdf(c) {
+  const d = DETAIL[c.id] || {};
+  printDoc({
+    title: c.title,
+    subtitle: `${c.id}　獵補案件簿 · 調查報告`,
+    meta: [
+      ['案件編號', c.id],
+      ['嚴重度', c.sev],
+      ['調查結果', c.verdict],
+      ['調查進度', c.progress],
+      ['事件類型', c.cat],
+      ['分析員', userName(c.analyst)],
+      ['案發時間', (c.occur || []).join(' — ') || '—'],
+      ['報告建立', c.created],
+      ['主機名稱', c.host],
+      ['主機使用者', c.hostUser],
+      ['標籤', joinTags(c.tags)],
+    ],
+    sections: [
+      { heading: '結論', body: d.conclusion || '（尚未填寫結論）' },
+      { heading: '案件始末', body: d.narrative || '（尚未填寫）' },
+      d.mitigation ? { heading: '處置與緩解建議', body: d.mitigation } : null,
+      (c.conns || []).length ? {
+        heading: '連線紀錄',
+        body: printTable(
+          ['來源 IP', '來源埠', '目的 IP', '目的埠', '目的主機', '備註'],
+          c.conns.map(n => [n.src, n.srcPort, n.dst, n.dstPort, n.dstHost, n.note])),
+      } : null,
+      (d.iocs || []).length ? {
+        heading: 'IOC',
+        body: printTable(['類型', '指標值'],
+          d.iocs.map(o => [IOC_LABEL[o.t] || o.t, o.v])),
+      } : null,
+      (d.ttps || []).length ? {
+        heading: 'MITRE ATT&CK TTP',
+        body: printTable(['戰術', '技術編號', '技術名稱'],
+          d.ttps.map(t => [t.tac, t.id, t.name])),
+      } : null,
+      (d.shots || []).length ? {
+        heading: '附圖',
+        body: el('div', { class: 'p-shots' }, ...d.shots.map(s => el('figure', {},
+          s.url ? el('img', { src: s.url, alt: s.cap }) : el('div', { class: 'p-noimg' }, '（圖片未附加）'),
+          el('figcaption', {}, s.cap)))),
+      } : null,
+      (d.audit || []).length ? {
+        heading: '異動歷程',
+        body: printTable(['時間', '人員', '職務', '動作'],
+          d.audit.map(a => [a.when, a.who, a.role, a.act])),
+      } : null,
+    ],
+  });
+}
+
+/* ---------- 請求管理系統 ---------- */
+function exportRequestPdf(r) {
+  const d = RDETAIL[r.id] || {};
+  printDoc({
+    title: r.subject,
+    subtitle: `${r.id}　請求管理系統 · ${r.type === 'CR' ? '變更請求' : '資訊請求'}`,
+    meta: [
+      ['請求編號', r.id],
+      ['類型', r.type],
+      ['優先級', r.prio],
+      ['處理進度', r.progress],
+      ['申請人', userName(r.applicant)],
+      ['申請單位', r.unit],
+      ['提出時間', r.created],
+      ['回覆時間', r.repliedAt || '—'],
+    ],
+    sections: [
+      { heading: '請求內容', body: r.desc || '（未填寫）' },
+      { heading: '回覆', body: r.reply || '（尚未回覆）' },
+      (d.audit || []).length ? {
+        heading: '異動歷程',
+        body: printTable(['時間', '人員', '職務', '動作'],
+          d.audit.map(a => [a.when, a.who, a.role, a.act])),
+      } : null,
+    ],
+  });
+}
+
+/* ---------- 資產管理系統 ---------- */
+function exportAssetPdf(a) {
+  const d = ADETAIL[a.id] || {};
+  printDoc({
+    title: a.hostname,
+    subtitle: `${a.id}　資產管理系統 · 資產明細`,
+    meta: [
+      ['資產編號', a.id],
+      ['主機名稱', a.hostname],
+      ['設備型號', a.device],
+      ['製造商', a.vendor],
+      ['作業系統', a.os],
+      ['重要性', a.importance],
+      ['IPv4', a.ip],
+      ['網段', a.cidr],
+      ['IPv6', a.ipv6],
+      ['MAC', a.mac],
+      ['上層網通設備', a.uplink],
+      ['所屬 VLAN', a.vlan],
+      ['放置地點', a.location],
+      ['負責分析員', userName(a.analyst)],
+      ['建檔時間', a.created],
+      ['標籤', joinTags(a.tags)],
+    ],
+    sections: [
+      { heading: '用途說明', body: d.purpose || '（未填寫）' },
+      (d.services || []).length ? {
+        heading: '服務與開放埠',
+        body: printTable(['服務', '埠', '版本'],
+          d.services.map(s => [s.name, s.port, s.version])),
+      } : null,
+      (d.vulns || []).length ? {
+        heading: '已知版本漏洞',
+        body: printTable(['CVE', '元件', '嚴重度', '立即修補', '說明'],
+          d.vulns.map(v => [v.cve, v.component, v.severity, v.urgent ? '是' : '否', v.note])),
+      } : null,
+      (d.files || []).length ? {
+        heading: '附件',
+        body: printTable(['檔名', '類型', '大小'],
+          d.files.map(f => [f.name, f.kind, `${f.size} bytes`])),
+      } : null,
+      (d.audit || []).length ? {
+        heading: '異動歷程',
+        body: printTable(['時間', '人員', '職務', '動作'],
+          d.audit.map(x => [x.when, x.who, x.role, x.act])),
+      } : null,
+    ],
+  });
+}
+
+/* ---------- 情資管理系統 ---------- */
+function exportIntelPdf(x) {
+  printDoc({
+    title: x.source,
+    subtitle: `${x.id}　情資管理系統 · 情資報告`,
+    meta: [
+      ['報告編號', x.id],
+      ['情資類型', x.kind || '其他'],
+      ['情資來源', x.source],
+      ['建立時間', x.created],
+      ['分析員', userName(x.analyst)],
+      ['TTP 數', String((x.ttps || []).length)],
+    ],
+    sections: [
+      { heading: '情資內容', body: x.content || '（未填寫）' },
+      { heading: '分析結果', body: x.analysis || '（未填寫）' },
+      (x.iocs || []).length ? {
+        heading: 'IOC',
+        body: printTable(['類型', '指標值', '備註'],
+          x.iocs.map(o => [IOC_LABEL[o.t] || o.t, o.v, o.n])),
+      } : null,
+      (x.ttps || []).length ? {
+        heading: 'MITRE ATT&CK TTP',
+        body: printTable(['技術編號', '技術名稱'],
+          x.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+      } : null,
+    ],
+  });
+}
+
+function exportHuntPdf(h) {
+  printDoc({
+    title: h.hypothesis ? h.hypothesis.slice(0, 60) : h.id,
+    subtitle: `${h.id}　情資管理系統 · 威脅獵補計畫`,
+    meta: [
+      ['計畫編號', h.id],
+      ['狀態', h.status],
+      ['建立時間', h.created],
+      ['分析員', userName(h.analyst)],
+      ['鎖定 TTP', (h.ttps || []).join('、') || '—'],
+      ['關聯案件', (h.cases || []).map(c => c.id || c).join('、') || '—'],
+    ],
+    sections: [
+      ...HUNT_FIELDS.map(([k, label]) => ({ heading: label, body: h[k] || '（未填寫）' })),
+      h.resultNote ? { heading: '調查結果補充', body: h.resultNote } : null,
+    ],
+  });
+}
+
+function exportAptPdf(a) {
+  printDoc({
+    title: a.name,
+    subtitle: `${a.id}　情資管理系統 · APT 組織報告`,
+    meta: [
+      ['組織編號', a.id],
+      ['組織名稱', a.name],
+      ['類型', a.type],
+      ['國家／地區', a.country],
+      ['鎖定目標', (a.targets || []).join('、') || '—'],
+      ['TTP 數', String((a.ttps || []).length)],
+    ],
+    sections: [
+      a.note ? { heading: '組織描述', body: a.note } : null,
+      (a.ttps || []).length ? {
+        heading: '使用的 MITRE ATT&CK 技術',
+        body: printTable(['技術編號', '技術名稱'],
+          a.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+      } : null,
+    ],
+  });
+}
+
+/* ============================================================
+   資產 XLSX
+   ============================================================ */
+
+/**
+ * 資產的匯出欄位。這份定義同時是 XLSX 的欄、CSV 範本的標題列，
+ * 以及 CSV 匯入的欄位對應表——三者必須一致，所以只寫一次。
+ *
+ * key 為資產物件上的欄位；detail 為真時改取 ADETAIL。
+ */
+const ASSET_COLUMNS = [
+  { key: 'id', label: '資產編號', width: 14, importable: false,
+    hint: '留空則由系統配發 ASSET-####；填既有編號則為更新' },
+  { key: 'hostname', label: '主機名稱', width: 20, required: true, hint: '必填，不可與現有資產重複' },
+  { key: 'device', label: '設備型號', width: 22 },
+  { key: 'vendor', label: '製造商', width: 20, hint: '格式「廠商（國家）」，中國製造商會特別標註' },
+  { key: 'os', label: '作業系統', width: 24 },
+  { key: 'ip', label: 'IPv4', width: 16 },
+  { key: 'cidr', label: '網段', width: 18 },
+  { key: 'ipv6', label: 'IPv6', width: 26 },
+  { key: 'mac', label: 'MAC', width: 19 },
+  { key: 'uplink', label: '上層網通設備', width: 18 },
+  { key: 'vlan', label: '所屬 VLAN', width: 18 },
+  { key: 'location', label: '放置地點', width: 20 },
+  { key: 'importance', label: '重要性', width: 10, enum: ['關鍵', '高', '中', '低'], hint: '關鍵／高／中／低，留空視為「中」' },
+  { key: 'analyst', label: '負責分析員', width: 14, hint: '填帳號，如 chen；留空則記為匯入者' },
+  { key: 'tags', label: '標籤', width: 26, list: true, hint: '多個標籤以分號分隔，如 server;tier-1' },
+  { key: 'purpose', label: '用途說明', width: 46, detail: true },
+  { key: 'created', label: '建檔時間', width: 18, importable: false },
+];
+
+const assetCellValue = (a, col) => {
+  if (col.detail) return (ADETAIL[a.id] || {})[col.key] || '';
+  if (col.list) return (a[col.key] || []).join(';');
+  return a[col.key] ?? '';
+};
+
+/** 匯出目前篩選後的資產清單，而不是永遠整份——使用者看到什麼就匯出什麼。 */
+function exportAssetsXlsx(rows) {
+  const list = rows && rows.length ? rows : ASSETS;
+  const extra = [
+    { label: '服務數', width: 9 },
+    { label: '漏洞數', width: 9 },
+    { label: '待立即修補', width: 12 },
+  ];
+  const blob = buildXlsx({
+    sheetName: '資產清冊',
+    columns: [...ASSET_COLUMNS, ...extra],
+    rows: list.map(a => {
+      const d = ADETAIL[a.id] || {};
+      return [
+        ...ASSET_COLUMNS.map(c => assetCellValue(a, c)),
+        (d.services || []).length,
+        (d.vulns || []).length,
+        (d.vulns || []).filter(v => v.urgent).length,
+      ];
+    }),
+  });
+  saveBlob(blob, `資產清冊-${stampSlug()}.xlsx`);
+}
+
+
+/** 資產清冊 CSV：欄位與 XLSX 一致，方便改完再匯入回來。 */
+function exportAssetsCsv(rows) {
+  const list = rows && rows.length ? rows : ASSETS;
+  const csv = buildCsv(
+    ASSET_COLUMNS.map(c => c.label),
+    list.map(a => ASSET_COLUMNS.map(c => assetCellValue(a, c))));
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+    `資產清冊-${stampSlug()}.csv`, { text: csv });
+}
+
+/**
+ * 案件清單彙總 PDF。匯出的是「目前篩選後的結果」，
+ * 使用者在畫面上篩出什麼，印出來就是什麼。
+ */
+function exportCaseListPdf() {
+  const rows = filtered();
+  const n = k => rows.filter(c => c.verdict === k).length;
+  printDoc({
+    title: '調查報告彙總',
+    subtitle: `獵補案件簿 · 依目前篩選條件匯出 ${rows.length} 件`,
+    meta: [
+      ['案件數', String(rows.length)],
+      ['惡意行為', String(n('惡意行為'))],
+      ['進行中', String(rows.filter(c => c.progress === '進行中').length)],
+      ['授權行為', String(n('授權行為'))],
+      ['關鍵字', S.q || '（無）'],
+      ['正常行為', String(n('正常行為'))],
+      ['篩選條件',
+        [S.fProgress !== '全部' && `進度=${S.fProgress}`,
+         S.fVerdict !== '全部' && `結果=${S.fVerdict}`,
+         S.fSev !== '全部' && `嚴重度=${S.fSev}`,
+         S.fTags.length && `標籤=${S.fTags.join('、')}`].filter(Boolean).join('　') || '（未設定）'],
+      ['排序', `${S.sortBy} ${S.sortDir === 'desc' ? '遞減' : '遞增'}`],
+    ],
+    sections: [{
+      heading: '案件清單',
+      body: printTable(
+        ['編號', '標題', '嚴重度', '結果', '進度', '分析員', '案發時間'],
+        rows.map(c => [c.id, c.title, c.sev, c.verdict, c.progress,
+          userName(c.analyst), (c.occur || [])[0] || c.created])),
+    }],
+  });
+}
+
+/* ============================================================
+   資產 CSV 匯入
+   ============================================================ */
+
+const IMPORTABLE = ASSET_COLUMNS.filter(c => c.importable !== false || c.key === 'id');
+
+/** 產生匯入範本：標題列 + 兩筆填好的示範列。 */
+function assetCsvTemplate() {
+  const headers = IMPORTABLE.map(c => c.label);
+  const sample = [
+    ['', 'TPE-WEB-05', 'Dell PowerEdge R660', 'Dell（美國）', 'Ubuntu 24.04 LTS',
+      '10.32.7.55', '10.32.7.0/24', '2001:db8:32:7::55', 'B0:83:FE:22:1A:05',
+      'TPE-SW-CORE', 'VLAN 20 · 應用區', '台北總部 3F 機房', '高', 'chen',
+      'server;web;tier-1', '對外入口網站的後端應用伺服器，處理表單投遞。'],
+    ['', 'TPE-SW-B2', 'H3C S5130S-28S-EI', '新華三（中國）', 'Comware 7.1.070',
+      '10.32.2.2', '10.32.2.0/24', '', '00:23:89:44:5C:02',
+      'TPE-SW-CORE', 'VLAN 30 · 辦公區', '台北總部 2F 弱電間', '中', 'lin',
+      'switch;access', '二樓辦公區接取交換器。'],
+  ];
+  return buildCsv(headers, sample);
+}
+
+function downloadAssetTemplate() {
+  const csv = assetCsvTemplate();
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+    '資產匯入範本.csv', { text: csv });
+}
+
+/* ---------- 驗證 ---------- */
+
+const IPV4_RE = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const MAC_RE = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
+const CIDR_RE = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
+
+const validIpv4 = v => {
+  const m = IPV4_RE.exec(v);
+  return !!m && m.slice(1).every(n => Number(n) <= 255);
+};
+
+/**
+ * 把 CSV 列轉成待匯入的資產，逐欄驗證。
+ *
+ * 匯入是少數會一次寫進大量資料的操作，錯了很難回頭，
+ * 所以這裡不做任何猜測性的自動修正——有問題就標出來讓人決定。
+ */
+function validateAssetRows(table) {
+  if (!table.length) return { error: '檔案沒有任何內容。' };
+
+  const headers = table[0].map(h => h.trim());
+  const colFor = {};
+  for (const c of IMPORTABLE) {
+    const idx = headers.findIndex(h => h === c.label);
+    if (idx >= 0) colFor[c.key] = idx;
+  }
+
+  const missing = IMPORTABLE.filter(c => c.required && colFor[c.key] === undefined);
+  if (missing.length) {
+    return { error: `標題列缺少必要欄位：${missing.map(c => c.label).join('、')}。請以範本為準。` };
+  }
+  const unknown = headers.filter(h => h && !IMPORTABLE.some(c => c.label === h));
+
+  const byHostname = new Map(ASSETS.map(a => [a.hostname.toLowerCase(), a]));
+  const byId = new Map(ASSETS.map(a => [a.id, a]));
+  const seenHost = new Map();
+  const items = [];
+
+  for (let r = 1; r < table.length; r += 1) {
+    const raw = table[r];
+    const line = r + 1;
+    const get = key => (colFor[key] === undefined ? '' : (raw[colFor[key]] ?? '').trim());
+    const errors = [];
+    const warnings = [];
+
+    const hostname = get('hostname');
+    if (!hostname) errors.push('主機名稱為必填');
+
+    const id = get('id');
+    let mode = 'create';
+    let target = null;
+    if (id) {
+      target = byId.get(id);
+      if (!target) errors.push(`資產編號 ${id} 不存在，無法更新（要新建請留空）`);
+      else mode = 'update';
+    }
+
+    const key = hostname.toLowerCase();
+    if (hostname) {
+      const existing = byHostname.get(key);
+      if (existing && existing.id !== id) {
+        errors.push(`主機名稱已存在於 ${existing.id}`);
+      }
+      if (seenHost.has(key)) errors.push(`與第 ${seenHost.get(key)} 列的主機名稱重複`);
+      else seenHost.set(key, line);
+    }
+
+    const importance = get('importance');
+    if (importance && !['關鍵', '高', '中', '低'].includes(importance)) {
+      errors.push(`重要性「${importance}」不是有效值（關鍵／高／中／低）`);
+    }
+
+    const ip = get('ip');
+    if (ip && !validIpv4(ip)) errors.push(`IPv4「${ip}」格式不正確`);
+
+    const mac = get('mac');
+    if (mac && !MAC_RE.test(mac)) errors.push(`MAC「${mac}」格式不正確`);
+
+    const cidr = get('cidr');
+    if (cidr && !CIDR_RE.test(cidr)) errors.push(`網段「${cidr}」格式不正確`);
+
+    const analyst = get('analyst');
+    if (analyst && !USERS[analyst]) warnings.push(`帳號「${analyst}」不存在，將記為你本人`);
+
+    const uplink = get('uplink');
+    if (uplink && !ASSETS.some(a => a.hostname === uplink) && !/無上層/.test(uplink)) {
+      warnings.push(`上層設備「${uplink}」不在資產清冊中`);
+    }
+
+    items.push({
+      line, mode, errors, warnings, id: id || null, hostname,
+      values: Object.fromEntries(IMPORTABLE.map(c => [c.key, get(c.key)])),
+    });
+  }
+
+  return { items, unknown, headers };
+}
+
+/* ---------- 匯入對話框 ---------- */
+
+function openAssetImport() {
+  const body = el('div', {},
+    el('p', { style: 'font-size:12.5px;line-height:1.8;color:var(--ink-2)' },
+      '以 CSV 批次建立或更新資產。第一列必須是標題列，欄位名稱需與範本一致；' +
+      '欄位順序不拘，多餘的欄會被忽略。'),
+
+    el('div', { style: 'display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap' },
+      el('button', { class: 'btn', onclick: downloadAssetTemplate },
+        el('span', { html: svgIcon(I.download) }), '下載匯入範本 CSV'),
+      el('button', { class: 'btn btn-sm', onclick: () => showTemplateSpec() },
+        el('span', { html: svgIcon(I.info) }), '欄位說明')),
+
+    el('div', { class: 'dropzone', id: 'csv-drop',
+      onclick: () => $('#csv-file').click(),
+      ondragover: e => { e.preventDefault(); e.currentTarget.dataset.over = '1'; },
+      ondragleave: e => { delete e.currentTarget.dataset.over; },
+      ondrop: e => {
+        e.preventDefault();
+        delete e.currentTarget.dataset.over;
+        const f = e.dataTransfer.files[0];
+        if (f) readAssetCsv(f);
+      } },
+      el('span', { html: svgIcon(I.upload) }),
+      el('div', {},
+        el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳 CSV 檔案'),
+        el('div', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:3px' },
+          '以 UTF-8 編碼儲存；Excel 請選「CSV UTF-8（逗號分隔）」')),
+      el('input', { type: 'file', id: 'csv-file', accept: '.csv,text/csv', style: 'display:none',
+        onchange: e => { const f = e.target.files[0]; if (f) readAssetCsv(f); } })),
+
+    el('div', { id: 'csv-result' }));
+
+  openModal('匯入資產（CSV）', body, 760);
+}
+
+function showTemplateSpec() {
+  openModal('CSV 欄位說明', el('div', {},
+    el('table', { class: 'tbl spec-tbl' },
+      el('thead', {}, el('tr', {},
+        el('th', {}, '欄位'), el('th', {}, '必填'), el('th', {}, '說明'))),
+      el('tbody', {}, ...IMPORTABLE.map(c => el('tr', {},
+        el('td', {}, el('span', { class: 'mono', style: 'font-size:11.5px' }, c.label)),
+        el('td', {}, c.required ? '是' : ''),
+        el('td', { style: 'font-size:11.5px;color:var(--ink-2)' },
+          c.hint || (c.detail ? '寫入資產明細的用途說明' : '')))))),
+    el('p', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:12px;line-height:1.7' },
+      '「資產編號」留空代表新建，系統會配發下一個 ASSET-####；' +
+      '填入既有編號則視為更新該筆資產。建檔時間由系統填寫，不接受匯入。')), 620);
+}
+
+async function readAssetCsv(file) {
+  const host = $('#csv-result');
+  host.innerHTML = '';
+  host.append(el('p', { class: 'hint', style: 'padding:10px 0' }, '解析中…'));
+
+  if (file.size > 5 * 1024 * 1024) {
+    host.innerHTML = '';
+    host.append(el('p', { class: 'login-err' }, '檔案超過 5 MB，請分批匯入。'));
+    return;
+  }
+
+  let text;
+  try {
+    text = await file.text();
+  } catch (e) {
+    host.innerHTML = '';
+    host.append(el('p', { class: 'login-err' }, '讀取檔案失敗：' + e.message));
+    return;
+  }
+
+  const result = validateAssetRows(parseCsv(text));
+  host.innerHTML = '';
+  if (result.error) {
+    host.append(el('p', { class: 'login-err' }, result.error));
+    return;
+  }
+  renderImportPreview(host, result, file.name);
+}
+
+function renderImportPreview(host, result, filename) {
+  const { items, unknown } = result;
+  const bad = items.filter(x => x.errors.length);
+  const ok = items.filter(x => !x.errors.length);
+  const creates = ok.filter(x => x.mode === 'create').length;
+  const updates = ok.filter(x => x.mode === 'update').length;
+  const warns = ok.filter(x => x.warnings.length).length;
+
+  host.append(
+    el('div', { class: 'imp-sum' },
+      el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--good)' }),
+        `可新建 ${creates}`),
+      el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--data)' }),
+        `可更新 ${updates}`),
+      warns ? el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--warning)' }),
+        `有提醒 ${warns}`) : null,
+      bad.length ? el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--critical)' }),
+        `無法匯入 ${bad.length}`) : null,
+      el('span', { class: 'hint', style: 'margin-left:auto' }, filename)),
+
+    unknown.length
+      ? el('p', { class: 'hint', style: 'margin-top:8px' },
+          `忽略未知欄位：${unknown.join('、')}`)
+      : null,
+
+    el('div', { class: 'tablewrap', style: 'margin-top:12px;max-height:320px;overflow:auto' },
+      el('table', { class: 'tbl' },
+        el('thead', {}, el('tr', {},
+          el('th', {}, '列'), el('th', {}, '動作'), el('th', {}, '主機名稱'),
+          el('th', {}, 'IPv4'), el('th', {}, '重要性'), el('th', {}, '檢查結果'))),
+        el('tbody', {}, ...items.map(x => el('tr', {},
+          el('td', {}, el('span', { class: 'mono', style: 'font-size:11.5px' }, String(x.line))),
+          el('td', {}, x.errors.length
+            ? el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--critical)' }), '略過')
+            : el('span', { class: 'chip' },
+                el('i', { class: 'dot', style: `background:${x.mode === 'create' ? 'var(--good)' : 'var(--data)'}` }),
+                x.mode === 'create' ? '新建' : `更新 ${x.id}`)),
+          el('td', {}, x.hostname || '—'),
+          el('td', {}, el('span', { class: 'mono', style: 'font-size:11.5px' }, x.values.ip || '—')),
+          el('td', {}, x.values.importance || '中'),
+          el('td', { style: 'font-size:11.5px;line-height:1.6' },
+            x.errors.length
+              ? el('span', { style: 'color:var(--critical)' }, x.errors.join('；'))
+              : x.warnings.length
+                ? el('span', { style: 'color:var(--warning)' }, x.warnings.join('；'))
+                : el('span', { style: 'color:var(--ink-3)' }, '無問題'))))))),
+
+    el('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:14px' },
+      el('button', {
+        class: 'btn btn-primary',
+        disabled: ok.length ? null : true,
+        onclick: () => commitAssetImport(ok),
+      }, el('span', { html: svgIcon(I.check) }), `匯入 ${ok.length} 筆`),
+      bad.length
+        ? el('span', { class: 'hint' }, `${bad.length} 筆有錯誤的資料不會被寫入，請修正後重新匯入。`)
+        : null));
+}
+
+function commitAssetImport(items) {
+  if (!items.length) return;
+  const me = USERS[S.me];
+  let created = 0;
+  let updated = 0;
+
+  for (const x of items) {
+    const v = x.values;
+    const analyst = USERS[v.analyst] ? v.analyst : S.me;
+    // \u3001 是頓號；字面字元類在非 UTF-8 解讀下會壞掉，一律用逃脫
+    const tags = (v.tags || '').split(/[;,\u3001\uff0c]/).map(t => t.trim()).filter(Boolean);
+
+    const fields = {
+      hostname: x.hostname,
+      device: v.device, vendor: v.vendor, os: v.os,
+      ip: v.ip, cidr: v.cidr, ipv6: v.ipv6, mac: v.mac,
+      uplink: v.uplink, vlan: v.vlan, location: v.location,
+      importance: v.importance || '中',
+      analyst, tags,
+    };
+
+    if (x.mode === 'update') {
+      const a = ASSETS.find(y => y.id === x.id);
+      if (!a) continue;
+      Object.assign(a, fields);
+      const d = (ADETAIL[a.id] ||= { purpose: '', services: [], vulns: [], files: [], audit: [] });
+      if (v.purpose) d.purpose = v.purpose;
+      (d.audit ||= []).unshift({ who: me.name, role: me.role, act: `自 CSV 匯入更新（第 ${x.line} 列）`, when: nowStamp() });
+      updated += 1;
+    } else {
+      const id = nextAssetId();
+      ASSETS.push({ id, ...fields, created: nowStamp() });
+      ADETAIL[id] = {
+        purpose: v.purpose || '', services: [], vulns: [], files: [],
+        audit: [{ who: me.name, role: me.role, act: `自 CSV 匯入建立（第 ${x.line} 列）`, when: nowStamp() }],
+      };
+      created += 1;
+    }
+  }
+
+  persist();
+  closeOverlay();
+  render();
+  toast(`匯入完成：新建 ${created} 筆、更新 ${updated} 筆`);
+}
+
+/* ============================================================
+   圖表 PNG
+   ============================================================ */
+
+/** 匯出選單裡共用的「把某個 SVG 存成 PNG」項目。 */
+function pngItem(label, selector, filename) {
+  return el('button', { class: 'mi', onclick: () => {
+    closeOverlay();
+    svgToPng($(selector), filename);
+  } }, el('span', { html: svgIcon(I.download) }), label);
+}
+
+/** 通用匯出選單。各系統把自己的項目傳進來。 */
+function openExportMenu(e, items) {
+  e.stopPropagation();
+  const ov = $('#overlay');
+  const menu = el('div', { class: 'menu' },
+    el('div', { class: 'mh' }, el('div', { class: 'eyebrow' }, '匯出')),
+    ...items.filter(Boolean));
+  ov.innerHTML = '';
+  ov.append(menu);
+  armOutsideClose();
+  menu.addEventListener('click', ev => ev.stopPropagation());
+}
+
+const menuItem = (label, onclick, icon) =>
+  el('button', { class: 'mi', onclick: () => { closeOverlay(); onclick(); } },
+    el('span', { html: svgIcon(icon || I.download) }), label);
+
+/* ============================================================
    正式版專屬畫面：變更密碼、稽核紀錄
    ============================================================ */
 
@@ -3183,7 +4432,13 @@ function viewDashboard(){
         el('h1',{},'威脅獵補總覽'),
         el('p',{class:'sub'},'藍隊調查案件即時彙整 · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:()=>toast('原型未實作匯出')},'匯出報表'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            menuItem('本頁報告匯出 PDF', ()=>exportCaseListPdf()),
+            pngItem('近 14 日趨勢圖 PNG', '#chart-case-trend', `案件趨勢-${stampSlug()}.png`),
+            pngItem('調查結果分佈 PNG', '#chart-case-verdict', `調查結果分佈-${stampSlug()}.png`),
+            pngItem('MITRE 戰術分佈 PNG', '#chart-case-tactics', `戰術分佈-${stampSlug()}.png`),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
           S.caseId=null;
           S.form={_loaded:false, ttps:[], iocs:[{t:'ip',v:''}], tags:[], shots:[], conns:[blankConn()]};
@@ -3593,7 +4848,7 @@ function drawTrend(){
   const W=host.clientWidth||600, H=Math.max(210,host.clientHeight||210), P={t:12,r:12,b:26,l:30};
   const iw=W-P.l-P.r, ih=H-P.t-P.b, max=6;
   const X=i=>P.l+(iw*i)/(TREND.length-1), Y=v=>P.t+ih-(ih*v)/max;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'近 14 日案件量趨勢折線圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-trend',role:'img','aria-label':'近 14 日案件量趨勢折線圖'});
 
   for(let g=0; g<=3; g++){
     const y=P.t+(ih*g)/3, v=max-(max*g)/3;
@@ -3637,7 +4892,7 @@ function drawVerdict(){
   const host=$('#ch-verdict'); if(!host)return;
   host.innerHTML='';
   const W=host.clientWidth||300, H=34, total=VERDICT_DIST.reduce((a,b)=>a+b.v,0), gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'調查結果分佈長條圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-verdict',role:'img','aria-label':'調查結果分佈長條圖'});
   let x=0;
   VERDICT_DIST.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<VERDICT_DIST.length-1?gap:0));
@@ -3658,7 +4913,7 @@ function drawTactics(){
   host.querySelectorAll('svg').forEach(n=>n.remove());
   const W=host.clientWidth||300, rowH=30, H=TACTICS.length*rowH, labelW=76, valW=30;
   const bw=W-labelW-valW, max=Math.max(...TACTICS.map(t=>t.v));
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'MITRE 戰術命中次數長條圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-tactics',role:'img','aria-label':'MITRE 戰術命中次數長條圖'});
   TACTICS.forEach((t,i)=>{
     const y=i*rowH+6, h=15, w=Math.max(2,(bw*t.v)/max);
     const lb=sv('text',{x:0,y:y+h-3,'font-size':11.5,fill:CSSVAR('--ink-2')});
@@ -3706,6 +4961,8 @@ function viewDetail(){
           el('span',{class:'chip','data-p':c.progress}, el('i',{class:'dot'}), c.progress)),
         el('h1',{style:'max-width:60ch'},c.title)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportCasePdf(c)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.caseId=c.id; go('form');}}, el('span',{html:svgIcon(I.edit)}),'編輯報告')
           : el('button',{class:'btn', disabled:true, title:`僅 ${u.name} 或隊長可編輯`}, el('span',{html:svgIcon(I.edit)}),'編輯報告'),
@@ -4623,6 +5880,15 @@ function openPicker(){
 
 /* ---------- spec notes ---------- */
 const RFI_NOTES=[
+  ['匯出 PDF 走瀏覽器列印','報告的「匯出 PDF」會開啟列印對話框，選「另存為 PDF」即得檔案。' +
+    '之所以不自行產生 PDF 位元組：本系統的報告是繁體中文，自行輸出就得內嵌一套中日韓字型' +
+    '（完整 Noto Sans TC 約 8 MB），映像檔與每份輸出都會變大，排版品質還不如瀏覽器本身。' +
+    '交給瀏覽器列印則中文字型完美、Markdown 與表格照常呈現、零相依。' +
+    '列印版是另外編排的：標頭、中繼資料表與各段落，不含畫面上的按鈕與可收合區塊。'],
+  ['圖表匯出 PNG','拓撲圖、TTP 熱圖與各儀表板圖表都可存成 PNG（2 倍解析度）。' +
+    '匯出的是**完整的圖**，不受畫面上縮放與平移影響——拓撲圖會依內容的實際邊界取景，' +
+    '而非只截目前看得到的那一塊。圖表顏色走 CSS 變數，匯出前會先把實際呈現色寫進節點，' +
+    '所以日間與夜間模式各自匯出的配色都正確。'],
   ['已依規格實作','首頁 Dashboard（上統計、下請求綱目）、依「創建時間」排序、請求類型篩選器、登入後才可編輯、日夜間模式，以及規格所列全部欄位：請求類型、編號、創建時間、申請者、申請主題、說明、優先等級、辦理進度、回覆內容，附圖可上傳並於檢視時點擊放大。'],
   ['編號規則','格式為「類型-四位流水號」，RFI 與 CR **各自獨立編號**。在表單中切換請求類型時，預覽編號會即時改配，避免 CR 頂著 RFI 的號碼。'],
   ['補入：受檢單位','規格未列此欄位，但請求必須有明確的受理對象，否則無法追蹤是誰該回覆。已設為必填。'],
@@ -4635,6 +5901,16 @@ const RFI_NOTES=[
 ];
 
 const ASSET_NOTES=[
+  ['資產匯出 XLSX','「匯出」選單可輸出 .xlsx——依目前篩選或全部皆可，另有 CSV 版本。' +
+    '檔案為單一工作表，首列凍結、含自動篩選，並在標準欄位之外多帶服務數、漏洞數與待立即修補數。' +
+    'XLSX 是自行組出的 OOXML，不引入試算表函式庫：正式版的 CSP 只允許自家資源，' +
+    '而這點需求用不著一整套程式庫。'],
+  ['資產以 CSV 匯入','「匯入 CSV」可批次建立或更新資產，並提供範本下載。' +
+    '**匯入前一定會先預覽**，逐列標出將新建還是更新、有無錯誤：主機名稱重複、' +
+    'IPv4／MAC／網段格式不符、重要性不是有效值、指定的資產編號不存在、檔案內自己重複——' +
+    '都會標出來且該列不寫入，其餘正常的列照常匯入。' +
+    '「資產編號」留空代表新建、填既有編號代表更新；建檔時間由系統填寫，不接受匯入。' +
+    '匯入走與手動編輯相同的路徑，因此一樣有稽核紀錄與權限檢查。'],
   ['已依規格實作','首頁 Dashboard（上統計、下資產綱目）、**預設依重要性排序**、登入後才可編輯、日夜間模式，以及規格所列全部欄位：主機名稱（規格原文為「電腦名稱」，為與獵補案件簿的欄位用語一致而改名）、分析員、設備名稱、IP、作業系統（版本）、服務（port）、服務版本、用途、放置地點、重要性、tags。'],
   ['整合空間：主機標定系統','每筆資產配有穩定的 ASSET-#### 編號作為索引鍵。明細頁的「整合介面」區塊直接列出後續系統將取用的 JSON 結構（英文鍵，免去對接時再轉換一層），可單筆複製；總覽右上角可一次匯出全部資產。這是「保留整合空間」在原型中能做到的具體形式——真正的 API 需等對方系統定案。'],
   ['已依規格實作（第二版）','再補入 IPv6、MAC、製造商（國家）、上層網通設備、所屬 VLAN、已知版本漏洞與附件上傳。綱目的 IP 欄以 IPv4 為主，**沒有 IPv4 才顯示 IPv6** 並加註 IPv6 標記（見 AWS-WEB-LB）。'],
@@ -4843,7 +6119,12 @@ function viewReqDashboard(){
         el('h1',{},'請求管理總覽'),
         el('p',{class:'sub'},'向受檢單位提出的資訊請求（RFI）與變更請求（CR） · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:()=>toast('原型未實作匯出')},'匯出清單'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('近 14 日請求量 PNG', '#chart-req-trend', `請求趨勢-${stampSlug()}.png`),
+            pngItem('請求類型分佈 PNG', '#chart-req-type', `請求類型-${stampSlug()}.png`),
+            pngItem('優先級分佈 PNG', '#chart-req-prio', `請求優先級-${stampSlug()}.png`),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
             S.reqId=null;
             S.rform={_loaded:false, shots:[]};
@@ -4980,6 +6261,8 @@ function viewReq(){
           el('span',{class:'chip','data-rp':r.progress}, el('i',{class:'dot'}), r.progress)),
         el('h1',{style:'max-width:60ch'},r.subject)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportRequestPdf(r)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.reqId=r.id; S.rform={_loaded:false, shots:[]}; go('form');}},
               el('span',{html:svgIcon(I.edit)}),'編輯請求表')
@@ -5308,7 +6591,7 @@ function drawReqTrend(){
   const W=host.clientWidth||600, H=Math.max(210,host.clientHeight||210), P={t:12,r:12,b:26,l:30};
   const iw=W-P.l-P.r, ih=H-P.t-P.b, max=Math.max(3,...days.map(x=>x.v));
   const X=i=>P.l+(iw*i)/(days.length-1), Y=v=>P.t+ih-(ih*v)/max;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'近 14 日請求建立量'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-req-trend',role:'img','aria-label':'近 14 日請求建立量'});
   for(let g=0;g<=3;g++){
     const y=P.t+(ih*g)/3, v=Math.round(max-(max*g)/3);
     s.append(sv('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:CSSVAR('--grid'),'stroke-width':1}));
@@ -5351,7 +6634,7 @@ function drawReqType(){
   const data=[{k:'RFI · 資訊請求', v:rfi, c:'var(--data)'},
               {k:'CR · 變更請求',  v:cr,  c:'var(--neutral-1)'}];
   const total=rfi+cr||1, W=host.clientWidth||300, H=34, gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'請求類型分佈'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-req-type',role:'img','aria-label':'請求類型分佈'});
   let x=0;
   data.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<data.length-1?gap:0));
@@ -5374,7 +6657,7 @@ function drawReqPrio(){
   const data=['速件','高','中','低'].map(k=>({k, v:open.filter(r=>r.prio===k).length}));
   const W=host.clientWidth||300, rowH=30, H=data.length*rowH, labelW=48, valW=28;
   const bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d.v));
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'未結請求的優先等級分佈'});
+  const s=sv('svg',{width:W,height:H,id:'chart-req-prio',role:'img','aria-label':'未結請求的優先等級分佈'});
   data.forEach((d,i)=>{
     const y=i*rowH+6, h=15, w=Math.max(2,(bw*d.v)/max);
     const lb=sv('text',{x:0,y:y+h-3,'font-size':11.5,fill:CSSVAR('--ink-2')});
@@ -5507,8 +6790,18 @@ function viewAssetDashboard(){
         el('h1',{},'資產總覽'),
         el('p',{class:'sub'},'受檢測環境的資產清冊 · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportAssets},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:openAssetImport},
+          el('span',{html:svgIcon(I.upload)}),'匯入 CSV'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            menuItem('資產清冊 XLSX（依目前篩選）', ()=>exportAssetsXlsx(assetFiltered())),
+            menuItem('資產清冊 XLSX（全部）', ()=>exportAssetsXlsx(ASSETS)),
+            menuItem('資產清冊 CSV', ()=>exportAssetsCsv(assetFiltered())),
+            pngItem('作業系統分佈 PNG', '#chart-asset-os', `資產OS分佈-${stampSlug()}.png`),
+            pngItem('重要性分佈 PNG', '#chart-asset-imp', `資產重要性-${stampSlug()}.png`),
+            pngItem('漏洞嚴重度分佈 PNG', '#chart-asset-vuln', `資產漏洞分佈-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportAssets, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
             S.assetId=null; S.aform=freshAform(); go('form');}},
           el('span',{html:svgIcon(I.plus)}),'建立資產'))),
@@ -5767,6 +7060,8 @@ function viewAsset(){
           ...a.tags.map(t=>el('span',{class:'tag'},'#'+t))),
         el('h1',{class:'mono', style:'max-width:60ch;letter-spacing:-.01em'},a.hostname)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportAssetPdf(a)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.assetId=a.id; S.aform=freshAform(); go('form');}},
               el('span',{html:svgIcon(I.edit)}),'編輯資產')
@@ -6229,7 +7524,7 @@ function drawAssetVul(){
   const W=host.clientWidth||300, avail=host.clientHeight||data.length*34;
   const rowH=Math.max(32, Math.min(52, Math.floor(avail/data.length)));
   const labelW=48, valW=52, bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d.v));
-  const s2=sv('svg',{width:W,height:data.length*rowH,role:'img','aria-label':'已知漏洞嚴重程度分佈'});
+  const s2=sv('svg',{width:W,height:data.length*rowH,id:'chart-asset-vuln',role:'img','aria-label':'已知漏洞嚴重程度分佈'});
   data.forEach((d,i)=>{
     const h=16, y=i*rowH+(rowH-h)/2, w=Math.max(2,(bw*d.v)/max);
     const uw=d.v?Math.max(0,w*d.urgent/d.v):0;
@@ -6269,7 +7564,7 @@ function drawAssetOs(){
   const W=host.clientWidth||600, avail=host.clientHeight||data.length*34;
   const rowH=Math.max(32, Math.floor(avail/Math.max(1,data.length)));
   const labelW=118, valW=32, bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d[1]));
-  const s=sv('svg',{width:W,height:data.length*rowH,role:'img','aria-label':'作業系統分佈'});
+  const s=sv('svg',{width:W,height:data.length*rowH,id:'chart-asset-os',role:'img','aria-label':'作業系統分佈'});
   data.forEach(([k,v],i)=>{
     const h=17, y=i*rowH+(rowH-h)/2, w=Math.max(2,(bw*v)/max);
     const lb=sv('text',{x:0,y:y+h-4,'font-size':12,fill:CSSVAR('--ink-2')}); lb.textContent=k; s.append(lb);
@@ -6296,7 +7591,7 @@ function drawAssetImp(){
   const data=order.map(k=>({k, v:ASSETS.filter(a=>a.importance===k).length,
     c: k==='關鍵'?'var(--emph)':k==='高'?'var(--neutral-1)':'var(--neutral-2)'}));
   const total=ASSETS.length||1, W=host.clientWidth||300, H=34, gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'重要性分佈'});
+  const s=sv('svg',{width:W,height:H,id:'chart-asset-imp',role:'img','aria-label':'重要性分佈'});
   let x=0;
   data.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<data.length-1?gap:0));
@@ -6558,8 +7853,11 @@ function viewTopo(){
         el('p',{class:'sub'},
           `由資產管理系統的 ${ASSETS.length} 筆資產建立 · 套用獵補案件簿的惡意判定 · ${nowStamp()}`)),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportTopo},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('網路拓撲圖 PNG', '.topo-svg', `網路拓撲圖-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportTopo, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn', onclick:()=>{S.tSensorMode=!S.tSensorMode; render();},
           'aria-pressed':String(S.tSensorMode)},
           el('span',{class:'sensor-mark'},'✳'), S.tSensorMode?'結束佈署':'佈署感測器'))),
@@ -6617,7 +7915,7 @@ function drawTopo(L){
   const stage=$('#topo-stage'); if(!stage)return;
   stage.innerHTML='';
   const W=stage.clientWidth||900, H=stage.clientHeight||560;
-  const svg=sv('svg',{width:W, height:H, class:'topo-svg', role:'img',
+  const svg=sv('svg',{width:W, height:H, viewBox:`0 0 ${W} ${H}`, class:'topo-svg', role:'img',
     'aria-label':`網路拓撲圖（依${L.mode.label}分組）`});
 
   const defs=sv('defs');
@@ -6630,7 +7928,8 @@ function drawTopo(L){
   });
   svg.append(defs);
 
-  const g=sv('g',{id:'topo-g'});
+  // data-pan：匯出 PNG 時清掉畫面上的平移縮放，輸出完整的圖
+  const g=sv('g',{id:'topo-g','data-pan':'1'});
   svg.append(g);
 
   const flowLabels=[]; let labelSeq=0;
@@ -7413,8 +8712,11 @@ function viewIntelDash(){
         el('h1',{},'情資總覽'),
         el('p',{class:'sub'},`APT 追蹤、TTP 對照與威脅獵補計畫 · 資料截至 ${nowStamp()}`)),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportIntel},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('TTP Mapping 熱圖 PNG', '#heat-home .heat-svg', `TTP熱圖-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportIntel, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         canEditIntel()
           ? el('div',{class:'newwrap'},
               el('button',{class:'btn btn-primary', id:'new-btn',
@@ -7973,7 +9275,10 @@ function viewMatrix(){
       el('div',{class:'topo-zoom'},
         el('button',{class:'lb-btn', title:'縮小', onclick:()=>heatZoom(-1), html:svgIcon(I.zoomOut)}),
         el('button',{class:'lb-btn lb-wide', onclick:()=>heatFit()},'符合視窗'),
-        el('button',{class:'lb-btn', title:'放大', onclick:()=>heatZoom(1), html:svgIcon(I.zoomIn)}))),
+        el('button',{class:'lb-btn', title:'放大', onclick:()=>heatZoom(1), html:svgIcon(I.zoomIn)}),
+        el('button',{class:'lb-btn', title:'匯出 PNG',
+          onclick:()=>svgToPng($('#heat-stage .heat-svg'), `TTP熱圖-${stampSlug()}.png`),
+          html:svgIcon(I.download)}))),
 
     S.mPanel==='vis' ? visPanel() : null,
     S.mPanel==='mark' ? markPanel() : null,
@@ -8211,7 +9516,10 @@ function viewApt(){
           el('span',{class:'tag'},a.type),
           el('span',{class:'tag'},a.country)),
         el('h1',{},a.name)),
-      el('div',{class:'head-actions'}, editBtn('apt',a.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportAptPdf(a)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('apt',a.id))),
     el('div',{class:'detail'},
       el('div',{},
         el('section',{class:'card sec'}, el('h3',{},'敘述'),
@@ -8256,7 +9564,10 @@ function viewIntelReport(){
           el('span',{class:'cid', style:'font-size:12.5px'},x.id),
           el('span',{class:'tag'},x.source)),
         el('h1',{style:'max-width:60ch'},x.source)),
-      el('div',{class:'head-actions'}, editBtn('intel',x.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportIntelPdf(x)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('intel',x.id))),
     el('div',{class:'detail'},
       el('div',{},
         el('section',{class:'card sec'}, el('h3',{},'情資內容'),
@@ -8357,7 +9668,10 @@ function viewHunt(){
             el('i',{class:'dot'}), h.status),
           ...h.ttps.map(t=>el('span',{class:'ttp-id'},t))),
         el('h1',{style:'max-width:62ch'},h.hypothesis)),
-      el('div',{class:'head-actions'}, editBtn('hunt',h.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportHuntPdf(h)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('hunt',h.id))),
     el('div',{class:'detail'},
       el('div',{},
         ...HUNT_FIELDS.map(([k,label,hint])=>el('section',{class:'card sec'},

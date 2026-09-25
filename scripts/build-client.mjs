@@ -21,6 +21,8 @@ const root = resolve(here, '..');
 const src = readFileSync(resolve(root, 'client/index.html'), 'utf8');
 const datalayer = readFileSync(resolve(root, 'client/datalayer.js'), 'utf8');
 const prodViews = readFileSync(resolve(root, 'client/prod-views.js'), 'utf8');
+const exchange = readFileSync(resolve(root, 'client/exchange.js'), 'utf8');
+const exchangeActions = readFileSync(resolve(root, 'client/exchange-actions.js'), 'utf8');
 const extraCss = readFileSync(resolve(root, 'client/prod.css'), 'utf8');
 
 /**
@@ -87,11 +89,16 @@ function build(mode) {
 
   out = out
     .replace('/*__BTMS_DATALAYER__*/', () => datalayer.replace('__BTMS_MODE__', mode))
+    .replace('/*__BTMS_EXCHANGE__*/', () => exchange)
+    .replace('/*__BTMS_EXCHANGE_ACTIONS__*/', () => exchangeActions)
     .replace('/*__BTMS_PRODVIEWS__*/', () => prodViews)
     .replace('/*__BTMS_PROD_CSS__*/', () => extraCss);
 
   if (out.includes('__BTMS_MODE__')) throw new Error('MODE 佔位符未被取代');
-  if (out.includes('/*__BTMS_DATALAYER__*/')) throw new Error('資料層未嵌入');
+  // 佔位符沒被取代表示模組沒嵌進去，頁面會在執行期才炸——提早擋下
+  for (const ph of ['DATALAYER', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
+    if (out.includes(`/*__BTMS_${ph}__*/`)) throw new Error(`${ph} 模組未嵌入`);
+  }
   return out;
 }
 
@@ -138,6 +145,22 @@ for (const [name, text] of [['public/index.html', server], ['dist/demo.html', de
   if (hits) {
     console.error(`\n${name} 的正規表示式字元類含非 ASCII 字面字元，請改用 \\uXXXX 逃脫：`);
     for (const h of [...new Set(hits)].slice(0, 5)) console.error(`  - ${h}`);
+    process.exit(1);
+  }
+}
+
+/* ---- 驗證：輸出不得含裸控制字元 ----
+   原始碼裡若不小心寫進真實的控制位元組（而非 \uXXXX 逃脫），
+   正規表示式字面值會在解析階段就壞掉，整個模組不執行。 */
+for (const [name, text] of [['public/index.html', server], ['dist/demo.html', demo]]) {
+  const idx = [...text].findIndex(ch => {
+    const c = ch.codePointAt(0);
+    return c < 0x20 && ch !== '\n' && ch !== '\t' && ch !== '\r';
+  });
+  if (idx >= 0) {
+    const around = text.slice(Math.max(0, idx - 50), idx + 20).replace(/[\u0000-\u001F]/g, '?');
+    console.error(`\n${name} 含裸控制字元（位置 ${idx}），請改用 \\uXXXX 逃脫：`);
+    console.error(`  …${around}…`);
     process.exit(1);
   }
 }

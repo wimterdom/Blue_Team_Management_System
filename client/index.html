@@ -4190,6 +4190,8 @@ function md(src){
 }
 
 /*__BTMS_DATALAYER__*/
+/*__BTMS_EXCHANGE__*/
+/*__BTMS_EXCHANGE_ACTIONS__*/
 /*__BTMS_PRODVIEWS__*/
 
 /* ============================================================
@@ -4582,7 +4584,13 @@ function viewDashboard(){
         el('h1',{},'威脅獵補總覽'),
         el('p',{class:'sub'},'藍隊調查案件即時彙整 · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:()=>toast('原型未實作匯出')},'匯出報表'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            menuItem('本頁報告匯出 PDF', ()=>exportCaseListPdf()),
+            pngItem('近 14 日趨勢圖 PNG', '#chart-case-trend', `案件趨勢-${stampSlug()}.png`),
+            pngItem('調查結果分佈 PNG', '#chart-case-verdict', `調查結果分佈-${stampSlug()}.png`),
+            pngItem('MITRE 戰術分佈 PNG', '#chart-case-tactics', `戰術分佈-${stampSlug()}.png`),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
           S.caseId=null;
           S.form={_loaded:false, ttps:[], iocs:[{t:'ip',v:''}], tags:[], shots:[], conns:[blankConn()]};
@@ -4992,7 +5000,7 @@ function drawTrend(){
   const W=host.clientWidth||600, H=Math.max(210,host.clientHeight||210), P={t:12,r:12,b:26,l:30};
   const iw=W-P.l-P.r, ih=H-P.t-P.b, max=6;
   const X=i=>P.l+(iw*i)/(TREND.length-1), Y=v=>P.t+ih-(ih*v)/max;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'近 14 日案件量趨勢折線圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-trend',role:'img','aria-label':'近 14 日案件量趨勢折線圖'});
 
   for(let g=0; g<=3; g++){
     const y=P.t+(ih*g)/3, v=max-(max*g)/3;
@@ -5036,7 +5044,7 @@ function drawVerdict(){
   const host=$('#ch-verdict'); if(!host)return;
   host.innerHTML='';
   const W=host.clientWidth||300, H=34, total=VERDICT_DIST.reduce((a,b)=>a+b.v,0), gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'調查結果分佈長條圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-verdict',role:'img','aria-label':'調查結果分佈長條圖'});
   let x=0;
   VERDICT_DIST.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<VERDICT_DIST.length-1?gap:0));
@@ -5057,7 +5065,7 @@ function drawTactics(){
   host.querySelectorAll('svg').forEach(n=>n.remove());
   const W=host.clientWidth||300, rowH=30, H=TACTICS.length*rowH, labelW=76, valW=30;
   const bw=W-labelW-valW, max=Math.max(...TACTICS.map(t=>t.v));
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'MITRE 戰術命中次數長條圖'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-case-tactics',role:'img','aria-label':'MITRE 戰術命中次數長條圖'});
   TACTICS.forEach((t,i)=>{
     const y=i*rowH+6, h=15, w=Math.max(2,(bw*t.v)/max);
     const lb=sv('text',{x:0,y:y+h-3,'font-size':11.5,fill:CSSVAR('--ink-2')});
@@ -5105,6 +5113,8 @@ function viewDetail(){
           el('span',{class:'chip','data-p':c.progress}, el('i',{class:'dot'}), c.progress)),
         el('h1',{style:'max-width:60ch'},c.title)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportCasePdf(c)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.caseId=c.id; go('form');}}, el('span',{html:svgIcon(I.edit)}),'編輯報告')
           : el('button',{class:'btn', disabled:true, title:`僅 ${u.name} 或隊長可編輯`}, el('span',{html:svgIcon(I.edit)}),'編輯報告'),
@@ -6022,6 +6032,15 @@ function openPicker(){
 
 /* ---------- spec notes ---------- */
 const RFI_NOTES=[
+  ['匯出 PDF 走瀏覽器列印','報告的「匯出 PDF」會開啟列印對話框，選「另存為 PDF」即得檔案。' +
+    '之所以不自行產生 PDF 位元組：本系統的報告是繁體中文，自行輸出就得內嵌一套中日韓字型' +
+    '（完整 Noto Sans TC 約 8 MB），映像檔與每份輸出都會變大，排版品質還不如瀏覽器本身。' +
+    '交給瀏覽器列印則中文字型完美、Markdown 與表格照常呈現、零相依。' +
+    '列印版是另外編排的：標頭、中繼資料表與各段落，不含畫面上的按鈕與可收合區塊。'],
+  ['圖表匯出 PNG','拓撲圖、TTP 熱圖與各儀表板圖表都可存成 PNG（2 倍解析度）。' +
+    '匯出的是**完整的圖**，不受畫面上縮放與平移影響——拓撲圖會依內容的實際邊界取景，' +
+    '而非只截目前看得到的那一塊。圖表顏色走 CSS 變數，匯出前會先把實際呈現色寫進節點，' +
+    '所以日間與夜間模式各自匯出的配色都正確。'],
   ['已依規格實作','首頁 Dashboard（上統計、下請求綱目）、依「創建時間」排序、請求類型篩選器、登入後才可編輯、日夜間模式，以及規格所列全部欄位：請求類型、編號、創建時間、申請者、申請主題、說明、優先等級、辦理進度、回覆內容，附圖可上傳並於檢視時點擊放大。'],
   ['編號規則','格式為「類型-四位流水號」，RFI 與 CR **各自獨立編號**。在表單中切換請求類型時，預覽編號會即時改配，避免 CR 頂著 RFI 的號碼。'],
   ['補入：受檢單位','規格未列此欄位，但請求必須有明確的受理對象，否則無法追蹤是誰該回覆。已設為必填。'],
@@ -6034,6 +6053,16 @@ const RFI_NOTES=[
 ];
 
 const ASSET_NOTES=[
+  ['資產匯出 XLSX','「匯出」選單可輸出 .xlsx——依目前篩選或全部皆可，另有 CSV 版本。' +
+    '檔案為單一工作表，首列凍結、含自動篩選，並在標準欄位之外多帶服務數、漏洞數與待立即修補數。' +
+    'XLSX 是自行組出的 OOXML，不引入試算表函式庫：正式版的 CSP 只允許自家資源，' +
+    '而這點需求用不著一整套程式庫。'],
+  ['資產以 CSV 匯入','「匯入 CSV」可批次建立或更新資產，並提供範本下載。' +
+    '**匯入前一定會先預覽**，逐列標出將新建還是更新、有無錯誤：主機名稱重複、' +
+    'IPv4／MAC／網段格式不符、重要性不是有效值、指定的資產編號不存在、檔案內自己重複——' +
+    '都會標出來且該列不寫入，其餘正常的列照常匯入。' +
+    '「資產編號」留空代表新建、填既有編號代表更新；建檔時間由系統填寫，不接受匯入。' +
+    '匯入走與手動編輯相同的路徑，因此一樣有稽核紀錄與權限檢查。'],
   ['已依規格實作','首頁 Dashboard（上統計、下資產綱目）、**預設依重要性排序**、登入後才可編輯、日夜間模式，以及規格所列全部欄位：主機名稱（規格原文為「電腦名稱」，為與獵補案件簿的欄位用語一致而改名）、分析員、設備名稱、IP、作業系統（版本）、服務（port）、服務版本、用途、放置地點、重要性、tags。'],
   ['整合空間：主機標定系統','每筆資產配有穩定的 ASSET-#### 編號作為索引鍵。明細頁的「整合介面」區塊直接列出後續系統將取用的 JSON 結構（英文鍵，免去對接時再轉換一層），可單筆複製；總覽右上角可一次匯出全部資產。這是「保留整合空間」在原型中能做到的具體形式——真正的 API 需等對方系統定案。'],
   ['已依規格實作（第二版）','再補入 IPv6、MAC、製造商（國家）、上層網通設備、所屬 VLAN、已知版本漏洞與附件上傳。綱目的 IP 欄以 IPv4 為主，**沒有 IPv4 才顯示 IPv6** 並加註 IPv6 標記（見 AWS-WEB-LB）。'],
@@ -6242,7 +6271,12 @@ function viewReqDashboard(){
         el('h1',{},'請求管理總覽'),
         el('p',{class:'sub'},'向受檢單位提出的資訊請求（RFI）與變更請求（CR） · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:()=>toast('原型未實作匯出')},'匯出清單'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('近 14 日請求量 PNG', '#chart-req-trend', `請求趨勢-${stampSlug()}.png`),
+            pngItem('請求類型分佈 PNG', '#chart-req-type', `請求類型-${stampSlug()}.png`),
+            pngItem('優先級分佈 PNG', '#chart-req-prio', `請求優先級-${stampSlug()}.png`),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
             S.reqId=null;
             S.rform={_loaded:false, shots:[]};
@@ -6379,6 +6413,8 @@ function viewReq(){
           el('span',{class:'chip','data-rp':r.progress}, el('i',{class:'dot'}), r.progress)),
         el('h1',{style:'max-width:60ch'},r.subject)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportRequestPdf(r)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.reqId=r.id; S.rform={_loaded:false, shots:[]}; go('form');}},
               el('span',{html:svgIcon(I.edit)}),'編輯請求表')
@@ -6707,7 +6743,7 @@ function drawReqTrend(){
   const W=host.clientWidth||600, H=Math.max(210,host.clientHeight||210), P={t:12,r:12,b:26,l:30};
   const iw=W-P.l-P.r, ih=H-P.t-P.b, max=Math.max(3,...days.map(x=>x.v));
   const X=i=>P.l+(iw*i)/(days.length-1), Y=v=>P.t+ih-(ih*v)/max;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'近 14 日請求建立量'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-req-trend',role:'img','aria-label':'近 14 日請求建立量'});
   for(let g=0;g<=3;g++){
     const y=P.t+(ih*g)/3, v=Math.round(max-(max*g)/3);
     s.append(sv('line',{x1:P.l,x2:W-P.r,y1:y,y2:y,stroke:CSSVAR('--grid'),'stroke-width':1}));
@@ -6750,7 +6786,7 @@ function drawReqType(){
   const data=[{k:'RFI · 資訊請求', v:rfi, c:'var(--data)'},
               {k:'CR · 變更請求',  v:cr,  c:'var(--neutral-1)'}];
   const total=rfi+cr||1, W=host.clientWidth||300, H=34, gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'請求類型分佈'});
+  const s=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,id:'chart-req-type',role:'img','aria-label':'請求類型分佈'});
   let x=0;
   data.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<data.length-1?gap:0));
@@ -6773,7 +6809,7 @@ function drawReqPrio(){
   const data=['速件','高','中','低'].map(k=>({k, v:open.filter(r=>r.prio===k).length}));
   const W=host.clientWidth||300, rowH=30, H=data.length*rowH, labelW=48, valW=28;
   const bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d.v));
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'未結請求的優先等級分佈'});
+  const s=sv('svg',{width:W,height:H,id:'chart-req-prio',role:'img','aria-label':'未結請求的優先等級分佈'});
   data.forEach((d,i)=>{
     const y=i*rowH+6, h=15, w=Math.max(2,(bw*d.v)/max);
     const lb=sv('text',{x:0,y:y+h-3,'font-size':11.5,fill:CSSVAR('--ink-2')});
@@ -6906,8 +6942,18 @@ function viewAssetDashboard(){
         el('h1',{},'資產總覽'),
         el('p',{class:'sub'},'受檢測環境的資產清冊 · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportAssets},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:openAssetImport},
+          el('span',{html:svgIcon(I.upload)}),'匯入 CSV'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            menuItem('資產清冊 XLSX（依目前篩選）', ()=>exportAssetsXlsx(assetFiltered())),
+            menuItem('資產清冊 XLSX（全部）', ()=>exportAssetsXlsx(ASSETS)),
+            menuItem('資產清冊 CSV', ()=>exportAssetsCsv(assetFiltered())),
+            pngItem('作業系統分佈 PNG', '#chart-asset-os', `資產OS分佈-${stampSlug()}.png`),
+            pngItem('重要性分佈 PNG', '#chart-asset-imp', `資產重要性-${stampSlug()}.png`),
+            pngItem('漏洞嚴重度分佈 PNG', '#chart-asset-vuln', `資產漏洞分佈-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportAssets, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
             S.assetId=null; S.aform=freshAform(); go('form');}},
           el('span',{html:svgIcon(I.plus)}),'建立資產'))),
@@ -7166,6 +7212,8 @@ function viewAsset(){
           ...a.tags.map(t=>el('span',{class:'tag'},'#'+t))),
         el('h1',{class:'mono', style:'max-width:60ch;letter-spacing:-.01em'},a.hostname)),
       el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportAssetPdf(a)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
         editable
           ? el('button',{class:'btn', onclick:()=>{S.assetId=a.id; S.aform=freshAform(); go('form');}},
               el('span',{html:svgIcon(I.edit)}),'編輯資產')
@@ -7628,7 +7676,7 @@ function drawAssetVul(){
   const W=host.clientWidth||300, avail=host.clientHeight||data.length*34;
   const rowH=Math.max(32, Math.min(52, Math.floor(avail/data.length)));
   const labelW=48, valW=52, bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d.v));
-  const s2=sv('svg',{width:W,height:data.length*rowH,role:'img','aria-label':'已知漏洞嚴重程度分佈'});
+  const s2=sv('svg',{width:W,height:data.length*rowH,id:'chart-asset-vuln',role:'img','aria-label':'已知漏洞嚴重程度分佈'});
   data.forEach((d,i)=>{
     const h=16, y=i*rowH+(rowH-h)/2, w=Math.max(2,(bw*d.v)/max);
     const uw=d.v?Math.max(0,w*d.urgent/d.v):0;
@@ -7668,7 +7716,7 @@ function drawAssetOs(){
   const W=host.clientWidth||600, avail=host.clientHeight||data.length*34;
   const rowH=Math.max(32, Math.floor(avail/Math.max(1,data.length)));
   const labelW=118, valW=32, bw=W-labelW-valW, max=Math.max(1,...data.map(d=>d[1]));
-  const s=sv('svg',{width:W,height:data.length*rowH,role:'img','aria-label':'作業系統分佈'});
+  const s=sv('svg',{width:W,height:data.length*rowH,id:'chart-asset-os',role:'img','aria-label':'作業系統分佈'});
   data.forEach(([k,v],i)=>{
     const h=17, y=i*rowH+(rowH-h)/2, w=Math.max(2,(bw*v)/max);
     const lb=sv('text',{x:0,y:y+h-4,'font-size':12,fill:CSSVAR('--ink-2')}); lb.textContent=k; s.append(lb);
@@ -7695,7 +7743,7 @@ function drawAssetImp(){
   const data=order.map(k=>({k, v:ASSETS.filter(a=>a.importance===k).length,
     c: k==='關鍵'?'var(--emph)':k==='高'?'var(--neutral-1)':'var(--neutral-2)'}));
   const total=ASSETS.length||1, W=host.clientWidth||300, H=34, gap=2;
-  const s=sv('svg',{width:W,height:H,role:'img','aria-label':'重要性分佈'});
+  const s=sv('svg',{width:W,height:H,id:'chart-asset-imp',role:'img','aria-label':'重要性分佈'});
   let x=0;
   data.forEach((d,i)=>{
     const w=Math.max(0,(W*d.v)/total-(i<data.length-1?gap:0));
@@ -7957,8 +8005,11 @@ function viewTopo(){
         el('p',{class:'sub'},
           `由資產管理系統的 ${ASSETS.length} 筆資產建立 · 套用獵補案件簿的惡意判定 · ${nowStamp()}`)),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportTopo},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('網路拓撲圖 PNG', '.topo-svg', `網路拓撲圖-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportTopo, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn', onclick:()=>{S.tSensorMode=!S.tSensorMode; render();},
           'aria-pressed':String(S.tSensorMode)},
           el('span',{class:'sensor-mark'},'✳'), S.tSensorMode?'結束佈署':'佈署感測器'))),
@@ -8016,7 +8067,7 @@ function drawTopo(L){
   const stage=$('#topo-stage'); if(!stage)return;
   stage.innerHTML='';
   const W=stage.clientWidth||900, H=stage.clientHeight||560;
-  const svg=sv('svg',{width:W, height:H, class:'topo-svg', role:'img',
+  const svg=sv('svg',{width:W, height:H, viewBox:`0 0 ${W} ${H}`, class:'topo-svg', role:'img',
     'aria-label':`網路拓撲圖（依${L.mode.label}分組）`});
 
   const defs=sv('defs');
@@ -8029,7 +8080,8 @@ function drawTopo(L){
   });
   svg.append(defs);
 
-  const g=sv('g',{id:'topo-g'});
+  // data-pan：匯出 PNG 時清掉畫面上的平移縮放，輸出完整的圖
+  const g=sv('g',{id:'topo-g','data-pan':'1'});
   svg.append(g);
 
   const flowLabels=[]; let labelSeq=0;
@@ -8812,8 +8864,11 @@ function viewIntelDash(){
         el('h1',{},'情資總覽'),
         el('p',{class:'sub'},`APT 追蹤、TTP 對照與威脅獵補計畫 · 資料截至 ${nowStamp()}`)),
       el('div',{class:'head-actions'},
-        el('button',{class:'btn', onclick:exportIntel},
-          el('span',{html:svgIcon(I.download)}),'匯出 JSON'),
+        el('button',{class:'btn', onclick:e=>openExportMenu(e,[
+            pngItem('TTP Mapping 熱圖 PNG', '#heat-home .heat-svg', `TTP熱圖-${stampSlug()}.png`),
+            menuItem('整合用 JSON（複製）', exportIntel, I.copy),
+          ])},
+          el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         canEditIntel()
           ? el('div',{class:'newwrap'},
               el('button',{class:'btn btn-primary', id:'new-btn',
@@ -9372,7 +9427,10 @@ function viewMatrix(){
       el('div',{class:'topo-zoom'},
         el('button',{class:'lb-btn', title:'縮小', onclick:()=>heatZoom(-1), html:svgIcon(I.zoomOut)}),
         el('button',{class:'lb-btn lb-wide', onclick:()=>heatFit()},'符合視窗'),
-        el('button',{class:'lb-btn', title:'放大', onclick:()=>heatZoom(1), html:svgIcon(I.zoomIn)}))),
+        el('button',{class:'lb-btn', title:'放大', onclick:()=>heatZoom(1), html:svgIcon(I.zoomIn)}),
+        el('button',{class:'lb-btn', title:'匯出 PNG',
+          onclick:()=>svgToPng($('#heat-stage .heat-svg'), `TTP熱圖-${stampSlug()}.png`),
+          html:svgIcon(I.download)}))),
 
     S.mPanel==='vis' ? visPanel() : null,
     S.mPanel==='mark' ? markPanel() : null,
@@ -9610,7 +9668,10 @@ function viewApt(){
           el('span',{class:'tag'},a.type),
           el('span',{class:'tag'},a.country)),
         el('h1',{},a.name)),
-      el('div',{class:'head-actions'}, editBtn('apt',a.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportAptPdf(a)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('apt',a.id))),
     el('div',{class:'detail'},
       el('div',{},
         el('section',{class:'card sec'}, el('h3',{},'敘述'),
@@ -9655,7 +9716,10 @@ function viewIntelReport(){
           el('span',{class:'cid', style:'font-size:12.5px'},x.id),
           el('span',{class:'tag'},x.source)),
         el('h1',{style:'max-width:60ch'},x.source)),
-      el('div',{class:'head-actions'}, editBtn('intel',x.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportIntelPdf(x)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('intel',x.id))),
     el('div',{class:'detail'},
       el('div',{},
         el('section',{class:'card sec'}, el('h3',{},'情資內容'),
@@ -9756,7 +9820,10 @@ function viewHunt(){
             el('i',{class:'dot'}), h.status),
           ...h.ttps.map(t=>el('span',{class:'ttp-id'},t))),
         el('h1',{style:'max-width:62ch'},h.hypothesis)),
-      el('div',{class:'head-actions'}, editBtn('hunt',h.id))),
+      el('div',{class:'head-actions'},
+        el('button',{class:'btn', onclick:()=>exportHuntPdf(h)},
+          el('span',{html:svgIcon(I.download)}),'匯出 PDF'),
+        editBtn('hunt',h.id))),
     el('div',{class:'detail'},
       el('div',{},
         ...HUNT_FIELDS.map(([k,label,hint])=>el('section',{class:'card sec'},

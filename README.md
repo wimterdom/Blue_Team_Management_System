@@ -78,6 +78,27 @@ cross-system jump can be reversed with one click back to where you were.
 - Authentication sits behind a provider interface — dropping in OIDC SSO later
   requires no change at any call site (see [`docs/SSO.md`](docs/SSO.md))
 
+**Export and import**
+
+- **Reports → PDF.** Every report (investigation, request, asset, intel, hunt plan,
+  APT profile) exports to PDF through the browser's print dialog — choose
+  "Save as PDF". Rendering PDF bytes ourselves would mean embedding a CJK font
+  (~8 MB for Noto Sans TC) for worse typography than the browser already gives
+  these Traditional Chinese reports. The print layout is composed separately:
+  header, metadata table and sections, without the on-screen controls
+- **Charts → PNG.** Topology map, ATT&CK heatmap and every dashboard chart export
+  at 2× resolution. The export is the *whole* figure — framing comes from the
+  content's own bounding box, not from what happens to be scrolled into view
+- **Assets → XLSX.** Current filter or the full inventory, as a single sheet with
+  a frozen header row and autofilter. The OOXML is assembled directly; no
+  spreadsheet library, so nothing to load past the CSP
+- **Assets ← CSV.** Bulk create or update, with a downloadable template. Every
+  import is **previewed before it is written**: each row is marked create or
+  update, and rows failing validation (duplicate hostname, malformed IPv4 / MAC /
+  CIDR, invalid importance, unknown asset ID, duplicates within the file) are
+  listed and skipped while the rest import normally. Imports take the same path as
+  manual edits, so they carry the same audit trail and permission checks
+
 **Interface**
 
 - Traditional Chinese UI, with light / dark / follow-system themes

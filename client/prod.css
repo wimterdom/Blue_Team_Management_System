@@ -23,3 +23,98 @@
 .livedot{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-3)}
 .livedot i{width:6px; height:6px; border-radius:50%; background:var(--good)}
 .livedot[data-state="off"] i{background:var(--warning)}
+
+/* ============================================================
+   列印版面（PDF 匯出）
+   畫面上的一切都不印，只印 #print-root。
+   ============================================================ */
+#print-root{display:none}
+
+@media print{
+  body[data-printing] > *{display:none !important}
+  body[data-printing] > #print-root{display:block !important}
+  body[data-printing]{background:#fff; margin:0}
+
+  @page{size:A4; margin:16mm 14mm}
+
+  #print-root{
+    color:#111; background:#fff;
+    font-family:var(--sans); font-size:10.5pt; line-height:1.65;
+  }
+  #print-root .p-head{
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1.5pt solid #1f4e79; padding-bottom:6pt; margin-bottom:14pt;
+  }
+  #print-root .p-brand{display:flex; align-items:center; gap:6pt;
+    font-weight:700; font-size:11pt; color:#1f4e79}
+  #print-root .p-mark svg{width:13pt; height:13pt; stroke:#1f4e79; fill:none; stroke-width:2;
+    display:block}
+  #print-root .p-when{font-size:8.5pt; color:#555}
+
+  #print-root .p-title{font-size:17pt; line-height:1.35; margin:0 0 3pt; font-weight:700}
+  #print-root .p-sub{font-size:9.5pt; color:#555; margin:0 0 12pt;
+    font-family:var(--mono)}
+
+  #print-root .p-meta{width:100%; border-collapse:collapse; margin-bottom:14pt;
+    font-size:9pt; break-inside:avoid}
+  #print-root .p-meta th{
+    width:16%; text-align:left; vertical-align:top; padding:3.5pt 6pt;
+    background:#f2f5f8; color:#1f4e79; font-weight:600; border:0.5pt solid #d6dde4;
+  }
+  #print-root .p-meta td{width:34%; padding:3.5pt 6pt; border:0.5pt solid #d6dde4;
+    vertical-align:top; word-break:break-word}
+
+  #print-root .p-sec{margin-bottom:13pt; break-inside:auto}
+  #print-root .p-sec h2{
+    font-size:11.5pt; font-weight:700; color:#1f4e79;
+    border-bottom:0.5pt solid #c8d3dc; padding-bottom:3pt; margin:0 0 7pt;
+    break-after:avoid;
+  }
+  #print-root .p-body{font-size:10pt}
+  #print-root .p-body p{margin:0 0 6pt}
+  #print-root .p-body ul,#print-root .p-body ol{margin:0 0 6pt; padding-left:16pt}
+  #print-root .p-body li{margin-bottom:2.5pt}
+  #print-root .p-body h1,#print-root .p-body h2,#print-root .p-body h3{
+    font-size:10.5pt; font-weight:700; margin:9pt 0 4pt; break-after:avoid}
+  #print-root .p-body code{font-family:var(--mono); font-size:9pt;
+    background:#f2f5f8; padding:0.5pt 2.5pt; border-radius:2pt}
+  #print-root .p-body pre{background:#f7f9fb; border:0.5pt solid #d6dde4;
+    padding:6pt; font-size:8.5pt; overflow:visible; white-space:pre-wrap;
+    break-inside:avoid}
+  #print-root .p-body blockquote{margin:0 0 6pt; padding-left:8pt;
+    border-left:2pt solid #c8d3dc; color:#444}
+  #print-root .p-body table{width:100%; border-collapse:collapse; font-size:9pt;
+    margin:0 0 6pt}
+  #print-root .p-body th,#print-root .p-body td{
+    border:0.5pt solid #d6dde4; padding:3pt 5pt; text-align:left; vertical-align:top}
+  #print-root .p-body th{background:#f2f5f8}
+
+  #print-root .p-tbl{width:100%; border-collapse:collapse; font-size:8.8pt}
+  #print-root .p-tbl th{background:#f2f5f8; color:#1f4e79; font-weight:600;
+    border:0.5pt solid #d6dde4; padding:3.5pt 5pt; text-align:left}
+  #print-root .p-tbl td{border:0.5pt solid #d6dde4; padding:3.5pt 5pt;
+    vertical-align:top; word-break:break-word}
+  #print-root .p-tbl tr{break-inside:avoid}
+  #print-root .p-empty{font-size:9pt; color:#777; margin:0}
+
+  #print-root .p-shots{display:grid; grid-template-columns:1fr 1fr; gap:8pt}
+  #print-root .p-shots figure{margin:0; break-inside:avoid}
+  #print-root .p-shots img{width:100%; border:0.5pt solid #d6dde4}
+  #print-root .p-noimg{border:0.5pt dashed #c8d3dc; padding:14pt; text-align:center;
+    color:#888; font-size:8.5pt}
+  #print-root .p-shots figcaption{font-size:8pt; color:#555; margin-top:2.5pt}
+
+  #print-root .p-foot{margin-top:16pt; padding-top:6pt; border-top:0.5pt solid #d6dde4;
+    font-size:8pt; color:#777}
+}
+
+/* ---- 匯入對話框 ---- */
+.dropzone{
+  display:flex; align-items:center; gap:11px; padding:18px 16px;
+  border:1.5px dashed var(--rule-2); border-radius:8px; cursor:pointer;
+  background:var(--surface-2); transition:border-color .15s, background .15s;
+}
+.dropzone:hover,.dropzone[data-over]{border-color:var(--accent); background:var(--accent-wash)}
+.dropzone svg{width:20px; height:20px; stroke:var(--ink-3); fill:none; stroke-width:1.7}
+.imp-sum{display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-top:14px}
+.spec-tbl th,.spec-tbl td{padding:5px 8px; font-size:12px; vertical-align:top}
