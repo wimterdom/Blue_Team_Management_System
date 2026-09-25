@@ -22,18 +22,49 @@
  * 展示版嵌在 Artifact 檢視器的沙箱 iframe 裡，任何由頁面發起的下載都會被
  * 擋掉且不發出錯誤，所以這裡不假裝成功——改為明說並提供可行的替代做法。
  */
-function saveBlob(blob, filename, { text = null } = {}) {
-  if (STORE.mode !== 'server') return demoDeliver(blob, filename, text);
+async function saveBlob(blob, filename, { text = null } = {}) {
+  if (STORE.mode === 'server') {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.append(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+    toast(`已匯出 ${filename}`);
+    return;
+  }
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.append(a);
-  a.click();
-  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
-  toast(`已匯出 ${filename}`);
+  // 展示版：頁面自己發起的下載會被檢視器的沙箱擋掉，改請檢視器代為存檔。
+  const dl = await viewerDownloads();
+  if (dl) {
+    try {
+      await dl.save({ filename, data: blob });
+      toast(`已匯出 ${filename}`);
+      return;
+    } catch (err) {
+      // 使用者自己按了取消，不必再彈別的東西
+      if (err && err.code === 'declined') return;
+      if (err && err.code === 'rate_limited') return toast('存檔提示已開啟，請先完成再試');
+      // 其餘情形（未授權、格式不支援…）退回可複製／可另存的替代做法
+    }
+  }
+  demoDeliver(blob, filename, text);
+}
+
+/** 檢視器提供的存檔管道。取不到就是這個環境不支援，回 null。 */
+let _dlNs;
+async function viewerDownloads() {
+  if (_dlNs !== undefined) return _dlNs;
+  try {
+    _dlNs = (window.claude && typeof window.claude.use === 'function'
+      ? await window.claude.use('downloads')
+      : null) || null;
+  } catch {
+    _dlNs = null;
+  }
+  return _dlNs;
 }
 
 /** 展示版的替代交付方式：圖片直接顯示供另存，文字提供複製。 */
@@ -41,9 +72,8 @@ function demoDeliver(blob, filename, text) {
   const isImage = blob.type.startsWith('image/');
   const body = el('div', {},
     el('p', { style: 'font-size:12.5px;line-height:1.75;color:var(--ink-2);margin-bottom:12px' },
-      '展示版嵌在檢視器的沙箱中，瀏覽器不允許頁面直接下載檔案。' +
-      '正式部署沒有這個限制，同一個按鈕會直接存成 ' +
-      el('b', {}, filename).textContent + '。'));
+      `這個環境無法直接存檔（${filename}）。正式部署沒有這個限制，` +
+      '同一個按鈕會直接存成檔案。以下提供替代取得方式：'));
 
   if (isImage) {
     const img = el('img', {
