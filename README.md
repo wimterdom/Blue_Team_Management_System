@@ -18,6 +18,7 @@ Docker. No external managed services.
 - [Architecture](#architecture)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Before you expose it](#before-you-expose-it)
 - [First login](#first-login)
 - [Configuration](#configuration)
 - [API](#api)
@@ -304,9 +305,8 @@ Compose publishes the port on all interfaces (`"8080:8080"`) so colleagues on th
 same network can reach it. To restrict it to the host itself, change that to
 `"127.0.0.1:8080:8080"` in `docker-compose.yml`.
 
-> `.env.example` ships with `BTMS_ADMIN_PASSWORD=admin`. Change it before the
-> container is reachable by anyone else — the first person to log in is the one who
-> gets to set the permanent password.
+Because the service is reachable from the network by design, work through
+[Before you expose it](#before-you-expose-it) before the first start.
 
 #### Option C — with HTTPS
 
@@ -321,6 +321,53 @@ Caddy obtains and renews a Let's Encrypt certificate automatically (the host mus
 be reachable from the internet on ports 80/443). For an internal deployment with no
 public domain, uncomment `tls internal` in the `Caddyfile` to use Caddy's own
 internal CA instead.
+
+### Before you expose it
+
+The default `docker-compose.yml` publishes port 8080 on every interface so the
+team can reach the service. That is the intended deployment, and it makes the
+following four points worth a minute before the first start.
+
+**1. Set the admin password first.** `.env.example` ships with
+`BTMS_ADMIN_PASSWORD=admin` for convenience. First login forces a password
+change — but that protects whoever logs in first, which on an exposed port is
+not necessarily you. Either set a real password in `.env`, or leave
+`BTMS_ADMIN_PASSWORD` empty so the container generates a random one and prints
+it to the log, and log in before announcing the URL.
+
+```bash
+# in .env
+BTMS_ADMIN_PASSWORD='a password only you know'
+```
+
+Note that the bootstrap password is deliberately not checked against the
+password policy — it exists to get you in once. The password you set at first
+login is checked.
+
+**2. HTTP on the LAN means the session cookie travels in clear.** Anyone who can
+capture traffic on the segment can replay it. For a trusted internal segment this
+may be an accepted risk; if it isn't, use
+[Option C](#option-c--with-https) and set `BTMS_COOKIE_SECURE=true`.
+
+**3. Limit which hosts can reach the port.** Docker publishes through its own
+iptables chain, so a host firewall rule on `INPUT` will not see the traffic —
+restrict it on the Docker chain, or publish to a specific interface instead:
+
+```bash
+# only this subnet may reach 8080
+sudo iptables -I DOCKER-USER -p tcp --dport 8080 ! -s 10.32.0.0/16 -j DROP
+
+# or bind to one interface in docker-compose.yml
+ports:
+  - "10.32.5.20:8080:8080"
+```
+
+**4. Accounts are created by the administrator, not self-service.** There is no
+sign-up page; an exposed port gives an unauthenticated visitor a login form and
+nothing else. Failed logins are rate limited and lock the account after five
+attempts, and every attempt is written to the audit log — review it with
+`/api/v1/audit?action=login_failed` if the service faces a wider network than
+you intended.
 
 ### 4. Verify
 
