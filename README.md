@@ -300,9 +300,13 @@ docker compose up -d
 docker compose logs | grep -A6 '首次啟動'
 ```
 
-Compose binds the port to `127.0.0.1` by default. To let colleagues on the same
-network reach it, change `"127.0.0.1:8080:8080"` to `"8080:8080"` in
-`docker-compose.yml`.
+Compose publishes the port on all interfaces (`"8080:8080"`) so colleagues on the
+same network can reach it. To restrict it to the host itself, change that to
+`"127.0.0.1:8080:8080"` in `docker-compose.yml`.
+
+> `.env.example` ships with `BTMS_ADMIN_PASSWORD=admin`. Change it before the
+> container is reachable by anyone else — the first person to log in is the one who
+> gets to set the permanent password.
 
 #### Option C — with HTTPS
 

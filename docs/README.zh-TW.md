@@ -273,8 +273,11 @@ docker compose up -d
 docker compose logs | grep -A6 '首次啟動'
 ```
 
-Compose 預設只把連接埠綁在 `127.0.0.1`。要讓同網段的同仁連進來，
-把 `docker-compose.yml` 裡的 `"127.0.0.1:8080:8080"` 改成 `"8080:8080"`。
+Compose 預設把連接埠開在所有介面（`"8080:8080"`），同網段的同仁可直接連。
+若只想綁在本機，把 `docker-compose.yml` 裡那行改成 `"127.0.0.1:8080:8080"`。
+
+> `.env.example` 目前預設 `BTMS_ADMIN_PASSWORD=admin`。在容器對其他人可連之前
+> 請先改掉——首次登入雖會強制變更密碼，但**搶先登入的人就是決定新密碼的人**。
 
 #### 方式三：加上 HTTPS
 
