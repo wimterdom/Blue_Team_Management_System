@@ -4586,9 +4586,9 @@ function viewDashboard(){
       el('div',{class:'head-actions'},
         el('button',{class:'btn', onclick:e=>openExportMenu(e,[
             menuItem('本頁報告匯出 PDF', ()=>exportCaseListPdf()),
-            pngItem('近 14 日趨勢圖 PNG', '#chart-case-trend', `案件趨勢-${stampSlug()}.png`),
-            pngItem('調查結果分佈 PNG', '#chart-case-verdict', `調查結果分佈-${stampSlug()}.png`),
-            pngItem('MITRE 戰術分佈 PNG', '#chart-case-tactics', `戰術分佈-${stampSlug()}.png`),
+            ...figureItems('近 14 日趨勢圖', '#chart-case-trend', '案件趨勢'),
+            ...figureItems('調查結果分佈', '#chart-case-verdict', '調查結果分佈'),
+            ...figureItems('MITRE 戰術分佈', '#chart-case-tactics', '戰術分佈'),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
@@ -6037,10 +6037,12 @@ const RFI_NOTES=[
     '（完整 Noto Sans TC 約 8 MB），映像檔與每份輸出都會變大，排版品質還不如瀏覽器本身。' +
     '交給瀏覽器列印則中文字型完美、Markdown 與表格照常呈現、零相依。' +
     '列印版是另外編排的：標頭、中繼資料表與各段落，不含畫面上的按鈕與可收合區塊。'],
-  ['圖表匯出 PNG','拓撲圖、TTP 熱圖與各儀表板圖表都可存成 PNG（2 倍解析度）。' +
-    '匯出的是**完整的圖**，不受畫面上縮放與平移影響——拓撲圖會依內容的實際邊界取景，' +
+  ['圖表匯出 PNG 與 SVG','拓撲圖、TTP 熱圖與各儀表板圖表都可存成 **PNG**（2 倍解析度）或 **SVG**（向量）。' +
+    'PNG 貼進簡報或郵件即可看；SVG 放大不失真、文字仍是文字（可搜尋、可複製）、' +
+    '可再進向量軟體修改，檔案通常也小得多——示範資料的拓撲圖 PNG 約 690 KB，SVG 約 175 KB。' +
+    '兩者都匯出**完整的圖**，不受畫面上縮放與平移影響：拓撲圖依內容的實際邊界取景，' +
     '而非只截目前看得到的那一塊。圖表顏色走 CSS 變數，匯出前會先把實際呈現色寫進節點，' +
-    '所以日間與夜間模式各自匯出的配色都正確。'],
+    'SVG 另補一塊與畫面同色的底，所以日間與夜間模式各自匯出都正確，離開系統也不會變色。'],
   ['已依規格實作','首頁 Dashboard（上統計、下請求綱目）、依「創建時間」排序、請求類型篩選器、登入後才可編輯、日夜間模式，以及規格所列全部欄位：請求類型、編號、創建時間、申請者、申請主題、說明、優先等級、辦理進度、回覆內容，附圖可上傳並於檢視時點擊放大。'],
   ['編號規則','格式為「類型-四位流水號」，RFI 與 CR **各自獨立編號**。在表單中切換請求類型時，預覽編號會即時改配，避免 CR 頂著 RFI 的號碼。'],
   ['補入：受檢單位','規格未列此欄位，但請求必須有明確的受理對象，否則無法追蹤是誰該回覆。已設為必填。'],
@@ -6272,9 +6274,9 @@ function viewReqDashboard(){
         el('p',{class:'sub'},'向受檢單位提出的資訊請求（RFI）與變更請求（CR） · 資料截至 '+nowStamp())),
       el('div',{class:'head-actions'},
         el('button',{class:'btn', onclick:e=>openExportMenu(e,[
-            pngItem('近 14 日請求量 PNG', '#chart-req-trend', `請求趨勢-${stampSlug()}.png`),
-            pngItem('請求類型分佈 PNG', '#chart-req-type', `請求類型-${stampSlug()}.png`),
-            pngItem('優先級分佈 PNG', '#chart-req-prio', `請求優先級-${stampSlug()}.png`),
+            ...figureItems('近 14 日請求量', '#chart-req-trend', '請求趨勢'),
+            ...figureItems('請求類型分佈', '#chart-req-type', '請求類型'),
+            ...figureItems('優先級分佈', '#chart-req-prio', '請求優先級'),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
         el('button',{class:'btn btn-primary', onclick:()=>{
@@ -6948,9 +6950,9 @@ function viewAssetDashboard(){
             menuItem('資產清冊 XLSX（依目前篩選）', ()=>exportAssetsXlsx(assetFiltered())),
             menuItem('資產清冊 XLSX（全部）', ()=>exportAssetsXlsx(ASSETS)),
             menuItem('資產清冊 CSV', ()=>exportAssetsCsv(assetFiltered())),
-            pngItem('作業系統分佈 PNG', '#chart-asset-os', `資產OS分佈-${stampSlug()}.png`),
-            pngItem('重要性分佈 PNG', '#chart-asset-imp', `資產重要性-${stampSlug()}.png`),
-            pngItem('漏洞嚴重度分佈 PNG', '#chart-asset-vuln', `資產漏洞分佈-${stampSlug()}.png`),
+            ...figureItems('作業系統分佈', '#chart-asset-os', '資產OS分佈'),
+            ...figureItems('重要性分佈', '#chart-asset-imp', '資產重要性'),
+            ...figureItems('漏洞嚴重度分佈', '#chart-asset-vuln', '資產漏洞分佈'),
             menuItem('整合用 JSON（複製）', exportAssets, I.copy),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
@@ -8006,7 +8008,7 @@ function viewTopo(){
           `由資產管理系統的 ${ASSETS.length} 筆資產建立 · 套用獵補案件簿的惡意判定 · ${nowStamp()}`)),
       el('div',{class:'head-actions'},
         el('button',{class:'btn', onclick:e=>openExportMenu(e,[
-            pngItem('網路拓撲圖 PNG', '.topo-svg', `網路拓撲圖-${stampSlug()}.png`),
+            ...figureItems('網路拓撲圖', '.topo-svg', '網路拓撲圖'),
             menuItem('整合用 JSON（複製）', exportTopo, I.copy),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
@@ -8865,7 +8867,7 @@ function viewIntelDash(){
         el('p',{class:'sub'},`APT 追蹤、TTP 對照與威脅獵補計畫 · 資料截至 ${nowStamp()}`)),
       el('div',{class:'head-actions'},
         el('button',{class:'btn', onclick:e=>openExportMenu(e,[
-            pngItem('TTP Mapping 熱圖 PNG', '#heat-home .heat-svg', `TTP熱圖-${stampSlug()}.png`),
+            ...figureItems('TTP Mapping 熱圖', '#heat-home .heat-svg', 'TTP熱圖'),
             menuItem('整合用 JSON（複製）', exportIntel, I.copy),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
@@ -9428,8 +9430,8 @@ function viewMatrix(){
         el('button',{class:'lb-btn', title:'縮小', onclick:()=>heatZoom(-1), html:svgIcon(I.zoomOut)}),
         el('button',{class:'lb-btn lb-wide', onclick:()=>heatFit()},'符合視窗'),
         el('button',{class:'lb-btn', title:'放大', onclick:()=>heatZoom(1), html:svgIcon(I.zoomIn)}),
-        el('button',{class:'lb-btn', title:'匯出 PNG',
-          onclick:()=>svgToPng($('#heat-stage .heat-svg'), `TTP熱圖-${stampSlug()}.png`),
+        el('button',{class:'lb-btn', title:'匯出圖檔',
+          onclick:e=>openExportMenu(e, figureItems('TTP Mapping 熱圖', '#heat-stage .heat-svg', 'TTP熱圖')),
           html:svgIcon(I.download)}))),
 
     S.mPanel==='vis' ? visPanel() : null,

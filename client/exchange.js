@@ -209,16 +209,23 @@ function printTable(headers, rows) {
  *   2. 匯出的是目前的完整內容，不受畫面上縮放與平移影響，
  *      所以改用 viewBox 的原始尺寸，並清掉暫時的 transform。
  */
-async function svgToPng(svg, filename, { scale = 2, background = null } = {}) {
-  if (!svg) return toast('找不到可匯出的圖表');
-
+/**
+ * 取出一份可獨立存在的 SVG。PNG 與 SVG 兩種輸出共用這一步，
+ * 差別只在最後是點陣化還是直接序列化。
+ *
+ * 三件必須處理的事：
+ *   1. 圖表顏色全部走 CSS 變數，SVG 一旦脫離文件就解析不到，
+ *      因此先把每個節點的實際呈現色寫成行內屬性。
+ *   2. 可平移的圖（拓撲）畫布只有視窗那麼大，內容卻延伸到視窗外，
+ *      直接拿 width/height 當 viewBox 會把圖裁掉一大半。改量測內容
+ *      本身的邊界框，匯出的就是完整的圖，與當下平移到哪裡無關。
+ *   3. SVG 本身沒有背景。夜間模式的淺色文字落在白底上會看不見，
+ *      所以補一塊與畫面同色的底。
+ */
+function prepareSvg(svg, { background = null } = {}) {
   const clone = svg.cloneNode(true);
   inlinePaint(svg, clone);
 
-  /* 取景範圍。
-     可平移的圖（拓撲）畫布只有視窗那麼大，內容卻延伸到視窗外，
-     直接拿 width/height 當 viewBox 會把圖裁掉一大半。改量測內容本身的
-     邊界框，匯出的就是完整的圖，與畫面上當下平移到哪裡無關。 */
   const pan = svg.querySelector('[data-pan]');
   let x = 0;
   let y = 0;
@@ -252,6 +259,22 @@ async function svgToPng(svg, filename, { scale = 2, background = null } = {}) {
     || getComputedStyle(document.body).getPropertyValue('--surface').trim()
     || '#ffffff';
 
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x);
+  rect.setAttribute('y', y);
+  rect.setAttribute('width', w);
+  rect.setAttribute('height', h);
+  rect.setAttribute('fill', bg);
+  clone.insertBefore(rect, clone.firstChild);
+
+  return { clone, x, y, w, h, bg };
+}
+
+/** 把畫面上的 SVG 存成 PNG（預設 2 倍解析度）。 */
+async function svgToPng(svg, filename, { scale = 2, background = null } = {}) {
+  if (!svg) return toast('找不到可匯出的圖表');
+  const { clone, w, h, bg } = prepareSvg(svg, { background });
+
   const xml = new XMLSerializer().serializeToString(clone);
   const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
 
@@ -282,6 +305,22 @@ async function svgToPng(svg, filename, { scale = 2, background = null } = {}) {
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
   if (!blob) return toast('圖表匯出失敗');
   saveBlob(blob, filename);
+}
+
+/**
+ * 把畫面上的 SVG 存成向量檔。
+ *
+ * 相對於 PNG 的好處：放大不失真、可再進編輯軟體修改、檔案通常小得多
+ * （示範資料的拓撲圖：PNG 約 690 KB，SVG 約 175 KB）。
+ * 文字仍是文字，可搜尋、可複製、可在向量軟體裡改。
+ */
+async function svgToSvgFile(svg, filename, { background = null } = {}) {
+  if (!svg) return toast('找不到可匯出的圖表');
+  const { clone } = prepareSvg(svg, { background });
+
+  const xml = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'
+    + new XMLSerializer().serializeToString(clone);
+  saveBlob(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }), filename, { text: xml });
 }
 
 /** 逐節點把實際呈現的顏色與字型寫成行內屬性，脫離文件後才畫得出來。 */

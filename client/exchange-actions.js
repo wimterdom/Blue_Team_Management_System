@@ -630,12 +630,21 @@ function commitAssetImport(items) {
    圖表 PNG
    ============================================================ */
 
-/** 匯出選單裡共用的「把某個 SVG 存成 PNG」項目。 */
-function pngItem(label, selector, filename) {
-  return el('button', { class: 'mi', onclick: () => {
-    closeOverlay();
-    svgToPng($(selector), filename);
-  } }, el('span', { html: svgIcon(I.download) }), label);
+/**
+ * 一張圖在匯出選單裡佔兩列：PNG 與 SVG。
+ *
+ * 兩種都留著是因為用途不同——PNG 貼進簡報或郵件即可看，
+ * SVG 放大不失真、可再進編輯軟體修改，檔案通常也小得多。
+ */
+function figureItems(label, selector, basename) {
+  const row = (fmt, run) => el('button', { class: 'mi', onclick: () => { closeOverlay(); run(); } },
+    el('span', { html: svgIcon(I.download) }),
+    el('span', {}, label),
+    el('small', {}, fmt));
+  return [
+    row('PNG', () => svgToPng($(selector), `${basename}-${stampSlug()}.png`)),
+    row('SVG', () => svgToSvgFile($(selector), `${basename}-${stampSlug()}.svg`)),
+  ];
 }
 
 /** 通用匯出選單。各系統把自己的項目傳進來。 */

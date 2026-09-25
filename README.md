@@ -87,9 +87,14 @@ cross-system jump can be reversed with one click back to where you were.
   (~8 MB for Noto Sans TC) for worse typography than the browser already gives
   these Traditional Chinese reports. The print layout is composed separately:
   header, metadata table and sections, without the on-screen controls
-- **Charts → PNG.** Topology map, ATT&CK heatmap and every dashboard chart export
-  at 2× resolution. The export is the *whole* figure — framing comes from the
-  content's own bounding box, not from what happens to be scrolled into view
+- **Charts → PNG or SVG.** Topology map, ATT&CK heatmap and every dashboard chart
+  export as a 2× raster or as vector. SVG scales without loss, keeps text as text
+  (searchable, selectable, editable in a vector tool) and is usually far smaller —
+  the demo topology is ~690 KB as PNG, ~175 KB as SVG. Both export the *whole*
+  figure: framing comes from the content's own bounding box, not from what happens
+  to be scrolled into view. Colours are resolved from CSS variables at export time,
+  and the SVG carries a matching background, so a figure exported in either theme
+  still reads correctly outside the app
 - **Assets → XLSX.** Current filter or the full inventory, as a single sheet with
   a frozen header row and autofilter. The OOXML is assembled directly; no
   spreadsheet library, so nothing to load past the CSP

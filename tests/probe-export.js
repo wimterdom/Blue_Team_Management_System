@@ -43,7 +43,7 @@ let printed=0; window.print=()=>{ printed++; };
   await click($$('button').find(b=>/返回總覽/.test(b.textContent))); await sleep(900);
   await click($$('button').find(b=>b.textContent.trim().startsWith('匯出'))); await sleep(250);
   out.push('案件匯出選單='+$$('.mi').map(m=>m.textContent.trim()).join(' | '));
-  await click($$('.mi').find(m=>/趨勢圖 PNG/.test(m.textContent))); await sleep(2500);
+  await click($$('.mi').find(m=>/趨勢圖\s*PNG/.test(m.textContent))); await sleep(2500);
   out.push('PNG 產出='+JSON.stringify(saved[saved.length-1]||null));
 
   /* ---- 3. 資產 XLSX + CSV ---- */

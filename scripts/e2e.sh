@@ -61,7 +61,8 @@ PYEOF
   cat "$PROBE"
 } > "$ROOT/public/__probe.html"
 
-"$CHROME" --headless --disable-gpu --virtual-time-budget=30000 \
+BUDGET="${BTMS_E2E_BUDGET:-30000}"
+"$CHROME" --headless --disable-gpu --virtual-time-budget="$BUDGET" \
   --dump-dom "http://127.0.0.1:$PORT/__probe.html" 2>/dev/null \
   | python3 -c "
 import sys,re,html,io
