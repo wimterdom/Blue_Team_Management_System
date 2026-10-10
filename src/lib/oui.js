@@ -18,10 +18,31 @@ let countryZh = null;
 let meta = null;
 let origin = null;   // 品牌母國覆寫
 
+/**
+ * 解析 seed/oui.txt。
+ * 每行「廠商 \t 國碼 \t 前綴1,前綴2,…」——同一家廠商常持有數十個前綴，
+ * 分組存放比逐筆 JSON 小 46%。
+ */
+function parseOuiTable(text) {
+  const out = new Map();
+  for (const line of text.split('\n')) {
+    if (!line) continue;
+    const i = line.indexOf('\t');
+    const j = line.indexOf('\t', i + 1);
+    if (i < 0 || j < 0) continue;
+    const org = line.slice(0, i);
+    const cc = line.slice(i + 1, j);
+    for (const pre of line.slice(j + 1).split(',')) {
+      if (pre) out.set(pre, [org, cc]);
+    }
+  }
+  return out;
+}
+
 function load() {
   if (table) return;
-  const f = resolve(seedDir, 'oui.json');
-  table = existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : {};
+  const f = resolve(seedDir, 'oui.txt');
+  table = existsSync(f) ? parseOuiTable(readFileSync(f, 'utf8')) : new Map();
   const c = resolve(seedDir, 'country-zh.json');
   countryZh = existsSync(c) ? JSON.parse(readFileSync(c, 'utf8')) : {};
   const m = resolve(seedDir, 'oui-meta.json');
@@ -29,12 +50,13 @@ function load() {
 
   const v = resolve(seedDir, 'vendor-origin.json');
   const raw = existsSync(v) ? JSON.parse(readFileSync(v, 'utf8')) : { brands: {} };
-  origin = [];
-  for (const [cc, names] of Object.entries(raw.brands || {})) {
-    for (const n of names) origin.push([n, cc]);
-  }
-  // 長字串優先比對，"lg electronics" 才不會被 "lg" 之類的短字串搶走
-  origin.sort((a, b) => b[0].length - a[0].length);
+  // 兩階段：品牌名優先，城市名僅作後備。
+  // Nokia Shanghai Bell 同時含品牌與城市，若讓城市搶先就會判錯。
+  const toPairs = src => Object.entries(src || {})
+    .flatMap(([cc, names]) => names.map(n => [n, cc]))
+    // 同一階段內長字串優先，"lg electronics" 才不會被短字串搶走
+    .sort((a, b) => b[0].length - a[0].length);
+  origin = { brands: toPairs(raw.brands), cities: toPairs(raw.cityHints) };
 }
 
 /**
@@ -45,10 +67,29 @@ function load() {
  * （例如標註中國製造商），所以這裡對知名品牌以母國為準，並把登錄國別一併回傳，
  * 兩者都看得到，不會把判斷依據藏起來。
  */
+const isLetter = ch => ch !== undefined && /[a-z]/.test(ch);
+
+/**
+ * 字界比對：needle 前後都不能緊鄰字母。
+ * 單純用 includes() 會讓 "intel" 命中巴西廠商 Intelbras、
+ * 讓 "hpe" 命中各種含該三字的名稱。
+ */
+function matchesBrand(lower, needle) {
+  let i = lower.indexOf(needle);
+  while (i >= 0) {
+    if (!isLetter(lower[i - 1]) && !isLetter(lower[i + needle.length])) return true;
+    i = lower.indexOf(needle, i + 1);
+  }
+  return false;
+}
+
 function brandOrigin(org) {
   const lower = String(org || '').toLowerCase();
-  for (const [needle, cc] of origin) {
-    if (lower.includes(needle)) return cc;
+  for (const [needle, cc] of origin.brands) {
+    if (matchesBrand(lower, needle)) return cc;
+  }
+  for (const [needle, cc] of origin.cities) {
+    if (matchesBrand(lower, needle)) return cc;
   }
   return '';
 }
@@ -68,7 +109,7 @@ export function lookupMac(mac) {
   if (hex.length < 6) return null;
 
   for (const len of [9, 7, 6]) {   // MA-S /36、MA-M /28、MA-L /24
-    const hit = table[hex.slice(0, len)];
+    const hit = table.get(hex.slice(0, len));
     if (!hit) continue;
     const [org, cc] = hit;
     const brand = brandOrigin(org);
@@ -91,7 +132,7 @@ export function lookupMac(mac) {
 export function ouiStatus() {
   load();
   return {
-    loaded: Object.keys(table).length,
+    loaded: table.size,
     retrieved: meta?.retrieved || null,
     withCountry: meta?.withCountry || 0,
     sources: meta?.sources || {},

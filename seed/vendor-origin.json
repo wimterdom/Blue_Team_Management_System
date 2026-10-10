@@ -1,5 +1,5 @@
 {
- "_note": "IEEE 登錄檔記的是註冊地址，不一定等於品牌母國（例如 TP-Link 有 79 個前綴登記在美國）。資產系統的「製造商（國家）」用於辨識設備來源，因此對下列知名品牌以母國為準。此表為人工維護，與 IEEE 原始資料分開存放，API 會同時回傳兩者。",
+ "_note": "IEEE 登錄檔記的是「註冊地址」，不一定等於品牌母國。影響是雙向的：TP-Link 有 79 個前綴登記在美國（會漏掉），Intel 的 1070 個前綴有 280 個登記在中國（會誤標為中國貨）。資產的「製造商（國家）」是用來辨識設備來源的，因此對知名品牌以母國為準。比對採字界匹配——needle 前後必須是非字母，所以 intel 不會命中 Intelbras。此表人工維護，與 IEEE 原始資料分開；API 同時回傳登錄國別與是否覆寫。　比對分兩階段：先比品牌名，再比城市名——Nokia Shanghai Bell 這類名稱同時含品牌與城市，品牌名必須優先，否則會被城市名搶走判斷。",
  "brands": {
   "CN": [
    "huawei",
@@ -33,21 +33,7 @@
    "fiberhome",
    "maipu",
    "digital china",
-   "bitmain",
-   "shenzhen",
-   "guangdong",
-   "hangzhou",
-   "chengdu",
-   "beijing",
-   "shanghai",
-   "nanjing",
-   "xiamen",
-   "zhuhai",
-   "wuhan",
-   "suzhou",
-   "qingdao",
-   "tianjin",
-   "chongqing"
+   "bitmain"
   ],
   "TW": [
    "asustek",
@@ -69,13 +55,28 @@
    "liteon",
    "realtek",
    "mediatek",
-   "via technologies"
+   "via technologies",
+   "acer",
+   "asus",
+   "msi computer",
+   "synology",
+   "qnap",
+   "delta electronics",
+   "foxconn",
+   "hon hai",
+   "chicony",
+   "elitegroup",
+   "sercomm",
+   "alpha networks",
+   "cameo communications"
   ],
   "KR": [
    "samsung",
    "lg electronics",
    "lg innotek",
-   "sk hynix"
+   "sk hynix",
+   "lg display",
+   "hanwha"
   ],
   "JP": [
    "buffalo",
@@ -83,7 +84,124 @@
    "i-o data",
    "nec platforms",
    "yamaha",
-   "allied telesis"
+   "allied telesis",
+   "canon",
+   "epson",
+   "seiko epson",
+   "ricoh",
+   "kyocera",
+   "brother industries",
+   "panasonic",
+   "sony",
+   "sharp",
+   "toshiba",
+   "hitachi",
+   "mitsubishi electric",
+   "omron",
+   "keyence",
+   "fujitsu",
+   "nec corporation",
+   "renesas",
+   "murata",
+   "alps alpine"
+  ],
+  "US": [
+   "intel",
+   "cisco",
+   "dell",
+   "hewlett packard",
+   "hp inc",
+   "hpe",
+   "aruba networks",
+   "apple",
+   "microsoft",
+   "ibm",
+   "juniper",
+   "arista",
+   "fortinet",
+   "palo alto",
+   "netgear",
+   "broadcom",
+   "qualcomm",
+   "nvidia",
+   "amd",
+   "seagate",
+   "western digital",
+   "motorola",
+   "google",
+   "amazon technologies",
+   "vmware",
+   "f5 networks",
+   "extreme networks",
+   "netapp",
+   "supermicro",
+   "super micro",
+   "super micro computer",
+   "dell emc",
+   "emc corporation",
+   "honeywell",
+   "rockwell automation",
+   "texas instruments",
+   "oracle",
+   "sun microsystems",
+   "meta platforms",
+   "microchip technology",
+   "analog devices",
+   "zebra technologies",
+   "garmin",
+   "roku",
+   "sonos",
+   "ubiquiti",
+   "mist systems"
+  ],
+  "FI": [
+   "nokia"
+  ],
+  "SE": [
+   "ericsson",
+   "axis communications"
+  ],
+  "DE": [
+   "siemens",
+   "bosch",
+   "phoenix contact",
+   "beckhoff",
+   "wago",
+   "hirschmann",
+   "lancom"
+  ],
+  "FR": [
+   "schneider electric",
+   "sagemcom",
+   "technicolor",
+   "thales"
+  ],
+  "NL": [
+   "philips",
+   "nxp semiconductors",
+   "signify"
+  ],
+  "CH": [
+   "logitech",
+   "stmicroelectronics"
+  ]
+ },
+ "cityHints": {
+  "CN": [
+   "shenzhen",
+   "guangdong",
+   "hangzhou",
+   "chengdu",
+   "beijing",
+   "shanghai",
+   "nanjing",
+   "xiamen",
+   "zhuhai",
+   "wuhan",
+   "suzhou",
+   "qingdao",
+   "tianjin",
+   "chongqing"
   ]
  }
 }

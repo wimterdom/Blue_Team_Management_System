@@ -28,8 +28,7 @@ const SOURCES = [
   { registry: 'MA-S', bits: 36, url: 'https://standards-oui.ieee.org/oui36/oui36.csv' },
 ];
 
-const OUT = resolve(root, 'seed/oui.json');
-const OUT_SUBSET = resolve(root, 'seed/oui-subset.json');
+const OUT = resolve(root, 'seed/oui.txt');
 const META = resolve(root, 'seed/oui-meta.json');
 const COUNTRY_ZH = resolve(root, 'seed/country-zh.json');
 
@@ -143,50 +142,32 @@ for (const src of fetched) {
   counts[src.registry] = n;
 }
 
-// 輸出時丟掉 bits（長度即前綴字元數，查詢端自己算得出來）
-const compact = {};
-for (const [k, v] of Object.entries(table)) compact[k] = v[1] ? [v[0], v[1]] : [v[0]];
+/* 輸出格式：每行「廠商 \t 國碼 \t 前綴1,前綴2,…」。
+   同一家廠商常持有數十個前綴（華為 2088 個、小米 346 個），分組後比逐筆
+   JSON 小 46%（2.15 MB → 1.16 MB），而且不需要執行期解壓縮——
+   展示版是單一 HTML 檔，而且必須帶完整表：先前只帶常見廠商的子集，
+   使用者隨手輸入的真實 MAC 幾乎都查不到，看起來就像功能壞掉。 */
+const byVendor = new Map();
+for (const [pre, v] of Object.entries(table)) {
+  const key = `${v[0]}\t${v[1] || ''}`;
+  if (!byVendor.has(key)) byVendor.set(key, []);
+  byVendor.get(key).push(pre);
+}
+const lines = [];
+for (const [key, pres] of byVendor) lines.push(`${key}\t${pres.sort().join(',')}`);
+lines.sort();
 
-const withCountry = Object.values(compact).filter(v => v.length > 1).length;
+const entries = Object.keys(table).length;
+const withCountry = Object.values(table).filter(v => v[1]).length;
 
 mkdirSync(resolve(root, 'seed'), { recursive: true });
-writeFileSync(OUT, JSON.stringify(compact), 'utf8');
-
-/* ---- 展示版用的子集 ----
-   完整表約 2.5 MB，塞進單檔展示版太重。取資安與網通場景最常遇到的廠商，
-   讓展示版也試得出這個功能；正式部署一律用完整表。 */
-const SUBSET_VENDORS = /^(cisco|juniper|arista|hewlett|hp |hpe|aruba|dell|emc|ibm|lenovo|fortinet|palo alto|check ?point|sophos|f5 |netgear|tp-?link|d-?link|zyxel|ubiquiti|mikrotik|huawei|h3c|new h3c|zte|ruijie|tenda|xiaomi|hikvision|dahua|apple|microsoft|intel|realtek|broadcom|qualcomm|mediatek|samsung|lg electron|asus|asustek|acer|gigabyte|msi|micro-star|supermicro|super micro|vmware|citrix|synology|qnap|western digital|seagate|brother|canon|epson|ricoh|fuji|xerox|axis|avaya|polycom|yealink|grandstream|nokia|ericsson|motorola|arris|technicolor|sagemcom|askey|accton|delta|azurewave|liteon|lite-on|wistron|quanta|compal|pegatron|foxconn|hon hai|inventec|advantech|moxa|siemens|schneider|rockwell|honeywell|abb |ge |mitsubishi|omron|keyence|raspberry|espressif|texas instruments|nvidia|amd|google|amazon|meta platforms|oracle|sun micro|fujitsu|nec |toshiba|sharp|panasonic|sony|hitachi|kyocera)/i;
-const PER_VENDOR = 6;   // 同一廠商留幾個前綴就夠展示了
-const subset = {};
-const perVendor = {};
-for (const [k, v] of Object.entries(compact)) {
-  if (k.length !== 6 || !SUBSET_VENDORS.test(v[0])) continue;
-  const key = v[0].toLowerCase();
-  perVendor[key] = (perVendor[key] || 0) + 1;
-  if (perVendor[key] > PER_VENDOR) continue;
-  subset[k] = v;
-}
-/* 示範資料裡那些 MAC 一定要查得到，否則展示版試不出這個功能 */
-const demoPath = resolve(root, 'seed/demo.json');
-if (existsSync(demoPath)) {
-  const demo = JSON.parse(readFileSync(demoPath, 'utf8'));
-  let added = 0;
-  for (const a of demo.assets || []) {
-    const hex = String(a.mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
-    for (const len of [9, 7, 6]) {
-      const pre = hex.slice(0, len);
-      if (compact[pre] && !subset[pre]) { subset[pre] = compact[pre]; added += 1; }
-    }
-  }
-  if (added) console.log(`  （另補入示範資產用到的 ${added} 個前綴）`);
-}
-writeFileSync(OUT_SUBSET, JSON.stringify(subset), 'utf8');
+writeFileSync(OUT, lines.join('\n'), 'utf8');
 
 const meta = {
   retrieved: new Date().toISOString().slice(0, 10),
-  entries: Object.keys(compact).length,
+  entries,
   withCountry,
-  subsetEntries: Object.keys(subset).length,
+  vendors: byVendor.size,
   sources: Object.fromEntries(fetched.map(f => [f.registry, {
     url: f.url, bits: f.bits, sha256: f.sha256,
     lastModified: f.lastModified, parsed: counts[f.registry],
@@ -195,8 +176,8 @@ const meta = {
 writeFileSync(META, JSON.stringify(meta, null, 2) + '\n', 'utf8');
 
 const sizeMb = p => (readFileSync(p).length / 1048576).toFixed(2);
-console.log(`\n已寫入 seed/oui.json        ${meta.entries} 筆（${sizeMb(OUT)} MB），其中 ${withCountry} 筆查得到國別`);
-console.log(`已寫入 seed/oui-subset.json ${meta.subsetEntries} 筆（${sizeMb(OUT_SUBSET)} MB，展示版用）`);
+console.log(`\n已寫入 seed/oui.txt  ${meta.entries} 筆前綴 / ${meta.vendors} 家廠商（${sizeMb(OUT)} MB）`);
+console.log(`  其中 ${withCountry} 筆查得到國別`);
 console.log(`已寫入 seed/oui-meta.json`);
 for (const [reg, s] of Object.entries(meta.sources)) {
   console.log(`  ${reg} /${s.bits}  ${s.parsed} 筆  ${s.lastModified || '（無 Last-Modified）'}`);

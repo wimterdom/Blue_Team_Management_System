@@ -459,11 +459,11 @@ function DemoStore() {
         return out;
       },
       async status() {
-        return { loaded: Object.keys(OUI_SUBSET).length, retrieved: OUI_SUBSET_DATE, subset: true };
+        return { loaded: ouiMap().size, retrieved: OUI_TABLE_DATE, withCountry: null, local: true };
       },
       async refresh() {
-        toast('展示版使用內建的 OUI 子集，更新功能需在正式部署環境操作');
-        return { ok: false, subset: true };
+        toast('展示版使用頁面內建的對照表，更新需在正式部署環境操作');
+        return { ok: false, local: true };
       },
     },
 
@@ -482,23 +482,71 @@ function DemoStore() {
   };
 }
 
-/* ---- 展示版內建的 OUI 子集 ---- */
-/*__BTMS_OUI_SUBSET__*/
+/* ---- 展示版內建的完整 OUI 對照表 ---- */
+/*__BTMS_OUI_TABLE__*/
 
-/** 與伺服器端 lookupMac() 同樣的比對規則：由長前綴往短的找。 */
+/**
+ * 展示版的 MAC 比對。與伺服器端 lookupMac() 同樣的規則：由長前綴往短的找。
+ *
+ * 表是「廠商 \t 國碼 \t 前綴清單」的純文字，第一次查詢時才展開成 Map——
+ * 五萬多筆不該在開頁時就花時間解析，而使用者多半不會碰到這個功能。
+ */
+let _ouiMap = null;
+function ouiMap() {
+  if (_ouiMap) return _ouiMap;
+  _ouiMap = new Map();
+  for (const line of OUI_TABLE.split('\n')) {
+    if (!line) continue;
+    const i = line.indexOf('\t');
+    const j = line.indexOf('\t', i + 1);
+    if (i < 0 || j < 0) continue;
+    const org = line.slice(0, i);
+    const cc = line.slice(i + 1, j);
+    for (const pre of line.slice(j + 1).split(',')) {
+      if (pre) _ouiMap.set(pre, [org, cc]);
+    }
+  }
+  return _ouiMap;
+}
+
 function localOuiLookup(mac) {
   const hex = String(mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
   if (hex.length < 6) return null;
+  const map = ouiMap();
   for (const len of [9, 7, 6]) {
-    const hit = OUI_SUBSET[hex.slice(0, len)];
+    const hit = map.get(hex.slice(0, len));
     if (!hit) continue;
     const [org, cc] = hit;
-    const name = cc ? (COUNTRY_ZH[cc] || cc) : '';
-    return { prefix: hex.slice(0, len), org, country: cc || '', countryName: name,
-             registryCountry: cc || '', originOverridden: false,
+    const brand = brandOriginOf(org);
+    const use = brand || cc || '';
+    const name = use ? (COUNTRY_ZH[use] || use) : '';
+    return { prefix: hex.slice(0, len), org, country: use, countryName: name,
+             registryCountry: cc || '',
+             originOverridden: Boolean(brand && cc && brand !== cc),
              vendor: name ? `${org}（${name}）` : org };
   }
   return null;
+}
+
+/**
+ * 與伺服器端相同的品牌母國覆寫。
+ * 字界比對（intel 不可命中 Intelbras），品牌名優先於城市名
+ * （Nokia Shanghai Bell 要判成品牌而非城市）。
+ */
+function brandOriginOf(org) {
+  const lower = String(org || '').toLowerCase();
+  const isLetter = ch => ch !== undefined && /[a-z]/.test(ch);
+  const hit = needle => {
+    let i = lower.indexOf(needle);
+    while (i >= 0) {
+      if (!isLetter(lower[i - 1]) && !isLetter(lower[i + needle.length])) return true;
+      i = lower.indexOf(needle, i + 1);
+    }
+    return false;
+  };
+  for (const [needle, cc] of VENDOR_ORIGIN.brands) if (hit(needle)) return cc;
+  for (const [needle, cc] of VENDOR_ORIGIN.cities) if (hit(needle)) return cc;
+  return '';
 }
 
 const STORE = IS_SERVER ? ServerStore() : DemoStore();

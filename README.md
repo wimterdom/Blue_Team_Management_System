@@ -119,12 +119,16 @@ cross-system jump can be reversed with one click back to where you were.
   techniques, 618 sub-techniques, all named in Traditional Chinese. 149 revoked-ID
   mappings ship with it, so a report written against an older ATT&CK still lands on
   the right cell after MITRE renumbers something
-- **IEEE MAC address registry** (MA-L / MA-M / MA-S, ~54k assignments) resolves a
-  MAC to its vendor and country, filling the asset's manufacturer field
+- **IEEE MAC address registry** (MA-L / MA-M / MA-S, 54,170 assignments) resolves
+  a MAC to its vendor and country, filling the asset's manufacturer field
   automatically. Lookups run locally — the system may be deployed without internet
   access, and sending internal MACs to an outside site for every lookup is both
-  slow and a disclosure. Administrators can check for upstream updates and refresh
-  the local copy from the "外部資料來源" page
+  slow and a disclosure. The registry records the *registration address*, which is
+  often not the brand's home country (TP-Link has 79 prefixes registered in the US;
+  280 of Intel's 1,070 are registered in China), so a curated brand-origin table
+  sits on top for well-known vendors — the API returns both, and which one was used.
+  Administrators can check for upstream updates and refresh the local copy from the
+  "外部資料來源" page
 
 **Interface**
 

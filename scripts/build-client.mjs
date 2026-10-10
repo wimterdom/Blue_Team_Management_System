@@ -23,16 +23,28 @@ const datalayer = readFileSync(resolve(root, 'client/datalayer.js'), 'utf8');
 const prodViews = readFileSync(resolve(root, 'client/prod-views.js'), 'utf8');
 const attackData = readFileSync(resolve(root, 'client/attack-data.js'), 'utf8');
 
-/* 展示版沒有伺服器可查 OUI，嵌入子集讓功能仍可操作；
-   正式版留空，一律走 /api/v1/oui。 */
-const ouiSubset = JSON.parse(readFileSync(resolve(root, 'seed/oui-subset.json'), 'utf8'));
+/* 展示版沒有伺服器可查 OUI，整張對照表嵌進頁面；正式版留空，一律走 /api/v1/oui。
+   必須是「完整」的表——先前只嵌常見廠商的子集，使用者隨手輸入的真實 MAC
+   幾乎都查不到，看起來就像功能壞掉。表為「廠商\t國碼\t前綴清單」的純文字，
+   比逐筆 JSON 小 46%，載入時才展開成 Map。 */
+const ouiTable = readFileSync(resolve(root, 'seed/oui.txt'), 'utf8');
 const countryZh = JSON.parse(readFileSync(resolve(root, 'seed/country-zh.json'), 'utf8'));
 const ouiMeta = JSON.parse(readFileSync(resolve(root, 'seed/oui-meta.json'), 'utf8'));
+const vendorOrigin = JSON.parse(readFileSync(resolve(root, 'seed/vendor-origin.json'), 'utf8'));
+// 同一階段內長字串優先，"lg electronics" 才不會被短字串搶走
+const toOriginPairs = src => Object.entries(src || {})
+  .flatMap(([cc, names]) => names.map(n => [n, cc]))
+  .sort((a, b) => b[0].length - a[0].length);
+const originPairs = {
+  brands: toOriginPairs(vendorOrigin.brands),
+  cities: toOriginPairs(vendorOrigin.cityHints),
+};
 const ouiBlockFor = mode => mode === 'demo'
-  ? `const OUI_SUBSET = ${JSON.stringify(ouiSubset)};\n`
+  ? `const OUI_TABLE = ${JSON.stringify(ouiTable)};\n`
     + `const COUNTRY_ZH = ${JSON.stringify(countryZh)};\n`
-    + `const OUI_SUBSET_DATE = ${JSON.stringify(ouiMeta.retrieved)};`
-  : 'const OUI_SUBSET = {}, COUNTRY_ZH = {}, OUI_SUBSET_DATE = null;';
+    + `const VENDOR_ORIGIN = ${JSON.stringify(originPairs)};\n`
+    + `const OUI_TABLE_DATE = ${JSON.stringify(ouiMeta.retrieved)};`
+  : 'const OUI_TABLE = "", COUNTRY_ZH = {}, VENDOR_ORIGIN = [], OUI_TABLE_DATE = null;';
 const nmap = readFileSync(resolve(root, 'client/nmap.js'), 'utf8');
 const exchange = readFileSync(resolve(root, 'client/exchange.js'), 'utf8');
 const exchangeActions = readFileSync(resolve(root, 'client/exchange-actions.js'), 'utf8');
@@ -105,7 +117,7 @@ function build(mode) {
     // OUI 子集的佔位符位在 datalayer 之內，所以先填好再整段注入
     .replace('/*__BTMS_DATALAYER__*/', () => datalayer
       .replace('__BTMS_MODE__', mode)
-      .replace('/*__BTMS_OUI_SUBSET__*/', () => ouiBlockFor(mode)))
+      .replace('/*__BTMS_OUI_TABLE__*/', () => ouiBlockFor(mode)))
     .replace('/*__BTMS_NMAP__*/', () => nmap)
     .replace('/*__BTMS_EXCHANGE__*/', () => exchange)
     .replace('/*__BTMS_EXCHANGE_ACTIONS__*/', () => exchangeActions)
@@ -114,7 +126,7 @@ function build(mode) {
 
   if (out.includes('__BTMS_MODE__')) throw new Error('MODE 佔位符未被取代');
   // 佔位符沒被取代表示模組沒嵌進去，頁面會在執行期才炸——提早擋下
-  for (const ph of ['ATTACK_DATA', 'OUI_SUBSET', 'DATALAYER', 'NMAP', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
+  for (const ph of ['ATTACK_DATA', 'OUI_TABLE', 'DATALAYER', 'NMAP', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
     if (out.includes(`/*__BTMS_${ph}__*/`)) throw new Error(`${ph} 模組未嵌入`);
   }
   return out;

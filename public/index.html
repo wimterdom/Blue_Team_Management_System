@@ -3467,11 +3467,11 @@ function DemoStore() {
         return out;
       },
       async status() {
-        return { loaded: Object.keys(OUI_SUBSET).length, retrieved: OUI_SUBSET_DATE, subset: true };
+        return { loaded: ouiMap().size, retrieved: OUI_TABLE_DATE, withCountry: null, local: true };
       },
       async refresh() {
-        toast('展示版使用內建的 OUI 子集，更新功能需在正式部署環境操作');
-        return { ok: false, subset: true };
+        toast('展示版使用頁面內建的對照表，更新需在正式部署環境操作');
+        return { ok: false, local: true };
       },
     },
 
@@ -3490,23 +3490,71 @@ function DemoStore() {
   };
 }
 
-/* ---- 展示版內建的 OUI 子集 ---- */
-const OUI_SUBSET = {}, COUNTRY_ZH = {}, OUI_SUBSET_DATE = null;
+/* ---- 展示版內建的完整 OUI 對照表 ---- */
+const OUI_TABLE = "", COUNTRY_ZH = {}, VENDOR_ORIGIN = [], OUI_TABLE_DATE = null;
 
-/** 與伺服器端 lookupMac() 同樣的比對規則：由長前綴往短的找。 */
+/**
+ * 展示版的 MAC 比對。與伺服器端 lookupMac() 同樣的規則：由長前綴往短的找。
+ *
+ * 表是「廠商 \t 國碼 \t 前綴清單」的純文字，第一次查詢時才展開成 Map——
+ * 五萬多筆不該在開頁時就花時間解析，而使用者多半不會碰到這個功能。
+ */
+let _ouiMap = null;
+function ouiMap() {
+  if (_ouiMap) return _ouiMap;
+  _ouiMap = new Map();
+  for (const line of OUI_TABLE.split('\n')) {
+    if (!line) continue;
+    const i = line.indexOf('\t');
+    const j = line.indexOf('\t', i + 1);
+    if (i < 0 || j < 0) continue;
+    const org = line.slice(0, i);
+    const cc = line.slice(i + 1, j);
+    for (const pre of line.slice(j + 1).split(',')) {
+      if (pre) _ouiMap.set(pre, [org, cc]);
+    }
+  }
+  return _ouiMap;
+}
+
 function localOuiLookup(mac) {
   const hex = String(mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
   if (hex.length < 6) return null;
+  const map = ouiMap();
   for (const len of [9, 7, 6]) {
-    const hit = OUI_SUBSET[hex.slice(0, len)];
+    const hit = map.get(hex.slice(0, len));
     if (!hit) continue;
     const [org, cc] = hit;
-    const name = cc ? (COUNTRY_ZH[cc] || cc) : '';
-    return { prefix: hex.slice(0, len), org, country: cc || '', countryName: name,
-             registryCountry: cc || '', originOverridden: false,
+    const brand = brandOriginOf(org);
+    const use = brand || cc || '';
+    const name = use ? (COUNTRY_ZH[use] || use) : '';
+    return { prefix: hex.slice(0, len), org, country: use, countryName: name,
+             registryCountry: cc || '',
+             originOverridden: Boolean(brand && cc && brand !== cc),
              vendor: name ? `${org}（${name}）` : org };
   }
   return null;
+}
+
+/**
+ * 與伺服器端相同的品牌母國覆寫。
+ * 字界比對（intel 不可命中 Intelbras），品牌名優先於城市名
+ * （Nokia Shanghai Bell 要判成品牌而非城市）。
+ */
+function brandOriginOf(org) {
+  const lower = String(org || '').toLowerCase();
+  const isLetter = ch => ch !== undefined && /[a-z]/.test(ch);
+  const hit = needle => {
+    let i = lower.indexOf(needle);
+    while (i >= 0) {
+      if (!isLetter(lower[i - 1]) && !isLetter(lower[i + needle.length])) return true;
+      i = lower.indexOf(needle, i + 1);
+    }
+    return false;
+  };
+  for (const [needle, cc] of VENDOR_ORIGIN.brands) if (hit(needle)) return cc;
+  for (const [needle, cc] of VENDOR_ORIGIN.cities) if (hit(needle)) return cc;
+  return '';
 }
 
 const STORE = IS_SERVER ? ServerStore() : DemoStore();
@@ -7301,11 +7349,14 @@ const ASSET_NOTES=[
     '自動帶入「製造商（國家）」欄位（地址不帶入）。收錄 MA-L（/24）、MA-M（/28）、MA-S（/36）' +
     '三個登錄檔共五萬多筆，查詢由長前綴往短的找，小廠商拿到的區段不會被持有整段的大廠蓋掉。' +
     '**比對在本機完成**，不會把內部 MAC 送到外部網站，封閉環境也能用。' +
+    '展示版把整張對照表內嵌在頁面裡（首次查詢時才展開），與正式部署查到的結果相同。' +
     '製造商欄已有內容時不覆寫，只在空白或先前也是自動帶入時才填。'],
   ['登錄國別 ≠ 品牌母國','IEEE 記的是註冊地址——TP-Link 有 79 個前綴登記在美國、Lenovo 有 142 個。' +
     '「製造商（國家）」是用來辨識設備來源的（例如標註中國製造商），若照登錄地址走就會漏掉。' +
+    '影響是雙向的——Intel 的 1070 個前綴有 280 個登記在中國，照登錄地址走反而會把 Intel 標成中國貨。' +
     '系統因此對知名品牌另以母國為準，對照表獨立存放於 `seed/vendor-origin.json`，' +
-    '與 IEEE 原始資料分開；查詢結果同時回傳登錄國別與是否覆寫，判斷依據不會被藏起來。' +
+    '與 IEEE 原始資料分開；比對採字界匹配（`intel` 不會命中 Intelbras），' +
+    '且品牌名優先於城市名。查詢結果同時回傳登錄國別與是否覆寫，判斷依據不會被藏起來。' +
     '管理員可在「外部資料來源」頁檢查官方有無更新並更新本機副本。'],
   ['附件可下載','資產的組態檔與 log 附件在展開後可直接下載；調查報告與請求表的附圖在放大檢視時，' +
     '右上角也有下載鈕。'],
