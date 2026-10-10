@@ -25,7 +25,9 @@ trap cleanup EXIT
 rm -rf "$WORK"
 node "$ROOT/scripts/build-client.mjs" >/dev/null
 
+# 分片測試要把單片上限壓很小，由呼叫端以環境變數指定
 BTMS_DATA_DIR="$WORK" BTMS_PORT="$PORT" BTMS_ADMIN_PASSWORD="$ADMIN_PW" BTMS_SEED_DEMO=true \
+  BTMS_ARCHIVE_VOLUME_MB="${BTMS_ARCHIVE_VOLUME_MB:-4032}" \
   node "$ROOT/src/server.js" > "$WORK.log" 2>&1 &
 SRV_PID=$!
 

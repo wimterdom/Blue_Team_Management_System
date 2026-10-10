@@ -301,13 +301,17 @@ function ServerStore() {
     /* ---- 專案封存 ---- */
     archive: {
       status: () => call('/archive/status'),
-      /** 回傳 Blob，由呼叫端交給 saveBlob。 */
-      async build(note) {
-        const res = await fetch('/api/v1/archive', {
-          method: 'POST', credentials: 'same-origin',
-          headers: { 'content-type': 'application/json', 'x-btms-csrf': csrf },
-          body: JSON.stringify({ note }),
-        });
+
+      /**
+       * 產生封存。回傳片數與每一片的大小，不含內容——
+       * 封存可能好幾 GB，一個回應塞不下，下載另外一片一片來。
+       */
+      build: note => call('/archive', { method: 'POST', body: { note } }),
+
+      /** 下載其中一片。 */
+      async part(archiveId, n) {
+        const res = await fetch(`/api/v1/archive/${archiveId}/part/${n}`,
+          { credentials: 'same-origin' });
         if (!res.ok) {
           const e = await res.json().catch(() => ({}));
           throw new Error(e?.error?.message || `伺服器回應 ${res.status}`);
@@ -316,18 +320,23 @@ function ServerStore() {
         const m = /filename\*=UTF-8''([^;]+)/.exec(cd);
         return {
           blob: await res.blob(),
-          filename: m ? decodeURIComponent(m[1]) : `專案封存-${stampSlug()}.zip`,
+          filename: m ? decodeURIComponent(m[1]) : `專案封存-第${n}片.zip`,
         };
       },
-      inspect(file) {
+
+      remove: id => call('/archive/' + encodeURIComponent(id), { method: 'DELETE' }),
+
+      /** files 是 File 陣列：分片封存要一次把所有片都帶上去。 */
+      inspect(files) {
         const fd = new FormData();
-        fd.append('file', file, file.name);
+        for (const f of files) fd.append('file', f, f.name);
         return call('/archive/inspect', { method: 'POST', body: fd, raw: true });
       },
-      restore(file) {
+
+      restore(files) {
         const fd = new FormData();
         fd.append('confirm', 'REPLACE');
-        fd.append('file', file, file.name);
+        for (const f of files) fd.append('file', f, f.name);
         return call('/archive/restore', { method: 'POST', body: fd, raw: true });
       },
     },
@@ -487,6 +496,8 @@ function DemoStore() {
     archive: {
       async status() { return null; },
       async build() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
+      async part() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
+      async remove() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
       async inspect() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
       async restore() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
     },

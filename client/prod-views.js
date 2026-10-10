@@ -332,7 +332,12 @@ const COLL_LABEL = {
   hunts: '威脅獵補計畫', ttp_marks: 'TTP 標註',
 };
 
-const mb = n => (n / 1048576).toFixed(2) + ' MB';
+/** 大小：小檔要看到小數才有意義，上 GB 的數字帶兩位小數只是雜訊。 */
+const mb = n => {
+  const m = n / 1048576;
+  if (m >= 1024) return (m / 1024).toFixed(2) + ' GB';
+  return (m >= 100 ? Math.round(m) : m.toFixed(2)) + ' MB';
+};
 
 /** 目前專案的規模，還原預覽時與封存檔並列比較。 */
 let ARC_NOW = {};
@@ -403,6 +408,7 @@ async function loadArchiveView() {
             row('附件', el('span', { class: 'tnum' }, String(st.attachments)),
               st.attachmentBytes ? mb(st.attachmentBytes) : null),
             row('帳號', el('span', { class: 'tnum' }, String(st.users)), '不含密碼'),
+            row('單片上限', el('span', {}, mb(st.volumeBytes)), '超過就自動分片'),
             st.lastRestore
               ? row('上次還原', el('span', { class: 'mono', style: 'font-size:11.5px' },
                   String(st.lastRestore.at).replace('T', ' ').slice(0, 16)))
@@ -416,6 +422,35 @@ async function loadArchiveView() {
           el('span', { html: svgIcon(I.download) }), '產生封存檔並下載'),
         el('span', { class: 'hint', id: 'arc-msg' },
           '資料量大時需要幾秒，請勿重複點擊'))),
+
+    /* ---- 伺服器上已產生的封存 ----
+       分片封存要下載好幾個檔案，中途斷掉一片就得全部重來。
+       留在伺服器上，缺哪片補哪片。 */
+    st.stored.length
+      ? el('section', { class: 'card sec', style: 'margin-top:14px' },
+          el('h3', {}, '伺服器上的封存'),
+          el('p', { class: 'hint', style: 'margin:5px 0 11px' },
+            `產生後保留 ${st.keepHours} 小時，供分片下載中斷時補抓；`
+            + '之後會在下次封存時自動清除。'),
+          ...st.stored.map(a => el('div', { class: 'arc-stored' },
+            el('div', { style: 'min-width:0' },
+              el('div', { style: 'font-size:12.5px' },
+                String(a.createdAt).replace('T', ' ').slice(0, 16),
+                el('span', { class: 'hint', style: 'margin-left:8px' },
+                  `${a.parts.length} 片・${mb(a.bytes)}`)),
+              el('div', { class: 'arc-parts' },
+                ...a.parts.map(p => el('button', {
+                  class: 'btn btn-sm', title: p.filename,
+                  onclick: ev => downloadPart(ev.currentTarget, a.archiveId, p),
+                }, a.parts.length > 1 ? `第 ${p.part} 片` : '下載', ' ',
+                  el('span', { class: 'hint' }, mb(p.bytes)))))),
+            el('button', { class: 'iconbtn', title: '刪除這份封存',
+              html: svgIcon(I.trash),
+              onclick: async () => {
+                await STORE.archive.remove(a.archiveId);
+                loadArchiveView();
+              } }))))
+      : null,
 
     /* ---- 還原 ---- */
     el('section', { class: 'card sec', style: 'margin-top:14px' },
@@ -437,50 +472,102 @@ async function loadArchiveView() {
         ondrop: e => {
           e.preventDefault();
           delete e.currentTarget.dataset.over;
-          const f = e.dataTransfer.files[0];
-          if (f) inspectArchiveFile(f);
+          const fs = [...e.dataTransfer.files];
+          if (fs.length) inspectArchiveFiles(fs);
         } },
         el('span', { html: svgIcon(I.upload) }),
         el('div', {},
           el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳封存 zip'),
           el('div', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:3px' },
-            '先讀取內容讓你確認，不會立刻動到資料')),
+            '先讀取內容讓你確認，不會立刻動到資料。'
+            + '分成多片的封存請一次選取全部')),
         el('input', { type: 'file', id: 'arc-file', accept: '.zip,application/zip',
-          style: 'display:none',
-          onchange: e => { const f = e.target.files[0]; if (f) inspectArchiveFile(f); } })),
+          multiple: '', style: 'display:none',
+          onchange: e => {
+            const fs = [...e.target.files];
+            if (fs.length) inspectArchiveFiles(fs);
+          } })),
       el('div', { id: 'arc-preview' })));
 }
 
+/** 補抓單獨一片。 */
+async function downloadPart(btn, archiveId, p) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '下載中…';
+  try {
+    const { blob, filename } = await STORE.archive.part(archiveId, p.part);
+    await saveBlob(blob, filename);
+  } catch (e) {
+    toast('下載失敗：' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/**
+ * 產生封存並下載。
+ *
+ * 資料超過單片上限時伺服器會切成多片，這裡逐片抓下來。一片一個請求、
+ * 一片一次 saveBlob——幾 GB 的東西沒辦法塞進一個回應，瀏覽器也擋不住。
+ */
 async function doArchive() {
   const btn = $('#arc-go');
   const msg = $('#arc-msg');
   btn.disabled = true;
   msg.textContent = '封存中…';
   try {
-    const { blob, filename } = await STORE.archive.build($('#arc-note')?.value || '');
-    await saveBlob(blob, filename);
-    msg.textContent = `已產生 ${filename}（${mb(blob.size)}）`;
+    const { archiveId, parts, stats } = await STORE.archive.build($('#arc-note')?.value || '');
+
+    for (const p of parts) {
+      msg.textContent = parts.length > 1
+        ? `下載第 ${p.part} 片／共 ${parts.length} 片（${mb(p.bytes)}）…`
+        : '下載中…';
+      const { blob, filename } = await STORE.archive.part(archiveId, p.part);
+      await saveBlob(blob, filename);
+    }
+
+    const done = parts.length > 1
+      ? `已產生 ${parts.length} 片、共 ${mb(stats.zipBytes)}。還原時要把所有片一起選取。`
+      : `已產生 ${parts[0].filename}（${mb(stats.zipBytes)}）`;
+    // 重新整理「伺服器上的封存」清單會重畫整個版面，連同這則訊息一起沖掉，
+    // 所以等它畫完再寫回去
+    await loadArchiveView();
+    const after = $('#arc-msg');
+    if (after) after.textContent = done;
     return true;
   } catch (e) {
     msg.textContent = '封存失敗：' + e.message;
     return false;
   } finally {
-    btn.disabled = false;
+    // 成功時版面已重畫，btn 是舊節點；對新的那顆重新取一次
+    const live = $('#arc-go') || btn;
+    live.disabled = false;
   }
 }
 
-/** 先讀內容給人確認，這一步不動任何資料。 */
-async function inspectArchiveFile(file) {
+/** 先讀內容給人確認，這一步不動任何資料。files 可以是多片。 */
+async function inspectArchiveFiles(files) {
   const host = $('#arc-preview');
   host.innerHTML = '';
-  host.append(el('p', { class: 'hint', style: 'padding:10px 0' }, '讀取封存檔…'));
+  host.append(el('p', { class: 'hint', style: 'padding:10px 0' },
+    files.length > 1 ? `讀取 ${files.length} 片封存檔…` : '讀取封存檔…'));
 
   let info;
   try {
-    info = await STORE.archive.inspect(file);
+    info = await STORE.archive.inspect(files);
   } catch (e) {
     host.innerHTML = '';
-    host.append(el('p', { class: 'login-err' }, '讀取失敗：' + e.message));
+    // 缺片、混到別次封存的片，訊息本身就說明了該怎麼辦，照實顯示
+    host.append(el('div', { class: 'arc-warn' },
+      el('span', { html: svgIcon(I.shield) }),
+      el('div', {},
+        el('b', {}, '無法讀取'),
+        el('div', { style: 'margin-top:4px;line-height:1.7' }, e.message))),
+      el('p', { class: 'hint', style: 'margin-top:9px' },
+        '已選 ' + files.length + ' 個檔案：'
+        + files.map(f => f.name).join('、')));
     return;
   }
 
@@ -494,7 +581,15 @@ async function inspectArchiveFile(file) {
         `附件 ${info.attachments}`),
       el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--ink-3)' }),
         `帳號 ${info.users}`),
-      el('span', { class: 'hint', style: 'margin-left:auto' }, info.filename)),
+      info.parts > 1
+        ? el('span', { class: 'chip' },
+            el('i', { class: 'dot', style: 'background:var(--accent)' }),
+            `${info.parts} 片已齊`)
+        : null,
+      el('span', { class: 'hint', style: 'margin-left:auto' },
+        info.filenames.length > 1
+          ? `${info.filenames.length} 個檔案`
+          : info.filenames[0])),
     el('div', { class: 'meta', style: 'margin-top:10px' },
       row('封存時間', el('span', { class: 'mono', style: 'font-size:12px' },
         String(info.exportedAt).replace('T', ' ').slice(0, 16))),
@@ -512,7 +607,7 @@ async function inspectArchiveFile(file) {
           el('td', { style: 'text-align:right;color:var(--ink-3)' },
             el('span', { class: 'tnum' }, String(ARC_NOW.counts?.[k] || 0)))))))),
     el('div', { style: 'display:flex;gap:9px;align-items:center;margin-top:14px;flex-wrap:wrap' },
-      el('button', { class: 'btn btn-danger', onclick: () => confirmRestore(file, info) },
+      el('button', { class: 'btn btn-danger', onclick: () => confirmRestore(files, info) },
         el('span', { html: svgIcon(I.exchange) }), '以這份封存取代目前專案'),
       el('span', { class: 'hint' }, '下一步會先問你要不要封存目前的資料')));
 }
@@ -524,14 +619,16 @@ async function inspectArchiveFile(file) {
  * 先問封存，再要求手動輸入確認字樣。把目前資料清掉這種事，
  * 不該只隔著一個「確定」按鈕。
  */
-function confirmRestore(file, info) {
+function confirmRestore(files, info) {
   const body = el('div', {},
     el('div', { class: 'arc-warn' },
       el('span', { html: svgIcon(I.shield) }),
       el('div', {},
         el('b', {}, '目前專案的所有業務資料將被清空'),
         el('div', { style: 'margin-top:4px;line-height:1.7' },
-          `並以 ${info.filename}（封存於 `
+          '並以'
+          + (info.parts > 1 ? `這份 ${info.parts} 片的封存` : ` ${info.filenames[0]}`)
+          + '（封存於 '
           + String(info.exportedAt).replace('T', ' ').slice(0, 16) + '）的內容取代。'))),
 
     el('div', { style: 'margin-top:14px' },
@@ -560,7 +657,7 @@ function confirmRestore(file, info) {
       el('span', { class: 'spacer' }),
       el('button', { class: 'btn', onclick: closeOverlay }, '取消'),
       el('button', { class: 'btn btn-danger', id: 'arc-do', disabled: true,
-        onclick: () => runRestore(file) },
+        onclick: () => runRestore(files) },
         el('span', { html: svgIcon(I.exchange) }), '清空並還原')));
 
   const ov = $('#overlay');
@@ -569,7 +666,7 @@ function confirmRestore(file, info) {
   setTimeout(() => $('#arc-confirm')?.focus(), 0);
 }
 
-async function runRestore(file) {
+async function runRestore(files) {
   const msg = $('#arc-run');
   const btn = $('#arc-do');
   const pre = document.querySelector('input[name="arc-pre"]:checked')?.value === 'yes';
@@ -589,7 +686,7 @@ async function runRestore(file) {
 
   msg.textContent = '還原中，請勿關閉頁面…';
   try {
-    const r = await STORE.archive.restore(file);
+    const r = await STORE.archive.restore(files);
     const n = Object.values(r.result.restored).reduce((a, b) => a + b, 0);
     closeOverlay();
     await STORE.load();

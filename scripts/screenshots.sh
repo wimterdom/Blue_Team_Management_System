@@ -62,7 +62,7 @@ cfg = ('<script>window.__SHOT=%s;window.__SHOT_PW=%s;window.__SHOT_NMAP=%s;</scr
        % (json.dumps(shot), json.dumps(pw), json.dumps(nmap)))
 # 截圖腳本是獨立模組，看不到 app 模組的頂層繫結。需要 STORE 的畫面
 # （例如封存還原，得先產生一份封存檔當輸入）靠這個把手取用。
-handle = '\n/* 截圖把手 */\nwindow.__T_STORE = STORE;\n'
+handle = '\n/* 截圖把手 */\nwindow.__T_STORE = STORE;\nwindow.saveBlob = saveBlob;\n'
 i = src.rindex('</script>')
 src = src[:i] + handle + src[i:]
 probe = open(f'{root}/tests/shots.js', encoding='utf-8').read()

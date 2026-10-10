@@ -110,6 +110,17 @@ const SHOTS = {
     await sleep(300);
     await click($$('.mi').find(m => /專案封存/.test(m.textContent)));
     await sleep(1800);
+    // 先產生一份，畫面上才有「伺服器上的封存」可拍。
+    // 攔下實際存檔：saveBlob 是模組作用域的繫結，覆寫 window 上的同名屬性
+    // 沒有用，要攔的是它底下真正觸發下載的那個 <a>。
+    HTMLAnchorElement.prototype.click = function () {};
+    $('#arc-note').value = '2026 第三季結案封存';
+    await click($('#arc-go'));
+    for (let i = 0; i < 60; i += 1) {
+      await sleep(300);
+      if (/已產生/.test($('#arc-msg')?.textContent || '')) break;
+    }
+    await sleep(500);
     top();
   },
 
@@ -121,10 +132,15 @@ const SHOTS = {
     await click($$('.mi').find(m => /專案封存/.test(m.textContent)));
     await sleep(1600);
 
-    // 拿系統自己產生的封存檔餵進真正的檔案輸入，拍到的才是實際畫面
-    const { blob, filename } = await window.__T_STORE.archive.build('2026 第三季結案封存');
+    // 拿系統自己產生的封存檔餵進真正的檔案輸入，拍到的才是實際畫面。
+    // 分片時要把每一片都抓下來，預覽才會顯示「N 片已齊」。
+    const S = window.__T_STORE;
+    const built = await S.archive.build('2026 第三季結案封存');
     const dt = new DataTransfer();
-    dt.items.add(new File([blob], filename, { type: 'application/zip' }));
+    for (const p of built.parts) {
+      const { blob, filename } = await S.archive.part(built.archiveId, p.part);
+      dt.items.add(new File([blob], filename, { type: 'application/zip' }));
+    }
     const input = $('#arc-file');
     input.files = dt.files;
     input.dispatchEvent(new Event('change'));

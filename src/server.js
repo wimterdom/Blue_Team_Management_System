@@ -257,7 +257,8 @@ function startMaintenance(app) {
 
 /* ---------- 啟動 ---------- */
 async function main() {
-  for (const dir of [config.paths.dataDir, config.paths.uploads, config.paths.backups]) {
+  for (const dir of [config.paths.dataDir, config.paths.uploads, config.paths.backups,
+    config.paths.archives]) {
     mkdirSync(dir, { recursive: true });
   }
 

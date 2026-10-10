@@ -1,7 +1,7 @@
 /**
  * 專案封存與還原。
  *
- * 封存產生一個 zip，內含兩種東西：
+ * 封存產生一組 zip，內含兩種東西：
  *
  *   1. Markdown 樹狀目錄 — 給人看的。每個系統一個資料夾，每筆紀錄一份
  *      index.md，附圖與附件放在該筆紀錄底下的 attachments/。不需要本系統
@@ -12,9 +12,24 @@
  * 為什麼不直接從 Markdown 還原：Markdown 是排版過的呈現，把它反解回結構化
  * 欄位既脆弱又會掉資料（例如判定結果與嚴重度在文中只是表格的一格文字）。
  * 兩份並存，各司其職——這點在封存的 README.md 裡也對使用者講明白。
+ *
+ * ## 分片
+ *
+ * ZIP32 的位移欄位是 32 位元，一個 zip 到不了 4 GiB；真要塞下去也搬不動。
+ * 超過單片上限時就分成多片，而且**每一片都是獨立、完整、任何工具都打得開的
+ * zip**，不是 PKWARE 的 spanned archive（.z01/.z02 那種，單一檔案會跨片，
+ * 工具支援也參差）。代價是要把所有片解壓到同一個資料夾才看得到完整的樹。
+ *
+ * 分片是先規劃再寫：第一階段把 Markdown 產出來、把附件 stat 一遍拿到大小，
+ * 據此決定每一項落在哪一片；第二階段才真的寫檔，附件到這時候才讀進來。
+ * 全部放進記憶體再 concat 的話，幾 GB 的封存當場就炸了。
+ *
+ * 文字在前、附件在後，所以**第 1 片必定裝著全部的 Markdown 與 manifest**，
+ * 光拿第 1 片就能讀完所有報告內容（只是圖多半連不到）。附件則從第 1 片的
+ * 剩餘空間開始依序往後填，不留空位。
  */
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, stat, readdir, rm } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import config from '../config.js';
@@ -23,10 +38,13 @@ import { COLLECTIONS } from './collections.js';
 import { listRecords } from './records.js';
 import { allSettings, setSetting } from './settings.js';
 import { nowIso, toDisplay } from './time.js';
-import { createZip, readZip } from './zip.js';
+import { ZipWriter, openZip, centralEntryBytes, localEntryBytes } from './zip.js';
 import { badRequest } from './errors.js';
 
 export const ARCHIVE_FORMAT = 'btms-archive/v1';
+
+/** 每一片都帶一份，用來辨識「這些片是不是同一次封存、湊齊了沒」。 */
+export const PART_FILE = 'PART.json';
 
 /* ---------- 共用小工具 ---------- */
 
@@ -67,7 +85,11 @@ const section = (title, body) => `\n## ${title}\n\n${body || '_（未填寫）_'
  * 組出整個封存。
  * @returns {{buffer: Buffer, filename: string, stats: object}}
  */
-export async function buildArchive({ note = '', by = null } = {}) {
+export async function buildArchive({
+  note = '', by = null,
+  volumeBytes = config.archive.volumeBytes,
+  outDir = config.paths.archives,
+} = {}) {
   const db = getDb();
   const when = new Date();
   const stamp = toDisplay(when.toISOString()).replace(/[: ]/g, '-');
@@ -86,7 +108,16 @@ export async function buildArchive({ note = '', by = null } = {}) {
     .prepare('SELECT * FROM attachments WHERE deleted = 0 ORDER BY uploaded_at')
     .all();
 
+  /**
+   * 計畫項目。text 是已經在記憶體裡的內容（Markdown、JSON，都很小）；
+   * file 是磁碟上的附件，直到真的要寫入那一片時才讀進來。
+   */
   const entries = [];
+  const addText = (name, text) => entries.push({
+    name, text, size: Buffer.byteLength(text, 'utf8'), store: false,
+  });
+  /** 附件另外收，最後才接在文字之後——第 1 片因此裝得下全部的 Markdown。 */
+  const attachEntries = [];
   const stats = { attachments: 0, attachmentBytes: 0, missingFiles: [] };
   for (const [k, v] of Object.entries(data)) stats[k] = v.length;
 
@@ -104,9 +135,10 @@ export async function buildArchive({ note = '', by = null } = {}) {
     const out = [];
     for (const a of list) {
       const full = join(config.paths.uploads, a.rel_path);
-      let bytes = null;
+      // 計畫階段只要大小，不讀內容——附件才是封存的體積來源
+      let size = null;
       try {
-        bytes = await readFile(full);
+        size = (await stat(full)).size;
       } catch {
         stats.missingFiles.push(`${a.collection}/${a.record_id}/${a.filename}`);
       }
@@ -119,10 +151,11 @@ export async function buildArchive({ note = '', by = null } = {}) {
       }
       used.add(fname);
       const path = `${dir}/attachments/${fname}`;
-      if (bytes) {
-        entries.push({ name: path, data: bytes, store: true });  // 影像再壓也沒好處
+      if (size != null) {
+        // 影像已經壓過，再 deflate 一次只是白費 CPU
+        attachEntries.push({ name: path, file: full, size, store: true });
         stats.attachments += 1;
-        stats.attachmentBytes += bytes.length;
+        stats.attachmentBytes += size;
         // 直接標在原物件上，稍後組 manifest 時才讀得到——
         // 標在複本上的話 manifest 會以為沒有任何附件。
         a.archivePath = path;
@@ -182,16 +215,14 @@ export async function buildArchive({ note = '', by = null } = {}) {
           (d.audit || []).map(a => [a.when, a.who, a.role, a.act]))),
       ].join('\n');
 
-      entries.push({ name: `${folder}/index.md`, data: md });
+      addText(`${folder}/index.md`, md);
       rows.push([c.id, c.title, c.sev, c.verdict, c.progress,
         userName(users, c.analyst), (c.occur || [])[0] || c.created]);
     }
-    entries.push({
-      name: `${dir}/README.md`,
-      data: `# 獵補案件簿\n\n共 ${data.cases.length} 份調查報告。\n\n`
-        + table(['編號', '標題', '嚴重度', '結果', '進度', '分析員', '案發時間'], rows,
-          '（此系統尚無資料）'),
-    });
+    addText(`${dir}/README.md`,
+      `# 獵補案件簿\n\n共 ${data.cases.length} 份調查報告。\n\n`
+      + table(['編號', '標題', '嚴重度', '結果', '進度', '分析員', '案發時間'], rows,
+        '（此系統尚無資料）'));
   }
 
   /* ===== 02 請求管理系統 ===== */
@@ -221,16 +252,14 @@ export async function buildArchive({ note = '', by = null } = {}) {
           (d.audit || []).map(a => [a.when, a.who, a.role, a.act]))),
       ].join('\n');
 
-      entries.push({ name: `${folder}/index.md`, data: md });
+      addText(`${folder}/index.md`, md);
       rows.push([r.id, r.type, r.subject, r.prio, r.progress,
         userName(users, r.applicant), r.created]);
     }
-    entries.push({
-      name: `${dir}/README.md`,
-      data: `# 請求管理系統\n\n共 ${data.requests.length} 張請求表。\n\n`
+    addText(`${dir}/README.md`,
+      `# 請求管理系統\n\n共 ${data.requests.length} 張請求表。\n\n`
         + table(['編號', '類型', '主旨', '優先級', '進度', '申請人', '提出時間'], rows,
-          '（此系統尚無資料）'),
-    });
+          '（此系統尚無資料）'));
   }
 
   /* ===== 03 資產管理系統 ===== */
@@ -246,7 +275,7 @@ export async function buildArchive({ note = '', by = null } = {}) {
       // 組態檔與 log 是純文字，直接另存成檔案比塞進 Markdown 好讀
       const docs = (d.files || []).filter(f => f.text != null);
       for (const f of docs) {
-        entries.push({ name: `${folder}/files/${safeName(f.name)}`, data: f.text });
+        addText(`${folder}/files/${safeName(f.name)}`, f.text);
       }
 
       const md = [
@@ -275,16 +304,14 @@ export async function buildArchive({ note = '', by = null } = {}) {
           (d.audit || []).map(x => [x.when, x.who, x.role, x.act]))),
       ].join('\n');
 
-      entries.push({ name: `${folder}/index.md`, data: md });
+      addText(`${folder}/index.md`, md);
       rows.push([a.id, a.hostname, a.ip, a.os, a.importance, a.vendor,
         userName(users, a.analyst)]);
     }
-    entries.push({
-      name: `${dir}/README.md`,
-      data: `# 資產管理系統\n\n共 ${data.assets.length} 項資產。\n\n`
+    addText(`${dir}/README.md`,
+      `# 資產管理系統\n\n共 ${data.assets.length} 項資產。\n\n`
         + table(['編號', '主機名稱', 'IPv4', '作業系統', '重要性', '製造商', '負責人'], rows,
-          '（此系統尚無資料）'),
-    });
+          '（此系統尚無資料）'));
   }
 
   /* ===== 04 主機標定系統 ===== */
@@ -310,7 +337,7 @@ export async function buildArchive({ note = '', by = null } = {}) {
         Object.values(assetsById).map(a => [a.hostname, a.ip, a.vlan, a.uplink]),
         '（無資產資料）'),
     ].join('\n');
-    entries.push({ name: `${dir}/README.md`, data: md });
+    addText(`${dir}/README.md`, md);
   }
 
   /* ===== 05 情資管理系統 ===== */
@@ -318,28 +345,24 @@ export async function buildArchive({ note = '', by = null } = {}) {
     const dir = DIRS.intel;
     for (const rec of data.apts) {
       const a = rec.data;
-      entries.push({
-        name: `${dir}/APT 組織報告/${safeName(a.id)}.md`,
-        data: [`# ${a.name}`, '', metaTable([
+      addText(`${dir}/APT 組織報告/${safeName(a.id)}.md`,
+        [`# ${a.name}`, '', metaTable([
           ['組織編號', a.id], ['組織名稱', a.name], ['類型', a.type],
           ['國家／地區', a.country], ['鎖定目標', (a.targets || []).join('、')],
           ['TTP 數', (a.ttps || []).length],
         ]), a.note ? section('組織描述', a.note) : '',
-        section('使用的技術', table(['技術編號'], (a.ttps || []).map(t => [t])))].join('\n'),
-      });
+        section('使用的技術', table(['技術編號'], (a.ttps || []).map(t => [t])))].join('\n'));
     }
     for (const rec of data.intels) {
       const x = rec.data;
-      entries.push({
-        name: `${dir}/情資報告/${safeName(x.id)}.md`,
-        data: [`# ${x.source || x.id}`, '', metaTable([
+      addText(`${dir}/情資報告/${safeName(x.id)}.md`,
+        [`# ${x.source || x.id}`, '', metaTable([
           ['報告編號', x.id], ['情資類型', x.kind], ['情資來源', x.source],
           ['建立時間', x.created], ['分析員', userName(users, x.analyst)],
         ]), section('情資內容', x.content), section('分析結果', x.analysis),
         section('IOC', table(['類型', '指標值', '備註'],
           (x.iocs || []).map(o => [o.t, o.v, o.n]))),
-        section('TTP', table(['技術編號'], (x.ttps || []).map(t => [t])))].join('\n'),
-      });
+        section('TTP', table(['技術編號'], (x.ttps || []).map(t => [t])))].join('\n'));
     }
     for (const rec of data.hunts) {
       const h = rec.data;
@@ -347,9 +370,8 @@ export async function buildArchive({ note = '', by = null } = {}) {
         ['dataReq', 'Determine Data Requirements 所需資料'], ['filter', 'Filter 篩選條件'],
         ['gaps', 'Find and Mitigate Data Collection Gaps 資料缺口'],
         ['implement', 'Implement and Test Analytics 實作與驗證']];
-      entries.push({
-        name: `${dir}/威脅獵補計畫/${safeName(h.id)}.md`,
-        data: [`# ${h.id}`, '', metaTable([
+      addText(`${dir}/威脅獵補計畫/${safeName(h.id)}.md`,
+        [`# ${h.id}`, '', metaTable([
           ['計畫編號', h.id], ['狀態', h.status], ['建立時間', h.created],
           ['分析員', userName(users, h.analyst)],
           ['鎖定 TTP', (h.ttps || []).join('、')],
@@ -357,38 +379,31 @@ export async function buildArchive({ note = '', by = null } = {}) {
         ]), ...FIELDS.map(([k, label]) => section(label, h[k])),
         section('調查結果', table(['案件', '結果', '補充'],
           (h.results || []).map(r => [r.caseId, r.verdict || '', r.note || '']))),
-        h.resultNote ? section('調查結果補充', h.resultNote) : ''].join('\n'),
-      });
+        h.resultNote ? section('調查結果補充', h.resultNote) : ''].join('\n'));
     }
-    entries.push({
-      name: `${dir}/TTP 標註.md`,
-      data: `# 分析員 TTP 標註\n\n`
+    addText(`${dir}/TTP 標註.md`,
+      `# 分析員 TTP 標註\n\n`
         + table(['技術編號', '註記', '標註人', '時間'],
           data.ttp_marks.map(r => [r.data.ttp, r.data.note, userName(users, r.data.by), r.data.at]),
-          '（無手動標註）'),
-    });
-    entries.push({
-      name: `${dir}/README.md`,
-      data: [`# 情資管理系統`, '',
+          '（無手動標註）'));
+    addText(`${dir}/README.md`,
+      [`# 情資管理系統`, '',
         `- APT 組織報告 ${data.apts.length} 份`,
         `- 情資報告 ${data.intels.length} 份`,
         `- 威脅獵補計畫 ${data.hunts.length} 份`,
-        `- 分析員 TTP 標註 ${data.ttp_marks.length} 項`].join('\n'),
-    });
+        `- 分析員 TTP 標註 ${data.ttp_marks.length} 項`].join('\n'));
   }
 
   /* ===== 帳號清單 ===== */
-  entries.push({
-    name: '帳號清單.md',
-    data: ['# 帳號清單', '',
+  addText('帳號清單.md',
+    ['# 帳號清單', '',
       '封存**不含任何密碼或密碼雜湊**。還原時，archive 中有但目前系統沒有的帳號',
       '會以「停用且無密碼」的狀態補建，只為了讓報告的作者資訊對得上；',
       '要讓這些人能登入，需由管理員另行啟用並設定密碼。', '',
       table(['帳號', '姓名', '職務', '權限', '狀態'],
         Object.values(users).map(u => [u.id, u.name, u.role, u.perm,
           u.disabled ? '停用' : '啟用'])),
-    ].join('\n'),
-  });
+    ].join('\n'));
 
   /* ===== manifest（還原用） ===== */
   const manifest = {
@@ -412,12 +427,11 @@ export async function buildArchive({ note = '', by = null } = {}) {
         archivePath: a.archivePath,   // 還原時由這個路徑把檔案取回來
       })),
   };
-  entries.push({ name: 'manifest.json', data: JSON.stringify(manifest, null, 2) });
+  addText('manifest.json', JSON.stringify(manifest, null, 2));
 
-  /* ===== 封存說明 ===== */
-  entries.push({
-    name: 'README.md',
-    data: [
+  /* ===== 封存說明 =====
+     片數要等規劃完才知道，所以這裡做成函式，規劃時先以保守長度佔位。 */
+  const readmeText = parts => [
       '# 藍隊管理系統 — 專案封存',
       '',
       metaTable([
@@ -464,57 +478,288 @@ export async function buildArchive({ note = '', by = null } = {}) {
       '還原會**清空目前所有業務資料**再寫入本封存的內容，所以系統會先問你',
       '要不要把目前的專案也封存一份。帳號不會被清除：封存中有而目前沒有的帳號',
       '會以「停用且無密碼」補建，只為了讓報告的作者資訊對得上。',
-    ].filter(Boolean).join('\n'),
-  });
+      parts > 1 ? [
+        '',
+        `## 這份封存分成 ${parts} 片`,
+        '',
+        `資料量超過單片上限，因此切成 ${parts} 個 zip。`,
+        '**每一片都是獨立、完整的 zip**，任何解壓工具都打得開，',
+        '不是需要特殊工具的分割壓縮檔。',
+        '',
+        '- 第 1 片裝著全部的 Markdown 與 `manifest.json`。',
+        '  只拿第 1 片就能讀完所有報告內容，只是圖多半連不到。',
+        `- 附件依序填進第 1 片的剩餘空間，再接著放到第 2～${parts} 片。`,
+        '- 要看完整的樹（含圖），把**所有片解壓到同一個資料夾**，讓它們合併。',
+        '- 還原時必須把**所有片一起選取**上傳，缺一片系統會明確告訴你缺哪一片。',
+      ].join('\n') : '',
+    ].filter(Boolean).join('\n');
 
-  const buffer = createZip(entries, when);
+  /* ===== 規劃分片 =====
+     用未壓縮大小估算，壓縮只會更小，所以實際不會超過上限。 */
+  const README_RESERVE = Buffer.byteLength(readmeText(999), 'utf8') + 1024;
+  const plan = planParts(
+    [{ name: 'README.md', text: '', size: README_RESERVE, store: false },
+      ...entries.filter(e => e.name !== 'README.md'),
+      ...attachEntries],
+    volumeBytes,
+  );
+
+  /* ===== 寫出每一片 ===== */
+  const archiveId = randomUUID();
+  const dir = join(outDir, archiveId);
+  await mkdir(dir, { recursive: true });
+
+  const readme = readmeText(plan.length);
+  const pad = n => String(n).padStart(2, '0');
+  const partName = n => plan.length === 1
+    ? `藍隊管理系統-專案封存-${stamp}.zip`
+    : `藍隊管理系統-專案封存-${stamp}-第${pad(n)}片-共${pad(plan.length)}片.zip`;
+
+  const written = [];
+  for (let i = 0; i < plan.length; i += 1) {
+    const filename = partName(i + 1);
+    const path = join(dir, filename);
+    const w = await ZipWriter.create(path, when);
+    await w.add(PART_FILE, JSON.stringify({
+      format: ARCHIVE_FORMAT, archiveId, part: i + 1, parts: plan.length,
+      createdAt: when.toISOString(),
+    }, null, 2));
+    for (const e of plan[i]) {
+      if (e.name === 'README.md') { await w.add('README.md', readme); continue; }
+      // 附件到這一刻才讀進記憶體，而且一次只有一個
+      const body = e.file ? await readFile(e.file) : e.text;
+      await w.add(e.name, body, { store: e.store });
+    }
+    const bytes = await w.close();
+    written.push({ part: i + 1, filename, bytes, files: plan[i].length + 1 });
+  }
+
   return {
-    buffer,
-    filename: `藍隊管理系統-專案封存-${stamp}.zip`,
-    stats: { ...stats, files: entries.length, zipBytes: buffer.length },
+    archiveId,
+    dir,
+    parts: written,
+    filename: partName(1),
+    stats: {
+      ...stats,
+      files: entries.length + attachEntries.length + plan.length,
+      parts: plan.length,
+      zipBytes: written.reduce((n, p) => n + p.bytes, 0),
+    },
     manifest,
   };
 }
 
+/**
+ * 把項目排進分片。每一片都要留下 PART.json 與中央目錄的空間。
+ *
+ * 單一項目若本身就超過上限，仍然自成一片——與其拒絕封存，不如產出一片
+ * 偏大的檔案；真的超過 ZIP32 的 4 GiB 硬界線時，ZipWriter 會擋下來。
+ */
+function planParts(items, volumeBytes) {
+  const RESERVE = 4096;              // PART.json 與 EOCD
+  const parts = [[]];
+  let used = RESERVE;
+  for (const e of items) {
+    const cost = localEntryBytes(e.name, e.size) + centralEntryBytes(e.name);
+    if (used + cost > volumeBytes && parts[parts.length - 1].length) {
+      parts.push([]);
+      used = RESERVE;
+    }
+    parts[parts.length - 1].push(e);
+    used += cost;
+  }
+  return parts;
+}
+
+/* ---------- 伺服器上已產生的封存 ---------- */
+
+/** 列出放在伺服器上的封存，供重複下載。 */
+export async function listStoredArchives(outDir = config.paths.archives) {
+  let ids = [];
+  try {
+    ids = await readdir(outDir);
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const id of ids) {
+    try {
+      const files = (await readdir(join(outDir, id))).filter(f => f.endsWith('.zip')).sort();
+      if (!files.length) continue;
+      const parts = [];
+      for (const f of files) {
+        const st = await stat(join(outDir, id, f));
+        parts.push({ filename: f, bytes: st.size });
+      }
+      const st = await stat(join(outDir, id));
+      out.push({
+        archiveId: id,
+        createdAt: st.mtime.toISOString(),
+        parts: parts.map((p, i) => ({ part: i + 1, ...p })),
+        bytes: parts.reduce((n, p) => n + p.bytes, 0),
+      });
+    } catch { /* 目錄正在被清掉，略過 */ }
+  }
+  return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** 清掉過期的封存。封存佔的磁碟與資料本身一樣大，不能無限累積。 */
+export async function pruneStoredArchives(
+  { keepHours = config.archive.keepHours, outDir = config.paths.archives } = {},
+) {
+  const cutoff = Date.now() - keepHours * 3600_000;
+  const removed = [];
+  for (const a of await listStoredArchives(outDir)) {
+    if (Date.parse(a.createdAt) < cutoff) {
+      await rm(join(outDir, a.archiveId), { recursive: true, force: true });
+      removed.push(a.archiveId);
+    }
+  }
+  return removed;
+}
+
+export async function removeStoredArchive(id, outDir = config.paths.archives) {
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw badRequest('封存代號不正確', 'bad_id');
+  await rm(join(outDir, id), { recursive: true, force: true });
+}
+
 /* ---------- 還原 ---------- */
 
-/** 先看一眼封存檔的內容，讓使用者確認要還原的是哪一份。 */
-export function inspectArchive(buf) {
-  let files;
+/**
+ * 開啟一組分片，檢查它們湊不湊得齊。
+ *
+ * 使用者可能少選一片、多選了別次封存的片、或選到重複的同一片，
+ * 這三種都要在動資料之前講清楚是哪一種。
+ *
+ * @param paths 每一片在磁碟上的路徑
+ * @returns {{manifest, readers, find(name), close()}}
+ */
+export async function openArchiveSet(paths) {
+  const readers = [];
+  const close = async () => { for (const r of readers) await r.zip.close().catch(() => {}); };
+
   try {
-    files = readZip(buf);
+    for (const path of paths) {
+      let zip;
+      try {
+        zip = await openZip(path);
+      } catch (e) {
+        throw badRequest(`無法讀取封存檔：${e.message}`, 'bad_archive');
+      }
+      let info = null;
+      if (zip.has(PART_FILE)) {
+        try {
+          info = JSON.parse((await zip.read(PART_FILE)).toString('utf8'));
+        } catch { /* 下面會當成缺少 PART.json 處理 */ }
+      }
+      readers.push({ path, zip, info });
+    }
+
+    if (!readers.length) throw badRequest('沒有收到封存檔', 'no_file');
+
+    const noInfo = readers.filter(r => !r.info);
+    if (noInfo.length) {
+      throw badRequest(
+        `有 ${noInfo.length} 個檔案缺少 ${PART_FILE}，可能不是本系統產生的封存檔`,
+        'no_part_info',
+      );
+    }
+
+    const bad = readers.find(r => r.info.format !== ARCHIVE_FORMAT);
+    if (bad) {
+      throw badRequest(`不支援的封存格式：${bad.info.format || '（未標示）'}`, 'bad_format');
+    }
+
+    // 混到別次封存的片，比缺片更危險——會還原出拼湊的資料
+    const ids = [...new Set(readers.map(r => r.info.archiveId))];
+    if (ids.length > 1) {
+      throw badRequest(
+        `這些檔案來自 ${ids.length} 次不同的封存，不能混在一起還原。`
+        + '請確認選到的是同一次封存產生的所有分片。',
+        'mixed_archives',
+      );
+    }
+
+    const total = readers[0].info.parts;
+    const seen = new Map();
+    for (const r of readers) {
+      if (seen.has(r.info.part)) {
+        throw badRequest(`第 ${r.info.part} 片重複選取了兩次`, 'duplicate_part');
+      }
+      seen.set(r.info.part, r);
+    }
+    const missing = [];
+    for (let n = 1; n <= total; n += 1) if (!seen.has(n)) missing.push(n);
+    if (missing.length) {
+      throw badRequest(
+        `這份封存共 ${total} 片，缺少第 ${missing.join('、')} 片。`
+        + '還原需要所有分片，請一次選取全部。',
+        'missing_parts',
+      );
+    }
+
+    // 路徑 → 擁有它的那一片。附件分散在各片，讀的時候要查得到
+    const where = new Map();
+    for (const r of readers) {
+      for (const name of r.zip.names) if (!where.has(name)) where.set(name, r.zip);
+    }
+
+    const mf = where.get('manifest.json');
+    if (!mf) {
+      throw badRequest('封存中找不到 manifest.json，這可能不是本系統產生的封存檔',
+        'no_manifest');
+    }
+    let manifest;
+    try {
+      manifest = JSON.parse((await mf.read('manifest.json')).toString('utf8'));
+    } catch (e) {
+      throw badRequest(`manifest.json 格式不正確：${e.message}`, 'bad_manifest');
+    }
+    if (manifest.format !== ARCHIVE_FORMAT) {
+      throw badRequest(`不支援的封存格式：${manifest.format || '（未標示）'}`, 'bad_format');
+    }
+
+    return {
+      manifest,
+      parts: total,
+      archiveId: ids[0],
+      async read(name) {
+        const z = where.get(name);
+        return z ? z.read(name) : null;
+      },
+      close,
+    };
   } catch (e) {
-    throw badRequest(`無法讀取封存檔：${e.message}`, 'bad_archive');
+    await close();
+    throw e;
   }
-  const raw = files.get('manifest.json');
-  if (!raw) {
-    throw badRequest('封存檔中找不到 manifest.json，這可能不是本系統產生的封存檔', 'no_manifest');
-  }
-  let manifest;
+}
+
+/** 先看一眼封存的內容，讓使用者確認要還原的是哪一份。不改動任何東西。 */
+export async function inspectArchive(paths) {
+  const set = await openArchiveSet(paths);
   try {
-    manifest = JSON.parse(raw.toString('utf8'));
-  } catch (e) {
-    throw badRequest(`manifest.json 格式不正確：${e.message}`, 'bad_manifest');
+    return { manifest: set.manifest, parts: set.parts, archiveId: set.archiveId };
+  } finally {
+    await set.close();
   }
-  if (manifest.format !== ARCHIVE_FORMAT) {
-    throw badRequest(`不支援的封存格式：${manifest.format || '（未標示）'}`, 'bad_format');
-  }
-  return { files, manifest };
 }
 
 /**
- * 以封存檔取代目前的專案資料。
+ * 以封存取代目前的專案資料。
  *
  * 業務資料全部清空後重建；帳號不清除——把目前的管理員刪掉就沒人進得來了。
  * 封存中有而目前沒有的帳號，以「停用且無密碼」補建，只為了讓作者資訊對得上。
  */
-export async function restoreArchive(buf, { by = null } = {}) {
-  const { files, manifest } = inspectArchive(buf);
+export async function restoreArchive(paths, { by = null } = {}) {
+  const set = await openArchiveSet(paths);
+  const { manifest } = set;
   const db = getDb();
   const now = nowIso();
 
   const result = {
     exportedAt: manifest.exportedAt,
+    parts: set.parts,
     cleared: {},
     restored: {},
     usersAdded: [],
@@ -522,76 +767,81 @@ export async function restoreArchive(buf, { by = null } = {}) {
     skippedAttachments: [],
   };
 
-  /* 1. 附件實體檔案先寫進資料磁碟區。
-        先寫檔再動資料庫：萬一寫檔失敗，資料庫還沒被清空。 */
-  const written = [];
-  for (const a of manifest.attachments || []) {
-    const bytes = files.get(a.archivePath);
-    if (!bytes) { result.skippedAttachments.push(`${a.filename}（封存中缺少檔案）`); continue; }
-    const sha = createHash('sha256').update(bytes).digest('hex');
-    const rel = join(sha.slice(0, 2), sha.slice(2, 4), sha);
-    const full = join(config.paths.uploads, rel);
-    await mkdir(dirname(full), { recursive: true });
-    if (!existsSync(full)) await writeFile(full, bytes);
-    written.push({ ...a, rel, sha, size: bytes.length });
-  }
-
-  /* 2. 資料庫一次性替換。整段放在同一個交易裡——
-        中途失敗不該留下「清空了但沒寫回去」的狀態。 */
-  const apply = db.transaction(() => {
-    for (const name of Object.keys(COLLECTIONS)) {
-      result.cleared[name] = db.prepare('SELECT COUNT(*) n FROM records WHERE collection = ?')
-        .get(name).n;
-      db.prepare('DELETE FROM records WHERE collection = ?').run(name);
+  try {
+    /* 1. 附件實體檔案先寫進資料磁碟區。
+          先寫檔再動資料庫：萬一寫檔失敗，資料庫還沒被清空。
+          一次只讀一個檔，幾 GB 的封存也不會把記憶體吃掉。 */
+    const written = [];
+    for (const a of manifest.attachments || []) {
+      const bytes = await set.read(a.archivePath);
+      if (!bytes) { result.skippedAttachments.push(`${a.filename}（封存中缺少檔案）`); continue; }
+      const sha = createHash('sha256').update(bytes).digest('hex');
+      const rel = join(sha.slice(0, 2), sha.slice(2, 4), sha);
+      const full = join(config.paths.uploads, rel);
+      await mkdir(dirname(full), { recursive: true });
+      if (!existsSync(full)) await writeFile(full, bytes);
+      written.push({ ...a, rel, sha, size: bytes.length });
     }
-    db.prepare('DELETE FROM attachments').run();
 
-    const ins = db.prepare(
-      `INSERT INTO records (collection, id, data, version, deleted,
-         created_at, created_by, updated_at, updated_by)
-       VALUES (?, ?, ?, 1, 0, ?, ?, ?, ?)`,
-    );
-    for (const [name, rows] of Object.entries(manifest.records || {})) {
-      if (!COLLECTIONS[name]) continue;
-      for (const r of rows) {
-        ins.run(name, String(r.id), JSON.stringify(r.data),
-          r.createdAt || now, r.createdBy || by, now, by);
+    /* 2. 資料庫一次性替換。整段放在同一個交易裡——
+          中途失敗不該留下「清空了但沒寫回去」的狀態。 */
+    const apply = db.transaction(() => {
+      for (const name of Object.keys(COLLECTIONS)) {
+        result.cleared[name] = db.prepare('SELECT COUNT(*) n FROM records WHERE collection = ?')
+          .get(name).n;
+        db.prepare('DELETE FROM records WHERE collection = ?').run(name);
       }
-      result.restored[name] = rows.length;
-    }
+      db.prepare('DELETE FROM attachments').run();
 
-    const insAtt = db.prepare(
-      `INSERT INTO attachments (id, collection, record_id, filename, mime, bytes,
-         sha256, rel_path, uploaded_at, uploaded_by, deleted)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-    );
-    for (const a of written) {
-      insAtt.run(a.id || randomUUID(), a.collection, a.recordId, a.filename,
-        a.mime, a.size, a.sha, a.rel, a.uploadedAt || now, a.uploadedBy || by);
-    }
-    result.attachments = written.length;
+      const ins = db.prepare(
+        `INSERT INTO records (collection, id, data, version, deleted,
+           created_at, created_by, updated_at, updated_by)
+         VALUES (?, ?, ?, 1, 0, ?, ?, ?, ?)`,
+      );
+      for (const [name, rows] of Object.entries(manifest.records || {})) {
+        if (!COLLECTIONS[name]) continue;
+        for (const r of rows) {
+          ins.run(name, String(r.id), JSON.stringify(r.data),
+            r.createdAt || now, r.createdBy || by, now, by);
+        }
+        result.restored[name] = rows.length;
+      }
 
-    // 補建缺少的帳號：停用、無密碼，只為了讓作者資訊顯示得出來
-    const exists = new Set(db.prepare('SELECT id FROM users').all().map(u => u.id));
-    const addUser = db.prepare(
-      `INSERT INTO users (id, name, role, perm, pw_hash, provider, must_change_pw,
-         disabled, created_at, updated_at)
-       VALUES (?, ?, ?, ?, NULL, 'local', 1, 1, ?, ?)`,
-    );
-    for (const u of manifest.users || []) {
-      if (exists.has(u.id)) continue;
-      // 權限一律降為分析員：封存裡的管理員不該因為還原就取得本系統的管理權
-      addUser.run(u.id, u.name || u.id, u.role || '網路分析員', 'analyst', now, now);
-      result.usersAdded.push(u.id);
-    }
-  });
-  apply();
+      const insAtt = db.prepare(
+        `INSERT INTO attachments (id, collection, record_id, filename, mime, bytes,
+           sha256, rel_path, uploaded_at, uploaded_by, deleted)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+      );
+      for (const a of written) {
+        insAtt.run(a.id || randomUUID(), a.collection, a.recordId, a.filename,
+          a.mime, a.size, a.sha, a.rel, a.uploadedAt || now, a.uploadedBy || by);
+      }
+      result.attachments = written.length;
+
+      // 補建缺少的帳號：停用、無密碼，只為了讓作者資訊顯示得出來
+      const exists = new Set(db.prepare('SELECT id FROM users').all().map(u => u.id));
+      const addUser = db.prepare(
+        `INSERT INTO users (id, name, role, perm, pw_hash, provider, must_change_pw,
+           disabled, created_at, updated_at)
+         VALUES (?, ?, ?, ?, NULL, 'local', 1, 1, ?, ?)`,
+      );
+      for (const u of manifest.users || []) {
+        if (exists.has(u.id)) continue;
+        // 權限一律降為分析員：封存裡的管理員不該因為還原就取得本系統的管理權
+        addUser.run(u.id, u.name || u.id, u.role || '網路分析員', 'analyst', now, now);
+        result.usersAdded.push(u.id);
+      }
+    });
+    apply();
+  } finally {
+    await set.close();
+  }
 
   if (manifest.settings?.ttp_hidden) {
     setSetting('ttp_hidden', manifest.settings.ttp_hidden, by);
   }
   setSetting('last_restore', {
-    at: now, by, exportedAt: manifest.exportedAt, counts: result.restored,
+    at: now, by, exportedAt: manifest.exportedAt, parts: set.parts, counts: result.restored,
   }, by);
 
   return result;

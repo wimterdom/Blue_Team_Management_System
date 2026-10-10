@@ -85,13 +85,43 @@ async function logout(){
     +$$('#arc-body .spec-tbl tbody tr').length+' 類｜紀錄總數='
     +T('#arc-body .meta .tnum'));
 
+  /* ---- 3.5 上傳幾張壓不動的圖，把封存撐過單片上限（e2e 設為 1 MiB）---- */
+  async function noisePng(px) {
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(px, px);
+    // 隨機像素：PNG 壓不掉。getRandomValues 單次上限 64 KiB，要分段填
+    for (let o = 0; o < img.data.length; o += 65536) {
+      crypto.getRandomValues(img.data.subarray(o, Math.min(o + 65536, img.data.length)));
+    }
+    for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+    ctx.putImageData(img, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    return new File([blob], 'noise.png', { type: 'image/png' });
+  }
+  let up = 0;
+  for (let i = 0; i < 5; i += 1) {
+    const f = await noisePng(360);
+    await STORE.uploadImages('cases', CASES[i].id, [f]);
+    up += f.size;
+  }
+  out.push('上傳 5 張隨機圖共 '+Math.round(up/1024)+' KB，用來觸發分片');
+
   /* ---- 4. 產生封存檔 ---- */
   $('#arc-note').value='端對端測試';
   await click($('#arc-go'));
-  for(let i=0;i<100 && !saved.length;i++) await sleep(250);
-  const z=saved[saved.length-1]||{};
-  out.push('封存產出：'+(z.name||'（逾時）')+'｜'+Math.round((z.size||0)/1024)+' KB｜'
-    +z.type+'｜訊息='+T('#arc-msg'));
+  // 多片會一片一片下載，等訊息收尾才算完成
+  for(let i=0;i<240;i++){
+    await sleep(250);
+    if(/已產生/.test(T('#arc-msg'))) break;
+  }
+  out.push('封存產出：'+saved.length+' 片｜共 '
+    +Math.round(saved.reduce((n,s)=>n+s.size,0)/1024)+' KB｜訊息='+T('#arc-msg'));
+  out.push('各片檔名：'+saved.map(s=>(s.name||'?').replace(/^藍隊管理系統-專案封存-/,'')).join(' / '));
+  if(saved.length<2) throw new Error('預期分成多片，實際只有 '+saved.length+' 片');
+  out.push('伺服器留存清單：'+$$('.arc-stored').length+' 份，可補抓的分片鈕 '
+    +$$('.arc-parts .btn').length+' 個');
 
   /* ---- 5. 改動資料，才看得出還原生效 ---- */
   const before=CASES.length;
@@ -105,14 +135,26 @@ async function logout(){
   out.push('新增測試資料 '+probeId+'：案件數 '+before+' → '+CASES.length);
 
   /* ---- 6. 餵真正的檔案輸入，走使用者會走的路。
-           用的是步驟 4 下載到的那份封存檔——它成形於 CASE-0096 之前，
+           用的是步驟 4 下載到的那幾片——它們成形於 CASE-0096 之前，
            所以還原後那筆資料應該要消失。 ---- */
-  const file=new File([saved[0].blob], saved[0].name, {type:'application/zip'});
-  const dt=new DataTransfer(); dt.items.add(file);
+  const files=saved.map(s=>new File([s.blob], s.name, {type:'application/zip'}));
+
+  // 先故意少選一片，確認擋得下來而且講得出缺哪一片
+  const short=new DataTransfer();
+  files.slice(0,-1).forEach(f=>short.items.add(f));
+  $('#arc-file').files=short.files;
+  $('#arc-file').dispatchEvent(new Event('change'));
+  await sleep(2600);
+  out.push('少選一片：'+T('#arc-preview .arc-warn'));
+  out.push('  （此時不該出現取代按鈕：'
+    +!$$('#arc-preview button').some(b=>/以這份封存取代/.test(b.textContent))+'）');
+
+  // 再把所有片一起選
+  const dt=new DataTransfer(); files.forEach(f=>dt.items.add(f));
   $('#arc-file').files=dt.files;
   $('#arc-file').dispatchEvent(new Event('change'));
-  await sleep(3200);
-  out.push('封存檔預覽：'+T('#arc-preview .imp-sum')+'｜並列比較='
+  await sleep(3600);
+  out.push('全部 '+files.length+' 片：'+T('#arc-preview .imp-sum')+'｜並列比較='
     +$$('#arc-preview .tbl tbody tr').length+' 列');
 
   const go=$$('#arc-preview button').find(b=>/以這份封存取代/.test(b.textContent));
@@ -139,8 +181,7 @@ async function logout(){
     await sleep(250);
     if(S.route==='dashboard' && !$('#arc-do')) break;
   }
-  out.push('還原前自動封存：新增下載 '+(saved.length-n0)+' 個（'
-    +((saved[saved.length-1]||{}).name||'—')+'）');
+  out.push('還原前自動封存：新增下載 '+(saved.length-n0)+' 片');
   const after=window.__T.CASES;
   out.push('還原後：route='+S.route+'｜案件數='+after.length+'（封存時 '+before+'）'
     +'｜'+probeId+' 仍在='+after.some(c=>c.id===probeId)

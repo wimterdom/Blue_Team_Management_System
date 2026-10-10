@@ -167,3 +167,13 @@
 }
 .arc-warn > span svg{width:17px; height:17px; stroke:var(--critical); fill:none; stroke-width:1.8; flex:none}
 .arc-warn b{color:var(--ink)}
+
+/* 伺服器上已產生的封存：一列一份，分片各一個下載鈕 */
+.arc-stored{
+  display:flex; align-items:flex-start; gap:12px; padding:11px 0;
+  border-top:1px solid var(--rule);
+}
+.arc-stored:first-of-type{border-top:0}
+.arc-stored > div:first-child{flex:1}
+.arc-parts{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px}
+.arc-parts .btn{display:inline-flex; gap:5px; align-items:baseline}

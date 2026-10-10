@@ -31,6 +31,23 @@ export const config = {
     db: process.env.BTMS_DB_PATH || resolve(DATA_DIR, 'btms.sqlite'),
     uploads: process.env.BTMS_UPLOAD_DIR || resolve(DATA_DIR, 'attachments'),
     backups: process.env.BTMS_BACKUP_DIR || resolve(DATA_DIR, 'backups'),
+    archives: process.env.BTMS_ARCHIVE_DIR || resolve(DATA_DIR, 'archives'),
+  },
+
+  archive: {
+    /**
+     * 單片上限。ZIP32 的位移欄位是 32 位元，一片不能到 4 GiB；
+     * 這裡預設 4 GiB 扣掉 64 MiB 給中央目錄，超過就自動分片。
+     *
+     * 實務上建議調小——4 GiB 的單檔在一些檔案系統、瀏覽器下載與
+     * 外接媒體上都很難搬。設 1024 會得到一疊 1 GiB 的分片。
+     */
+    volumeBytes: Math.min(
+      int(process.env.BTMS_ARCHIVE_VOLUME_MB, 4096 - 64) * 1024 * 1024,
+      4 * 1024 * 1024 * 1024 - 64 * 1024 * 1024,
+    ),
+    /** 產生的封存檔放在伺服器上供下載，超過這個時數就在下次封存時清掉。 */
+    keepHours: int(process.env.BTMS_ARCHIVE_KEEP_HOURS, 24),
   },
 
   auth: {

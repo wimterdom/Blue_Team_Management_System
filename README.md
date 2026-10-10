@@ -93,7 +93,8 @@ against attack.mitre.org.
 ### Project archive — administrators only
 
 Packs all five subsystems, images included, into one zip: a Markdown tree for
-people and a `manifest.json` for the machine.
+people and a `manifest.json` for the machine. Past the volume limit it splits
+into several independent zips.
 
 ![Project archive](docs/screenshots/archive.png)
 
@@ -241,10 +242,27 @@ cross-system jump can be reversed with one click back to where you were.
   into fields would be brittle and would lose data, so the two coexist and the
   archive's own README says which is which. Editing the Markdown by hand does
   not change what a restore produces
+- **An archive larger than one volume is split across several zips.** A ZIP32
+  offset is 32 bits, so a single zip cannot reach 4 GiB — and a 4 GiB file is
+  awkward to move anyway. Each part is an **independent, complete zip** that any
+  tool opens, not a PKWARE spanned archive (`.z01`, `.z02`, …) where one file
+  straddles volumes and tool support is patchy. Part 1 always holds all the
+  Markdown and `manifest.json`, so it alone reads as a complete text archive;
+  attachments fill the rest of part 1 and continue into the later parts. Extract
+  every part into the same folder to get the whole tree with its images. The
+  volume size is `BTMS_ARCHIVE_VOLUME_MB` (default 4032, i.e. 4 GiB less room for
+  the central directory); setting it lower, say 1024, is often more practical
+- Parts are built on disk and downloaded one request at a time, and they stay on
+  the server for `BTMS_ARCHIVE_KEEP_HOURS` (default 24) so an interrupted download
+  can be resumed part by part. The next archive prunes expired ones
 - A restore clears every business record first, so the system asks whether to
   archive the current project beforehand and requires the word `REPLACE` to be
   typed. A malformed archive is rejected before anything is deleted, and the
   whole replacement runs in one SQLite transaction
+- Restoring a split archive needs **all** of its parts selected at once. Every
+  part carries a `PART.json` identifying the archive it belongs to and its number,
+  so a missing part, a duplicate, or parts mixed in from a different archive are
+  each named precisely — and are caught before any data is touched
 - Accounts are never cleared — removing the current administrator would lock
   everyone out. Accounts present in the archive but missing locally are recreated
   **disabled, with no password and analyst permissions**, purely so authorship on
@@ -592,6 +610,8 @@ Full list in [`.env.example`](.env.example). Common settings:
 | `BTMS_MAX_FAILED_LOGINS` | `5` | Failed attempts before lockout |
 | `BTMS_UPLOAD_MAX_BYTES` | `10485760` | Per-file attachment limit |
 | `BTMS_BACKUP_INTERVAL_HOURS` | `24` | Automatic backup interval |
+| `BTMS_ARCHIVE_VOLUME_MB` | `4032` | Archive volume size; larger archives split into parts |
+| `BTMS_ARCHIVE_KEEP_HOURS` | `24` | How long built archives stay on the server for download |
 | `BTMS_AUDIT_RETENTION_DAYS` | `0` | Audit retention; `0` keeps forever |
 
 **Secrets are injected through environment variables only** — never baked into the
