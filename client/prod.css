@@ -144,3 +144,10 @@
 .tech .tname .ttp-en{margin-left:0; line-height:1.45}
 
 .tagopt-sub .ttp-en{margin-left:5px}
+
+/* 顯示設定與標註清單：技術名稱中英分兩行，與挑選視窗一致 */
+.vis-name{display:flex; flex-direction:column; gap:0; min-width:0}
+.vis-name .ttp-zh,.vis-name .ttp-en{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block}
+.vis-name .ttp-en{margin-left:0; line-height:1.4}
+.vis-head .ttp-en{margin-left:6px}

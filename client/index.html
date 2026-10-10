@@ -5761,7 +5761,8 @@ const INTEL_NOTES=[
   ['技術名稱中英並列','所有 ATT&CK 技術與戰術都同時顯示中文與官方英文原名——' +
     '分析員要拿名稱去 attack.mitre.org 對照、或與英文的廠商報告比對，只有中文反而難找。' +
     '挑選視窗、已選清單、熱圖提示、情資與獵補計畫的 TTP 列、TTP 篩選器都已並列；' +
-    '匯出的 PDF 另有獨立的英文欄位。**搜尋同時比對中文、英文與編號**，' +
+    '匯出的 PDF 另有獨立的英文欄位。熱圖的每一格也放了三行——編號、中文名、英文名，格內放不下的完整名稱在滑鼠提示、技術顯示設定與挑選視窗都看得到；曾把欄寬從 118 加到 160 想讓英文少被截一點，但矩陣預設「符合視窗」，變寬只會整體縮小、字反而更難讀，因此維持原寬度。' +
+    '**搜尋同時比對中文、英文與編號**，' +
     '輸入 PowerShell、憑證或 T1059.001 都找得到同一項。' +
     '英文名直接取自官方 STIX 資料，不另行翻譯或改寫，確保與官網字面一致。'],
   ['獵補計畫任何分析員都可編輯','威脅獵補計畫是全隊一起推進的工作——假說由一個人提出，' +
@@ -8996,7 +8997,14 @@ function riskPanel(R){
 /* ---- TTP Mapping 熱圖 ----
    一格用垂直細條分層：分析員一條、每個命中的 APT 各一條。
    顏色不互相混合，三方以上仍分得出是誰。 */
-const HEAT={cw:118, ch:30, gap:5, headH:44, labelW:0};
+/* 格高 42 是為了讓每格放得下三行：編號、中文名、英文名。
+   分析員要拿名稱去 attack.mitre.org 對照，只有中文反而難找。
+   欄寬維持 118，熱圖本來就可縮放平移。 */
+/* 格高 42 是為了讓每格放得下三行：編號、中文名、英文名。
+   欄寬維持 118——試過加寬到 160 讓英文少被截一點，但矩陣預設「符合視窗」，
+   變寬只會整體縮小，字反而更難讀。格內放不下的完整名稱在滑鼠提示、
+   技術顯示設定與挑選視窗都看得到。 */
+const HEAT={cw:118, ch:42, gap:5, headH:56, labelW:0};
 
 function heatCell(sv2, x, y, w, h, tech, layers, opts){
   const row=opts.row||{kind:'parent', subs:[]};
@@ -9036,11 +9044,20 @@ function heatCell(sv2, x, y, w, h, tech, layers, opts){
   const tx=sv('text',{x:ix+iw-6, y:y+12.5,'text-anchor':'end','font-size':8.4,
     fill:CSSVAR('--ink-3'),'font-family':'IBM Plex Mono, monospace'});
   tx.textContent=tech.id; g2.append(tx);
-  const nm=sv('text',{x:ix+iw-(!isSub&&row.subs&&row.subs.length?22:6), y:y+h-6,
+  // 中文在上、英文在下。子技術的 tech.en 是葉節點名稱（PowerShell），
+  // 不是「母技術: 子技術」的組合，所以放得進一格的寬度。
+  const nmX=ix+iw-(!isSub&&row.subs&&row.subs.length?22:6);
+  const clip=(txt,n)=>txt && txt.length>n ? txt.slice(0,n-1)+'…' : (txt||'');
+  const nm=sv('text',{x:nmX, y:y+h-17,
     'text-anchor':'end','font-size':8.6,
     fill:layers.length?CSSVAR('--ink'):CSSVAR('--ink-3')});
-  const cut=isSub?12:(row.subs&&row.subs.length?9:11);
-  nm.textContent=tech.name.length>cut?tech.name.slice(0,cut-1)+'…':tech.name; g2.append(nm);
+  nm.textContent=clip(tech.name, isSub?12:(row.subs&&row.subs.length?9:11));
+  g2.append(nm);
+  const en=sv('text',{x:nmX, y:y+h-6,
+    'text-anchor':'end','font-size':7.6,
+    fill:CSSVAR('--ink-3')});
+  en.textContent=clip(tech.en, isSub?22:(row.subs&&row.subs.length?17:20));
+  g2.append(en);
   const ttl=sv('title');
   ttl.textContent=`${tech.id} ${techLabel(tech)}`+(layers.length
     ? '\n'+layers.map(L=>'• '+L.label+' — '+L.detail).join('\n') : '\n（尚未標註）');
@@ -9065,7 +9082,10 @@ function drawHeat(hostId, opts){
     const t1=sv('text',{x:x+HEAT.cw/2, y:22,'text-anchor':'middle','font-size':10.5,
       fill:CSSVAR('--ink'),'font-weight':'600'});
     t1.textContent=c.t.name; svg.append(t1);
-    const t2=sv('text',{x:x+HEAT.cw/2, y:33,'text-anchor':'middle','font-size':8.4,
+    const te=sv('text',{x:x+HEAT.cw/2, y:33,'text-anchor':'middle','font-size':8,
+      fill:CSSVAR('--ink-2')});
+    te.textContent=c.t.en || ''; svg.append(te);
+    const t2=sv('text',{x:x+HEAT.cw/2, y:45,'text-anchor':'middle','font-size':8.4,
       fill:CSSVAR('--ink-3'),'font-family':'IBM Plex Mono, monospace'});
     const nP=c.techs.filter(r=>r.kind==='parent').length;
     t2.textContent=`${c.t.id} · ${nP}`; svg.append(t2);
@@ -9242,7 +9262,7 @@ function visPanel(){
         + t.techs.reduce((m,x)=>m+x.subs.filter(sb=>techVisible(t.id,sb.id)).length,0);
       return el('div',{class:'vis-col'},
         el('div',{class:'vis-head'},
-          el('span',{},t.name),
+          el('span',{}, t.name, t.en?el('span',{class:'ttp-en'},t.en):null),
           el('span',{class:'mono'},`${vis}/${t.techs.length+t.techs.reduce((m,x)=>m+x.subs.length,0)}`)),
         el('div',{class:'vis-list'}, ...t.techs.flatMap(x=>{
           const mk=(o,sub)=>el('button',{class:'vis-item'+(o.on?' on':'')+(sub?' sub':''),
@@ -9250,9 +9270,11 @@ function visPanel(){
             onclick:()=>{ TTP_HIDDEN[t.id+'|'+o.id]=o.on; persist(); render(); }},
             el('span',{class:'vis-eye', html:svgIcon(o.on?I.eye:I.eyeOff)}),
             el('span',{class:'vis-id mono'},o.id),
-            el('span',{class:'vis-name'},o.name));
-          return [mk({id:x.id, name:x.name, on:techVisible(t.id,x.id)}, false),
-            ...x.subs.map(sb=>mk({id:sb.id, name:sb.name, on:techVisible(t.id,sb.id)}, true))];
+            el('span',{class:'vis-name'},
+              el('span',{class:'ttp-zh'},o.name),
+              o.en?el('span',{class:'ttp-en'},o.en):null));
+          return [mk({id:x.id, name:x.name, en:x.en, on:techVisible(t.id,x.id)}, false),
+            ...x.subs.map(sb=>mk({id:sb.id, name:sb.name, en:sb.en, on:techVisible(t.id,sb.id)}, true))];
         })));
     })));
 }
@@ -9301,7 +9323,9 @@ function paintMarkList(){
         }},
         el('span',{class:'mk-box', style:m?`background:${layerHex(ANALYST_COLOR)};border-color:${layerHex(ANALYST_COLOR)}`:''}),
         el('span',{class:'vis-id mono'},x.id),
-        el('span',{class:'vis-name'},x.name),
+        el('span',{class:'vis-name'},
+          el('span',{class:'ttp-zh'},x.name),
+          x.en?el('span',{class:'ttp-en'},x.en):null),
         auto?el('span',{class:'mk-auto'},`案件 ${m.cases.length}`):null));
     });
   });
