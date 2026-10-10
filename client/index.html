@@ -1384,7 +1384,7 @@ ${stamp(0,'01:30')} 完成 \`TPE-FIN-WS042\` 網路隔離，橫向移動行為�
       {tac:'TA0002 執行',     id:'T1059.001', name:'指令與腳本直譯器：PowerShell'},
       {tac:'TA0008 橫向移動', id:'T1021.002', name:'遠端服務：SMB／Windows 管理員共用'},
       {tac:'TA0006 憑證存取', id:'T1003.001', name:'作業系統憑證傾印：LSASS 記憶體'},
-      {tac:'TA0005 防禦規避', id:'T1070.001', name:'清除 Windows 事件記錄'},
+      {tac:'TA0112 防禦削弱',id:'T1685.005',name:'停用或竄改防護工具：清除 Windows 事件記錄'},
     ],
     shots:[
       {cap:'EDR 程序樹：cmd.exe → psexesvc.exe', kind:'tree'},
@@ -1422,8 +1422,8 @@ ${stamp(1,'23:06')}，SIEM 收到 \`TPE-DC-01\` 的 **Event ID 1102**（安全�
       {t:'ip', v:'10.32.9.10', n:'發生清除行為的網域控制站'},
     ],
     ttps:[
-      {tac:'TA0005 防禦規避', id:'T1070.001', name:'清除 Windows 事件記錄'},
-      {tac:'TA0005 防禦規避', id:'T1562.002', name:'停用 Windows 事件記錄'},
+      {tac:'TA0112 防禦削弱',id:'T1685.005',name:'停用或竄改防護工具：清除 Windows 事件記錄'},
+      {tac:'TA0112 防禦削弱',id:'T1685.001',name:'停用或竄改防護工具：停用或竄改 Windows 事件記錄'},
     ],
     shots:[
       {cap:'SIEM 中的 Event ID 1102 原始事件', kind:'log'},
@@ -1877,7 +1877,7 @@ const EXTRA = [
    d:{conclusion:'確認為惡意行為。攻擊者以外洩的管理帳號登入防火牆，新增一條允許特定外部位址存取內網 RDP 的規則。規則已移除，管理介面改為僅限跳板機存取。',
     narrative:`## 異動內容\n\n\`\`\`\n+ allow src 45.133.1.88/32 dst 10.32.0.0/16 port 3389\n  建立者: fwadmin   來源: 45.133.1.88\n\`\`\`\n\n## 疑點\n\n- 管理帳號自**外部位址**登入，正常僅限內網跳板機\n- 規則的來源位址與登入來源相同\n- 無對應的變更申請單\n\n## 處置\n\n規則已移除、管理密碼重設、管理介面限制為僅跳板機可達，並啟用管理動作的即時告警。`,
     iocs:[{t:'ip',v:'45.133.1.88',n:'外部管理登入與規則放行來源'}],
-    ttps:[{tac:'TA0005 防禦規避',id:'T1562.004',name:'停用或修改系統防火牆'},{tac:'TA0001 初始入侵',id:'T1078',name:'有效帳號'}],
+    ttps:[{tac:'TA0112 防禦削弱',id:'T1686',name:'停用或竄改系統防火牆'},{tac:'TA0001 初始入侵',id:'T1078',name:'有效帳號'}],
     shots:[{cap:'防火牆規則異動紀錄', kind:'log'}],
     audit:[{who:USERS['lin'].name, role:USERS['lin'].role, act:'建立報告', when:stamp(26,'12:35')}]}},
   {c:{id:'CASE-0066', title:'非上班時間的遠端桌面連線',
@@ -3026,7 +3026,7 @@ powershell.exe (CORP\\ychiu)
 
 已針對全網段盤點修補落後主機，共 14 台，已排入緊急修補。`,
     iocs:[{t:'filename',v:'werfault.exe',n:'遭濫用的系統程序'}],
-    ttps:[{tac:'TA0004 權限提升',id:'T1068',name:'利用漏洞提權'},{tac:'TA0005 防禦規避',id:'T1562.001',name:'停用或修改防護工具'}],
+    ttps:[{tac:'TA0004 權限提升',id:'T1068',name:'利用漏洞提權'},{tac:'TA0112 防禦削弱',id:'T1685',name:'停用或竄改防護工具'}],
     shots:[{cap:'提權程序序列',kind:'tree'}],
     audit:[{who:USERS['chen'].name, role:USERS['chen'].role, act:'建立報告', when:stamp(2,'11:05')}]}},
   {c:{id:'CASE-0093', title:'自業務部工作站竊取快取網域憑證',
@@ -3264,11 +3264,11 @@ const layerHex = c => isDarkMode() ? c.dark : c.light;
 const APTS=[
   {id:'APT-0001', name:'赤鳶 (Vermilion Kite)', type:'國家支持組織', country:'中國', colorIdx:0,
    targets:['政府機關','國防承包商','半導體製造','電信業'],
-   ttps:['T1566.001','T1195','T1059.001','T1053.005','T1003.001','T1021.002','T1070.001','T1071.001','T1041','T1027','T1547.001','T1087.002'],
+   ttps:['T1566.001','T1195','T1059.001','T1053.005','T1003.001','T1021.002','T1685.005','T1071.001','T1041','T1027','T1547.001','T1087.002'],
    desc:`長期針對亞太地區政府與高科技製造業的國家級組織，活動可追溯至 2019 年。慣以供應鏈與釣魚郵件取得初始立足點，入侵後以合法系統工具活動（living-off-the-land），停留時間中位數超過 90 天。`, analyst:'tsai', created:stamp(40,'09:00')},
   {id:'APT-0002', name:'暗影金融 (Shadow Ledger)', type:'網路犯罪集團', country:'東歐', colorIdx:1,
    targets:['金融服務','零售通路','醫療院所','物流業'],
-   ttps:['T1190','T1078','T1486','T1490','T1567.002','T1021.001','T1110.003','T1562.001','T1489','T1485','T1105'],
+   ttps:['T1190','T1078','T1486','T1490','T1567.002','T1021.001','T1110.003','T1685','T1489','T1485','T1105'],
    desc:`以金錢為唯一動機的犯罪集團，近兩年轉向雙重勒索模式。先竊取資料再加密，並經營洩漏網站施壓。初始入侵高度依賴外洩憑證與對外服務漏洞。`, analyst:'tsai', created:stamp(47,'09:00')},
   {id:'APT-0003', name:'綠潮 (Green Tide)', type:'駭客激進份子', country:'跨國鬆散組織', colorIdx:2,
    targets:['能源業','石化製造','政府環保單位'],
@@ -3309,7 +3309,7 @@ const INTELS=[
    content:`同業回報「暗影金融」在勒索前會先停用備份代理服務並刪除磁碟區陰影複本，且特別針對 Veeam 的服務名稱。`,
    analysis:`與本環境的相關性**高**。我方備份主機 TPE-BKP-01／02 正是 Veeam B&R 12.1。已針對備份服務停止事件建立高優先告警，並確認異地複本為不可變儲存。`,
    iocs:[{t:'filename',v:'vssadmin.exe',n:'刪除陰影複本'},{t:'filename',v:'wbadmin.exe',n:'刪除備份目錄'}],
-   ttps:['T1490','T1489','T1562.001']},
+   ttps:['T1490','T1489','T1685']},
   {id:'INTEL-0006', created:stamp(27,'09:05'), source:'OSINT · 資安研究者部落格', analyst:'tsai',
    content:`研究者揭露「綠潮」近期改以 DDoS 搭配網頁污損進行行動，並公布其常用的攻擊基礎設施清單與行動預告模式——通常於行動前 48 小時於社群平台發布聲明。`,
    analysis:`與本環境的相關性**低**。我方非其宣稱的目標產業，且對外服務均有 CDN 與 DDoS 防護。已將其社群帳號納入監看，作為早期預警。`,
@@ -3382,7 +3382,7 @@ INTELS.push(
    content:`同業回報遭「赤鳶」入侵後，攻擊者長期潛伏於備份伺服器，因該類主機多不在端點防護的重點監控範圍內。`,
    analysis:`與本環境的相關性**高**。我方 TPE-BKP-01／02 的 EDR 版本較舊且排除了部分掃描路徑。已排入優先升級並移除排除項。`,
    iocs:[{t:'filename',v:'bkpsvc.dll',n:'偽裝成備份元件的後門'}],
-   ttps:['T1574.002','T1036.005','T1562.001']},
+   ttps:['T1574.001','T1036.005','T1685']},
   {id:'INTEL-0010', created:stamp(7,'09:50'), source:'開源情資 · CISA 公告', analyst:'tsai',
    content:`CISA 發布 KEV 目錄更新，新增三項已遭實際利用的漏洞，其中 CVE-2024-3400（PAN-OS）與本環境的邊界防火牆版本相符。`,
    analysis:`與本環境的相關性**嚴重**。TPE-FW-01 為 PAN-OS 11.0.4，該漏洞已在資產系統標記為需立即修補。這是目前對外曝險最高的單點。`,
@@ -3500,7 +3500,7 @@ HUNTS.push(
    implement:`總部範圍的分析已完成，未發現利用跡象；分公司待日誌轉發後補做。`,
    results:[], cases:[]},
   {id:'HUNT-0012', created:stamp(17,'16:30'), analyst:'tsai', status:'已完成',
-   ttps:['T1574.002','T1036.005'],
+   ttps:['T1574.001','T1036.005'],
    hypothesis:`承 INTEL-0009，若攻擊者已潛伏於備份伺服器，應可在其上找到偽裝成備份元件的非簽章 DLL。`,
    analytics:`掃描備份主機上所有被載入的 DLL，找出非微軟或非備份廠商簽章者；再比對其載入路徑是否位於預期目錄之外。`,
    dataReq:`備份主機的模組載入事件（Sysmon Event ID 7）、檔案簽章資訊。`,
@@ -3638,467 +3638,7 @@ const TACTICS = [
    MITRE ATT&CK Enterprise — 14 戰術。common:1 為預設顯示的實務常見技術，
    其餘收錄但預設隱藏，情資分析員可用眼睛圖示逐項開關。
    ============================================================ */
-const ATTACK_FULL=[
-  {id:'TA0043', name:'偵察', techs:[
-    {id:'T1595', name:'主動掃描', common:true, subs:[
-      {id:'T1595.001', name:'掃描 IP 區塊', common:true},
-      {id:'T1595.002', name:'漏洞掃描', common:true},
-      {id:'T1595.003', name:'字典式掃描', common:false},
-    ]},
-    {id:'T1592', name:'蒐集受害者主機資訊', common:true, subs:[
-      {id:'T1592.001', name:'硬體', common:false},
-      {id:'T1592.002', name:'軟體', common:true},
-      {id:'T1592.003', name:'韌體', common:false},
-      {id:'T1592.004', name:'用戶端組態', common:false},
-    ]},
-    {id:'T1589', name:'蒐集受害者身分資訊', common:true, subs:[
-      {id:'T1589.001', name:'憑證', common:true},
-      {id:'T1589.002', name:'電子郵件地址', common:true},
-      {id:'T1589.003', name:'員工姓名', common:false},
-    ]},
-    {id:'T1590', name:'蒐集受害者網路資訊', common:true, subs:[
-      {id:'T1590.001', name:'網域屬性', common:false},
-      {id:'T1590.002', name:'DNS', common:true},
-      {id:'T1590.005', name:'IP 位址', common:true},
-      {id:'T1590.006', name:'網路安全設備', common:false},
-    ]},
-    {id:'T1591', name:'蒐集受害者組織資訊', common:true, subs:[
-      {id:'T1591.001', name:'實體位置', common:false},
-      {id:'T1591.002', name:'商業關係', common:true},
-      {id:'T1591.004', name:'身分角色', common:false},
-    ]},
-    {id:'T1598', name:'網路釣魚以蒐集資訊', common:true, subs:[
-      {id:'T1598.001', name:'魚叉式服務', common:false},
-      {id:'T1598.002', name:'魚叉式附件', common:true},
-      {id:'T1598.003', name:'魚叉式連結', common:true},
-    ]},
-    {id:'T1596', name:'搜尋公開技術資料庫', common:false, subs:[
-      {id:'T1596.001', name:'DNS/被動 DNS', common:false},
-      {id:'T1596.005', name:'掃描資料庫', common:false},
-    ]},
-    {id:'T1593', name:'搜尋公開網站與網域', common:false, subs:[
-      {id:'T1593.001', name:'社群媒體', common:false},
-      {id:'T1593.002', name:'搜尋引擎', common:false},
-    ]},
-    {id:'T1594', name:'搜尋受害者自有網站', common:false, subs:[]},
-    {id:'T1597', name:'搜尋封閉來源', common:false, subs:[
-      {id:'T1597.001', name:'威脅情資供應商', common:false},
-      {id:'T1597.002', name:'購買技術資料', common:false},
-    ]},
-  ]},
-  {id:'TA0042', name:'資源開發', techs:[
-    {id:'T1583', name:'取得基礎設施', common:true, subs:[
-      {id:'T1583.001', name:'網域', common:true},
-      {id:'T1583.003', name:'虛擬私人伺服器', common:true},
-      {id:'T1583.004', name:'伺服器', common:false},
-      {id:'T1583.006', name:'Web 服務', common:false},
-    ]},
-    {id:'T1586', name:'入侵帳號', common:true, subs:[
-      {id:'T1586.001', name:'社群媒體帳號', common:false},
-      {id:'T1586.002', name:'電子郵件帳號', common:true},
-      {id:'T1586.003', name:'雲端帳號', common:false},
-    ]},
-    {id:'T1588', name:'取得能力', common:true, subs:[
-      {id:'T1588.001', name:'惡意程式', common:true},
-      {id:'T1588.002', name:'工具', common:true},
-      {id:'T1588.005', name:'漏洞利用程式', common:true},
-      {id:'T1588.004', name:'數位憑證', common:false},
-    ]},
-    {id:'T1608', name:'部署能力', common:true, subs:[
-      {id:'T1608.001', name:'上傳惡意程式', common:true},
-      {id:'T1608.003', name:'安裝數位憑證', common:false},
-      {id:'T1608.004', name:'水坑式網站', common:false},
-    ]},
-    {id:'T1587', name:'開發能力', common:true, subs:[
-      {id:'T1587.001', name:'惡意程式', common:true},
-      {id:'T1587.002', name:'程式碼簽章憑證', common:false},
-      {id:'T1587.004', name:'漏洞利用程式', common:false},
-    ]},
-    {id:'T1585', name:'建立帳號', common:false, subs:[
-      {id:'T1585.001', name:'社群媒體帳號', common:false},
-      {id:'T1585.002', name:'電子郵件帳號', common:false},
-    ]},
-    {id:'T1584', name:'入侵基礎設施', common:false, subs:[
-      {id:'T1584.001', name:'網域', common:false},
-      {id:'T1584.005', name:'殭屍網路', common:false},
-    ]},
-  ]},
-  {id:'TA0001', name:'初始入侵', techs:[
-    {id:'T1566', name:'網路釣魚', common:true, subs:[
-      {id:'T1566.001', name:'附件', common:true},
-      {id:'T1566.002', name:'連結', common:true},
-      {id:'T1566.003', name:'透過服務', common:false},
-      {id:'T1566.004', name:'語音釣魚', common:false},
-    ]},
-    {id:'T1190', name:'利用對外服務漏洞', common:true, subs:[]},
-    {id:'T1078', name:'有效帳號', common:true, subs:[
-      {id:'T1078.001', name:'預設帳號', common:false},
-      {id:'T1078.002', name:'網域帳號', common:true},
-      {id:'T1078.003', name:'本機帳號', common:true},
-      {id:'T1078.004', name:'雲端帳號', common:true},
-    ]},
-    {id:'T1133', name:'對外遠端服務', common:true, subs:[]},
-    {id:'T1091', name:'透過可移除媒體複製', common:true, subs:[]},
-    {id:'T1195', name:'供應鏈入侵', common:true, subs:[
-      {id:'T1195.001', name:'軟體相依套件', common:true},
-      {id:'T1195.002', name:'軟體供應鏈', common:true},
-      {id:'T1195.003', name:'硬體供應鏈', common:false},
-    ]},
-    {id:'T1189', name:'路過式入侵', common:false, subs:[]},
-    {id:'T1199', name:'信任關係', common:false, subs:[]},
-    {id:'T1200', name:'硬體植入', common:false, subs:[]},
-    {id:'T1659', name:'內容注入', common:false, subs:[]},
-  ]},
-  {id:'TA0002', name:'執行', techs:[
-    {id:'T1059', name:'指令與腳本直譯器', common:true, subs:[
-      {id:'T1059.001', name:'PowerShell', common:true},
-      {id:'T1059.003', name:'Windows Command Shell', common:true},
-      {id:'T1059.004', name:'Unix Shell', common:true},
-      {id:'T1059.005', name:'Visual Basic', common:false},
-      {id:'T1059.006', name:'Python', common:false},
-      {id:'T1059.007', name:'JavaScript', common:false},
-    ]},
-    {id:'T1053', name:'排程工作／作業', common:true, subs:[
-      {id:'T1053.003', name:'Cron', common:false},
-      {id:'T1053.005', name:'Scheduled Task', common:true},
-      {id:'T1053.006', name:'Systemd Timers', common:false},
-    ]},
-    {id:'T1204', name:'使用者執行', common:true, subs:[
-      {id:'T1204.001', name:'惡意連結', common:true},
-      {id:'T1204.002', name:'惡意檔案', common:true},
-      {id:'T1204.003', name:'惡意映像檔', common:false},
-    ]},
-    {id:'T1047', name:'Windows Management Instrumentation', common:true, subs:[]},
-    {id:'T1569', name:'系統服務', common:true, subs:[
-      {id:'T1569.002', name:'Service Execution', common:true},
-      {id:'T1569.001', name:'Launchctl', common:false},
-    ]},
-    {id:'T1203', name:'用戶端執行漏洞利用', common:true, subs:[]},
-    {id:'T1106', name:'原生 API', common:false, subs:[]},
-    {id:'T1129', name:'共用模組', common:false, subs:[]},
-    {id:'T1610', name:'部署容器', common:false, subs:[]},
-    {id:'T1648', name:'無伺服器執行', common:false, subs:[]},
-  ]},
-  {id:'TA0003', name:'持續性', techs:[
-    {id:'T1547', name:'開機或登入自動啟動', common:true, subs:[
-      {id:'T1547.001', name:'登錄機碼／啟動資料夾', common:true},
-      {id:'T1547.004', name:'Winlogon Helper DLL', common:false},
-      {id:'T1547.009', name:'捷徑竄改', common:false},
-      {id:'T1547.014', name:'Active Setup', common:false},
-    ]},
-    {id:'T1053', name:'排程工作／作業', common:true, subs:[
-      {id:'T1053.005', name:'Scheduled Task', common:true},
-      {id:'T1053.003', name:'Cron', common:false},
-    ]},
-    {id:'T1543', name:'建立或修改系統程序', common:true, subs:[
-      {id:'T1543.003', name:'Windows 服務', common:true},
-      {id:'T1543.002', name:'Systemd 服務', common:false},
-      {id:'T1543.001', name:'Launch Agent', common:false},
-    ]},
-    {id:'T1505', name:'伺服器軟體元件', common:true, subs:[
-      {id:'T1505.003', name:'Web Shell', common:true},
-      {id:'T1505.001', name:'SQL 儲存程序', common:false},
-      {id:'T1505.002', name:'傳輸代理程式', common:false},
-    ]},
-    {id:'T1136', name:'建立帳號', common:true, subs:[
-      {id:'T1136.001', name:'本機帳號', common:true},
-      {id:'T1136.002', name:'網域帳號', common:true},
-      {id:'T1136.003', name:'雲端帳號', common:false},
-    ]},
-    {id:'T1098', name:'帳號操弄', common:true, subs:[
-      {id:'T1098.001', name:'額外雲端憑證', common:false},
-      {id:'T1098.002', name:'額外郵件委派權限', common:true},
-      {id:'T1098.003', name:'額外雲端角色', common:false},
-    ]},
-    {id:'T1137', name:'Office 應用程式啟動', common:true, subs:[
-      {id:'T1137.001', name:'Office 範本巨集', common:false},
-      {id:'T1137.005', name:'Outlook 規則', common:true},
-      {id:'T1137.006', name:'增益集', common:false},
-    ]},
-    {id:'T1546', name:'事件觸發執行', common:false, subs:[
-      {id:'T1546.003', name:'WMI 訂閱', common:false},
-      {id:'T1546.008', name:'協助工具功能', common:false},
-      {id:'T1546.015', name:'元件物件模型綁架', common:false},
-    ]},
-    {id:'T1574', name:'綁架執行流程', common:false, subs:[
-      {id:'T1574.001', name:'DLL 搜尋順序綁架', common:false},
-      {id:'T1574.002', name:'DLL 側載', common:false},
-      {id:'T1574.011', name:'服務登錄權限', common:false},
-    ]},
-    {id:'T1197', name:'BITS 工作', common:false, subs:[]},
-    {id:'T1205', name:'流量訊號', common:false, subs:[
-      {id:'T1205.001', name:'埠敲門', common:false},
-    ]},
-  ]},
-  {id:'TA0004', name:'權限提升', techs:[
-    {id:'T1068', name:'利用漏洞提權', common:true, subs:[]},
-    {id:'T1548', name:'權限提升控制機制濫用', common:true, subs:[
-      {id:'T1548.002', name:'繞過使用者帳戶控制', common:true},
-      {id:'T1548.001', name:'Setuid/Setgid', common:false},
-      {id:'T1548.003', name:'Sudo 快取', common:false},
-    ]},
-    {id:'T1134', name:'存取權杖操弄', common:true, subs:[
-      {id:'T1134.001', name:'權杖模擬／竊取', common:true},
-      {id:'T1134.002', name:'以權杖建立程序', common:false},
-      {id:'T1134.005', name:'SID 歷程注入', common:false},
-    ]},
-    {id:'T1055', name:'程序注入', common:true, subs:[
-      {id:'T1055.001', name:'DLL 注入', common:true},
-      {id:'T1055.002', name:'可攜式執行檔注入', common:false},
-      {id:'T1055.012', name:'程序空洞化', common:true},
-      {id:'T1055.004', name:'非同步程序呼叫', common:false},
-    ]},
-    {id:'T1484', name:'網域或租戶原則修改', common:false, subs:[
-      {id:'T1484.001', name:'群組原則修改', common:false},
-      {id:'T1484.002', name:'信任修改', common:false},
-    ]},
-    {id:'T1611', name:'逃逸至主機', common:false, subs:[]},
-  ]},
-  {id:'TA0005', name:'防禦規避', techs:[
-    {id:'T1070', name:'主機痕跡清除', common:true, subs:[
-      {id:'T1070.001', name:'清除 Windows 事件記錄', common:true},
-      {id:'T1070.004', name:'刪除檔案', common:true},
-      {id:'T1070.003', name:'清除指令歷程', common:false},
-      {id:'T1070.006', name:'時間戳記竄改', common:false},
-    ]},
-    {id:'T1027', name:'混淆的檔案或資訊', common:true, subs:[
-      {id:'T1027.002', name:'加殼', common:true},
-      {id:'T1027.010', name:'指令碼混淆', common:true},
-      {id:'T1027.013', name:'加密／編碼檔案', common:false},
-    ]},
-    {id:'T1562', name:'削弱防禦', common:true, subs:[
-      {id:'T1562.001', name:'停用或修改防護工具', common:true},
-      {id:'T1562.002', name:'停用 Windows 事件記錄', common:true},
-      {id:'T1562.004', name:'停用或修改系統防火牆', common:true},
-    ]},
-    {id:'T1036', name:'偽裝', common:true, subs:[
-      {id:'T1036.005', name:'使用合法名稱或位置', common:true},
-      {id:'T1036.003', name:'重新命名系統工具', common:true},
-      {id:'T1036.007', name:'雙重副檔名', common:false},
-    ]},
-    {id:'T1218', name:'簽章二進位代理執行', common:true, subs:[
-      {id:'T1218.011', name:'Rundll32', common:true},
-      {id:'T1218.005', name:'Mshta', common:true},
-      {id:'T1218.010', name:'Regsvr32', common:false},
-      {id:'T1218.007', name:'Msiexec', common:false},
-    ]},
-    {id:'T1140', name:'解混淆／解碼檔案', common:true, subs:[]},
-    {id:'T1112', name:'修改登錄機碼', common:false, subs:[]},
-    {id:'T1553', name:'顛覆信任控制', common:false, subs:[
-      {id:'T1553.002', name:'程式碼簽章', common:false},
-      {id:'T1553.005', name:'標記網頁來源繞過', common:false},
-    ]},
-    {id:'T1497', name:'虛擬化／沙箱規避', common:false, subs:[
-      {id:'T1497.001', name:'系統檢查', common:false},
-      {id:'T1497.003', name:'時間式規避', common:false},
-    ]},
-    {id:'T1620', name:'反射式程式碼載入', common:false, subs:[]},
-    {id:'T1055', name:'程序注入', common:false, subs:[
-      {id:'T1055.012', name:'程序空洞化', common:false},
-    ]},
-  ]},
-  {id:'TA0006', name:'憑證存取', techs:[
-    {id:'T1003', name:'作業系統憑證傾印', common:true, subs:[
-      {id:'T1003.001', name:'LSASS 記憶體', common:true},
-      {id:'T1003.002', name:'安全帳戶管理員', common:true},
-      {id:'T1003.003', name:'NTDS', common:true},
-      {id:'T1003.004', name:'LSA 機密', common:false},
-      {id:'T1003.006', name:'DCSync', common:true},
-    ]},
-    {id:'T1110', name:'暴力破解', common:true, subs:[
-      {id:'T1110.001', name:'密碼猜測', common:false},
-      {id:'T1110.002', name:'密碼破解', common:false},
-      {id:'T1110.003', name:'密碼噴灑', common:true},
-      {id:'T1110.004', name:'憑證填充', common:true},
-    ]},
-    {id:'T1555', name:'密碼儲存區憑證', common:true, subs:[
-      {id:'T1555.003', name:'瀏覽器儲存的憑證', common:true},
-      {id:'T1555.004', name:'Windows 認證管理員', common:false},
-      {id:'T1555.005', name:'密碼管理員', common:false},
-    ]},
-    {id:'T1552', name:'不安全的憑證', common:true, subs:[
-      {id:'T1552.001', name:'檔案中的憑證', common:true},
-      {id:'T1552.002', name:'登錄機碼中的憑證', common:false},
-      {id:'T1552.004', name:'私密金鑰', common:false},
-    ]},
-    {id:'T1558', name:'竊取或偽造 Kerberos 票證', common:true, subs:[
-      {id:'T1558.001', name:'黃金票證', common:true},
-      {id:'T1558.002', name:'白銀票證', common:false},
-      {id:'T1558.003', name:'Kerberoasting', common:true},
-    ]},
-    {id:'T1056', name:'輸入擷取', common:true, subs:[
-      {id:'T1056.001', name:'鍵盤側錄', common:true},
-      {id:'T1056.002', name:'GUI 輸入擷取', common:false},
-    ]},
-    {id:'T1040', name:'網路嗅探', common:false, subs:[]},
-    {id:'T1621', name:'多因素驗證請求產生', common:false, subs:[]},
-    {id:'T1539', name:'竊取 Web 工作階段 Cookie', common:false, subs:[]},
-  ]},
-  {id:'TA0007', name:'發現', techs:[
-    {id:'T1087', name:'帳號探索', common:true, subs:[
-      {id:'T1087.001', name:'本機帳號', common:true},
-      {id:'T1087.002', name:'網域帳號', common:true},
-      {id:'T1087.003', name:'電子郵件帳號', common:false},
-    ]},
-    {id:'T1018', name:'遠端系統探索', common:true, subs:[]},
-    {id:'T1046', name:'網路服務探測', common:true, subs:[]},
-    {id:'T1082', name:'系統資訊探索', common:true, subs:[]},
-    {id:'T1083', name:'檔案與目錄探索', common:true, subs:[]},
-    {id:'T1057', name:'程序探索', common:true, subs:[]},
-    {id:'T1016', name:'系統網路組態探索', common:true, subs:[
-      {id:'T1016.001', name:'網際網路連線探索', common:false},
-    ]},
-    {id:'T1069', name:'權限群組探索', common:true, subs:[
-      {id:'T1069.001', name:'本機群組', common:false},
-      {id:'T1069.002', name:'網域群組', common:true},
-    ]},
-    {id:'T1518', name:'軟體探索', common:false, subs:[
-      {id:'T1518.001', name:'資安軟體探索', common:false},
-    ]},
-    {id:'T1049', name:'系統網路連線探索', common:false, subs:[]},
-    {id:'T1033', name:'系統擁有者／使用者探索', common:false, subs:[]},
-    {id:'T1135', name:'網路共用探索', common:false, subs:[]},
-    {id:'T1201', name:'密碼原則探索', common:false, subs:[]},
-  ]},
-  {id:'TA0008', name:'橫向移動', techs:[
-    {id:'T1021', name:'遠端服務', common:true, subs:[
-      {id:'T1021.001', name:'遠端桌面', common:true},
-      {id:'T1021.002', name:'SMB／Windows 管理員共用', common:true},
-      {id:'T1021.004', name:'SSH', common:true},
-      {id:'T1021.006', name:'Windows 遠端管理', common:true},
-      {id:'T1021.003', name:'分散式元件物件模型', common:false},
-    ]},
-    {id:'T1550', name:'替代認證materials', common:true, subs:[
-      {id:'T1550.002', name:'雜湊傳遞', common:true},
-      {id:'T1550.003', name:'票證傳遞', common:true},
-      {id:'T1550.001', name:'應用程式存取權杖', common:false},
-    ]},
-    {id:'T1570', name:'橫向工具轉移', common:true, subs:[]},
-    {id:'T1091', name:'透過可移除媒體複製', common:true, subs:[]},
-    {id:'T1072', name:'軟體部署工具', common:false, subs:[]},
-    {id:'T1080', name:'污染共用內容', common:false, subs:[]},
-    {id:'T1563', name:'遠端服務工作階段綁架', common:false, subs:[
-      {id:'T1563.002', name:'RDP 綁架', common:false},
-      {id:'T1563.001', name:'SSH 綁架', common:false},
-    ]},
-  ]},
-  {id:'TA0009', name:'蒐集', techs:[
-    {id:'T1005', name:'本機系統資料蒐集', common:true, subs:[]},
-    {id:'T1039', name:'網路共用磁碟蒐集', common:true, subs:[]},
-    {id:'T1114', name:'郵件蒐集', common:true, subs:[
-      {id:'T1114.001', name:'本機郵件蒐集', common:true},
-      {id:'T1114.002', name:'遠端郵件蒐集', common:true},
-      {id:'T1114.003', name:'郵件轉寄規則', common:true},
-    ]},
-    {id:'T1113', name:'螢幕擷取', common:true, subs:[]},
-    {id:'T1560', name:'封存蒐集資料', common:true, subs:[
-      {id:'T1560.001', name:'透過工具封存', common:true},
-      {id:'T1560.002', name:'透過程式庫封存', common:false},
-      {id:'T1560.003', name:'自訂方式封存', common:false},
-    ]},
-    {id:'T1074', name:'資料暫存', common:true, subs:[
-      {id:'T1074.001', name:'本機資料暫存', common:true},
-      {id:'T1074.002', name:'遠端資料暫存', common:false},
-    ]},
-    {id:'T1056', name:'輸入擷取', common:false, subs:[
-      {id:'T1056.001', name:'鍵盤側錄', common:false},
-    ]},
-    {id:'T1119', name:'自動化蒐集', common:false, subs:[]},
-    {id:'T1213', name:'資訊儲存庫中的資料', common:false, subs:[
-      {id:'T1213.002', name:'SharePoint', common:false},
-      {id:'T1213.003', name:'程式碼儲存庫', common:false},
-    ]},
-    {id:'T1125', name:'視訊擷取', common:false, subs:[]},
-    {id:'T1123', name:'音訊擷取', common:false, subs:[]},
-  ]},
-  {id:'TA0011', name:'命令與控制', techs:[
-    {id:'T1071', name:'應用層協定', common:true, subs:[
-      {id:'T1071.001', name:'Web 協定', common:true},
-      {id:'T1071.004', name:'DNS', common:true},
-      {id:'T1071.002', name:'檔案傳輸協定', common:false},
-      {id:'T1071.003', name:'郵件協定', common:false},
-    ]},
-    {id:'T1573', name:'加密通道', common:true, subs:[
-      {id:'T1573.001', name:'對稱加密', common:false},
-      {id:'T1573.002', name:'非對稱加密', common:true},
-    ]},
-    {id:'T1568', name:'動態解析', common:true, subs:[
-      {id:'T1568.002', name:'網域產生演算法', common:true},
-      {id:'T1568.001', name:'快速通量 DNS', common:false},
-      {id:'T1568.003', name:'DNS 計算', common:false},
-    ]},
-    {id:'T1105', name:'入口工具轉移', common:true, subs:[]},
-    {id:'T1090', name:'代理', common:true, subs:[
-      {id:'T1090.001', name:'內部代理', common:false},
-      {id:'T1090.002', name:'外部代理', common:true},
-      {id:'T1090.003', name:'多重跳板', common:true},
-      {id:'T1090.004', name:'網域前置', common:false},
-    ]},
-    {id:'T1219', name:'遠端存取軟體', common:true, subs:[]},
-    {id:'T1102', name:'Web 服務', common:false, subs:[
-      {id:'T1102.001', name:'死信箱解析', common:false},
-      {id:'T1102.002', name:'雙向通訊', common:false},
-    ]},
-    {id:'T1572', name:'協定隧道', common:false, subs:[]},
-    {id:'T1008', name:'備援通道', common:false, subs:[]},
-    {id:'T1104', name:'多階段通道', common:false, subs:[]},
-    {id:'T1132', name:'資料編碼', common:false, subs:[
-      {id:'T1132.001', name:'標準編碼', common:false},
-    ]},
-    {id:'T1095', name:'非應用層協定', common:false, subs:[]},
-  ]},
-  {id:'TA0010', name:'資料外洩', techs:[
-    {id:'T1041', name:'透過 C2 通道外洩資料', common:true, subs:[]},
-    {id:'T1567', name:'透過 Web 服務外洩', common:true, subs:[
-      {id:'T1567.001', name:'透過程式碼儲存庫', common:false},
-      {id:'T1567.002', name:'透過雲端儲存', common:true},
-    ]},
-    {id:'T1048', name:'透過替代協定外洩', common:true, subs:[
-      {id:'T1048.001', name:'對稱加密非 C2', common:false},
-      {id:'T1048.002', name:'非對稱加密非 C2', common:false},
-      {id:'T1048.003', name:'未加密非 C2', common:true},
-    ]},
-    {id:'T1030', name:'資料傳輸大小限制', common:true, subs:[]},
-    {id:'T1029', name:'排程傳輸', common:true, subs:[]},
-    {id:'T1020', name:'自動化外洩', common:false, subs:[
-      {id:'T1020.001', name:'流量複製', common:false},
-    ]},
-    {id:'T1052', name:'實體媒體外洩', common:false, subs:[
-      {id:'T1052.001', name:'USB 外洩', common:false},
-    ]},
-    {id:'T1011', name:'替代網路媒介外洩', common:false, subs:[
-      {id:'T1011.001', name:'藍牙外洩', common:false},
-    ]},
-  ]},
-  {id:'TA0040', name:'衝擊', techs:[
-    {id:'T1486', name:'加密資料以勒索', common:true, subs:[]},
-    {id:'T1490', name:'抑制系統復原', common:true, subs:[]},
-    {id:'T1485', name:'資料銷毀', common:true, subs:[
-      {id:'T1485.001', name:'生命週期刪除', common:false},
-    ]},
-    {id:'T1489', name:'服務停止', common:true, subs:[]},
-    {id:'T1498', name:'網路阻斷服務', common:true, subs:[
-      {id:'T1498.001', name:'直接洪水攻擊', common:false},
-      {id:'T1498.002', name:'反射放大攻擊', common:false},
-    ]},
-    {id:'T1491', name:'污損', common:false, subs:[
-      {id:'T1491.001', name:'內部污損', common:false},
-      {id:'T1491.002', name:'對外污損', common:false},
-    ]},
-    {id:'T1565', name:'資料操弄', common:false, subs:[
-      {id:'T1565.001', name:'儲存資料操弄', common:false},
-      {id:'T1565.002', name:'傳輸中資料操弄', common:false},
-    ]},
-    {id:'T1561', name:'磁碟抹除', common:false, subs:[
-      {id:'T1561.001', name:'磁碟內容抹除', common:false},
-      {id:'T1561.002', name:'磁碟結構抹除', common:false},
-    ]},
-    {id:'T1531', name:'帳號存取移除', common:false, subs:[]},
-    {id:'T1499', name:'端點阻斷服務', common:false, subs:[
-      {id:'T1499.002', name:'服務耗盡洪水', common:false},
-    ]},
-  ]},
-];
+/*__BTMS_ATTACK_DATA__*/
 /* 案件系統的 TTP 選擇器沿用同一份來源：母技術與子技術一併列出 */
 const ATTACK = ATTACK_FULL.map(t=>({tac:`${t.id} ${t.name}`,
   techs:t.techs.flatMap(x=>[[x.id,x.name],...x.subs.map(sb=>[sb.id, x.name+'：'+sb.name])])}));
@@ -4109,13 +3649,70 @@ const TECH_INDEX = (()=>{ const m={};
       tacticId:t.id, tacticName:t.name, isSub:true, parent:x.id}; });
   }));
   return m; })();
+/**
+ * 把已作廢的技術編號換成現行編號。
+ *
+ * ATT&CK 每年都會改編技術：v19 就把 T1562 Impair Defenses 整組改成 T1685、
+ * T1070.001 改成 T1685.005。舊報告裡若還留著作廢編號，熱圖上會對不到任何
+ * 一格，看起來就像「已判定為惡意的案件卻沒有被標註」。
+ * 作廢對照可能是鏈式的（T1073 → T1574.002 → T1574.001），所以要一路追到底。
+ */
+function currentTtpId(id){
+  let cur=id, hops=0;
+  while(ATTACK_REVOKED[cur] && hops++ < 8) cur=ATTACK_REVOKED[cur];
+  return cur;
+}
+
+/** 整棵資料樹的 TTP 編號就地遷移，回報換掉幾筆。 */
+function migrateTtpIds(){
+  let n=0;
+  const fixId = o => {
+    if(!o || !o.id) return;
+    const to=currentTtpId(o.id);
+    if(to!==o.id){
+      o.id=to;
+      const info=TECH_INDEX[to];
+      if(info){ o.name=info.name; o.tac=`${info.tacticId} ${info.tacticName}`; }
+      n++;
+    }
+  };
+  Object.values(DETAIL).forEach(d=>(d.ttps||[]).forEach(fixId));
+  const fixList = arr => { if(!Array.isArray(arr)) return;
+    arr.forEach((t,i)=>{ const to=currentTtpId(t); if(to!==t){ arr[i]=to; n++; } }); };
+  APTS.forEach(a=>fixList(a.ttps));
+  INTELS.forEach(x=>fixList(x.ttps));
+  HUNTS.forEach(h=>fixList(h.ttps));
+  TTP_MARKS.forEach(m=>{ const to=currentTtpId(m.ttp); if(to!==m.ttp){ m.ttp=to; n++; } });
+  return n;
+}
+
 const TTP_HIDDEN = {};
+/* 目前有被標註（案件帶入或 APT 引用）的技術。
+   由 ttpLayers() 在每次計算時更新。 */
+let MARKED_TECHS = new Set();
+
+/**
+ * 這一格要不要出現在熱圖上。
+ *
+ * 判斷順序：
+ *   1. 分析員在「顯示設定」裡明確指定的，一律聽他的
+ *   2. 有被標註的技術一律顯示——熱圖的用途就是呈現涵蓋範圍，
+ *      把已經標到的技術藏起來等於讓它在圖上消失。這正是先前
+ *      「已判定為惡意的案件卻沒有被標註」的真正成因：標註有算進去，
+ *      只是那一列因為不在預設清單中而根本沒有被畫出來。
+ *   3. 其餘才看預設的常見清單
+ */
 function techVisible(tacticId, techId){
   const k=tacticId+'|'+techId;
   if(k in TTP_HIDDEN) return !TTP_HIDDEN[k];
+  if(MARKED_TECHS.has(techId)) return true;
   const t=ATTACK_FULL.find(x=>x.id===tacticId); if(!t) return true;
   for(const x of t.techs){
-    if(x.id===techId) return !!x.common;
+    if(x.id===techId){
+      // 母技術收合時代表整個家族，子技術有標註就得顯示
+      if(x.subs.some(sb=>MARKED_TECHS.has(sb.id))) return true;
+      return !!x.common;
+    }
     const sb=x.subs.find(y=>y.id===techId);
     if(sb) return !!sb.common;
   }
@@ -6108,6 +5705,18 @@ const TOPO_NOTES=[
 ];
 
 const INTEL_NOTES=[
+  ['ATT&CK 技術表由官方資料產生','技術表不再手寫，改由 `scripts/update-attack.mjs` 自 MITRE 官方的 STIX 資料產生，' +
+    '目前為 **Enterprise v19.2**（15 個戰術、254 項母技術、618 項子技術）。' +
+    '每項技術的中文名稱集中在 `seed/attack-zh.json`，官方新增而未翻譯者腳本會列出清單，不會默默產出半套。' +
+    '`--check` 參數可只檢查官方有無新版（有新版時以離開碼 10 回報，便於排程或 CI 判斷）。'],
+  ['作廢編號會自動遷移','ATT&CK 每年都會改編技術——v19 就把 T1562 Impair Defenses 整組改成 T1685、' +
+    'T1070.001 改成 T1685.005、T1574.002 併入 T1574.001，並新增了 TA0112「防禦削弱」戰術，' +
+    'TA0005 也自 Defense Evasion 更名為 Stealth。舊報告裡若還留著作廢編號，熱圖上會對不到任何一格。' +
+    '系統內建 149 筆作廢對照（可鏈式追溯），載入既有資料時自動換成現行編號並寫回，全隊看到的是同一份。'],
+  ['有標註的技術一律顯示','熱圖預設每個戰術顯示 8 項常見技術，常見與否依 MITRE 自身的「被威脅組織與工具引用次數」' +
+    '決定，且母技術以整個家族（含子技術）的次數計——威脅組織多半被歸因到子技術，只看母技術會把最常見的' +
+    '技術排到後面。**但只要該技術已被案件或 APT 標註，就一律顯示**，不受預設清單限制：' +
+    '熱圖的用途是呈現涵蓋範圍，把已經標到的技術藏起來等於讓它在圖上消失。'],
   ['情資報告新增「情資類型」','單選：**官方情資**（政府與 CERT 通報）、**網路情資**（OSINT 與社群共享）、**第三方機構**（商業訂閱與資安廠商報告）、**其他**。既有 21 篇已依來源歸類——TWNCERT 與 CISA 歸官方、MISP 與研究者部落格歸網路、Mandiant／CrowdStrike／Recorded Future 等歸第三方機構；**同業 ISAC 分享歸為「其他」**，因為它既非官方通報也非商業產品，實務上多半自成一類，若貴單位習慣視為第三方機構可直接改。類型在綱目、檢視頁與建立表單都會出現，並以色點區分。'],
   ['綱目加上情資類型與 TTP 篩選','情資報告綱目可依情資類型篩選；情資報告與威脅獵補計畫兩個綱目都加上 **TTP 篩選**——下拉面板只列出該綱目資料中真的出現過的技術（情資 41 項、獵補計畫 32 項），每項後面標示筆數，可搜尋、可多選，**多選為「符合任一」**。與其他篩選器之間則是「同時成立」。威脅獵補計畫沒有情資類型欄位，故該處只加 TTP 篩選。'],
   ['已依規格實作','首頁 Dashboard 上半統計、下半含 APT 組織綱目、TTP Mapping 熱圖（SVG，可縮放平移）、情資報告綱目、威脅獵補計畫綱目與受檢環境風險現況評估（低／中／高／嚴重）。登入後才可瀏覽，編輯權限受限。日夜間模式。'],
@@ -8820,12 +8429,14 @@ const RISK_COLOR={'嚴重':'var(--critical)','高':'var(--serious)','中':'var(-
 function ttpLayers(){
   const marks=analystTtps();
   const map=new Map();   // techId -> [{kind,label,color,detail}]
+  // 先記下哪些技術有標註，techVisible() 才知道這幾列不能藏
   const add=(tid,layer)=>{ if(!map.has(tid)) map.set(tid,[]); map.get(tid).push(layer); };
   marks.forEach((v,tid)=>add(tid,{kind:'analyst', label:'分析員標註', color:ANALYST_COLOR,
     detail: v.cases.length ? `由 ${v.cases.length} 件案件帶入：${v.cases.join('、')}`
                            : (v.note||'分析員手動標註')}));
   APTS.forEach(a=>a.ttps.forEach(tid=>add(tid,{kind:'apt', id:a.id, label:a.name,
     color:LAYER_COLORS[a.colorIdx%LAYER_COLORS.length], detail:`${a.type} · ${a.country}`})));
+  MARKED_TECHS = new Set(map.keys());
   return map;
 }
 /* 熱圖列：母技術一列；展開時其可見子技術各一列 */
@@ -8891,7 +8502,9 @@ function viewIntelDash(){
 
     el('div',{class:'card panel heat-card'},
       el('div',{class:'panel-head'},
-        el('h3',{},'TTP Mapping 熱圖'),
+        el('h3',{},'TTP Mapping 熱圖',
+          el('span',{class:'atk-ver', title:`技術表由 MITRE 官方 STIX 資料產生（Enterprise ${ATTACK_VERSION}）`},
+            `ATT&CK ${ATTACK_VERSION}`)),
         el('span',{class:'note'},
           `分析員標註 ${analystTtps().size} 項 · 含 APT 共 ${marked} 項 · 重疊 ${overlap} 項`),
         el('div',{class:'topo-zoom', style:'margin-left:auto'},
@@ -9265,7 +8878,9 @@ const HEAT={cw:118, ch:30, gap:5, headH:44, labelW:0};
 function heatCell(sv2, x, y, w, h, tech, layers, opts){
   const row=opts.row||{kind:'parent', subs:[]};
   const isSub=row.kind==='sub';
-  const g2=sv('g',{class:'heat-cell'+(layers.length?' on':'')+(opts.dim?' dim':'')+(isSub?' sub':'')});
+  // data-tech／data-layers 讓格子可被程式定位，測試與後續自動化都用得到
+  const g2=sv('g',{class:'heat-cell'+(layers.length?' on':'')+(opts.dim?' dim':'')+(isSub?' sub':''),
+    'data-tech':tech.id, 'data-layers':String(layers.length)});
   const ix = isSub ? x+11 : x, iw = isSub ? w-11 : w;
   if(isSub) g2.append(sv('path',{d:`M${x+4},${y-2} L${x+4},${y+h/2} L${x+10},${y+h/2}`,
     fill:'none', stroke:CSSVAR('--rule-2'), 'stroke-width':1}));

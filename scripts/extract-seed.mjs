@@ -38,7 +38,9 @@ function dataRegionOf(text) {
   }
   throw new Error('找不到資料區的結尾標記（/*__BTMS_DATALAYER__*/ 或 PERSISTENCE）');
 }
-const dataRegion = dataRegionOf(body);
+// ATT&CK 技術表已獨立成產生檔，資料區求值時需一併載入
+const attackData = readFileSync(resolve(root, 'client/attack-data.js'), 'utf8');
+const dataRegion = dataRegionOf(body).replace('/*__BTMS_ATTACK_DATA__*/', attackData);
 
 // 資料區只碰到 matchMedia 與 documentElement，給最小 shim 即可求值
 const sandbox = {
@@ -71,7 +73,7 @@ const WANT = [
   'REQUESTS', 'RDETAIL',
   'ASSETS', 'ADETAIL', 'SENSORS',
   'APTS', 'INTELS', 'HUNTS', 'INTEL_KINDS',
-  'ATTACK_FULL', 'TACTICS',
+  'ATTACK_FULL', 'TACTICS', 'ATTACK_REVOKED', 'ATTACK_VERSION',
   'IOC_TYPES', 'SEV_ORDER', 'IMP_ORDER',
 ];
 const collector = `\n__out = { ${WANT.map(k => `${k}: typeof ${k}!=='undefined' ? ${k} : null`).join(', ')} };\n`;
@@ -92,6 +94,8 @@ mkdirSync(resolve(root, 'seed'), { recursive: true });
 /* ---- 參照資料：正式部署一定會載入 ---- */
 const reference = {
   attack: out.ATTACK_FULL,
+  attackVersion: out.ATTACK_VERSION,
+  attackRevoked: out.ATTACK_REVOKED,
   tactics: out.TACTICS,
   roles: out.ROLES,
   perms: out.PERMS,
@@ -108,6 +112,44 @@ const demoUsers = Object.fromEntries(
     { id: u.id ?? id, name: u.name, role: u.role, perm: u.perm },
   ]),
 );
+
+/**
+ * 把示範資料裡已作廢的 ATT&CK 編號換成現行編號。
+ *
+ * 用戶端載入時也會做一次同樣的遷移（給既有部署用），但種子資料本身
+ * 就該是乾淨的——否則每次重跑這支腳本又會把舊編號灌回去。
+ * 作廢對照可能鏈式相接，所以一路追到底。
+ */
+function currentId(id, revoked) {
+  let cur = id;
+  for (let i = 0; i < 8 && revoked[cur]; i += 1) cur = revoked[cur];
+  return cur;
+}
+
+function migrateDemoTtps(demoData, revoked, index) {
+  let n = 0;
+  const fixObj = o => {
+    if (!o || !o.id) return;
+    const to = currentId(o.id, revoked);
+    if (to === o.id) return;
+    o.id = to;
+    const info = index[to];
+    if (info) { o.name = info.name; o.tac = `${info.tacticId} ${info.tacticName}`; }
+    n += 1;
+  };
+  const fixArr = arr => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach((t, i) => {
+      const to = currentId(t, revoked);
+      if (to !== t) { arr[i] = to; n += 1; }
+    });
+  };
+  Object.values(demoData.detail || {}).forEach(d => (d.ttps || []).forEach(fixObj));
+  (demoData.apts || []).forEach(a => fixArr(a.ttps));
+  (demoData.intels || []).forEach(x => fixArr(x.ttps));
+  (demoData.hunts || []).forEach(h => fixArr(h.ttps));
+  return n;
+}
 
 const demo = {
   // 原型的日期都以「執行當下」為基準推算，抽成 JSON 後就凍結了。
@@ -129,6 +171,18 @@ const demo = {
   intels: out.INTELS,
   hunts: out.HUNTS,
 };
+
+const techIndex = {};
+for (const tac of out.ATTACK_FULL || []) {
+  for (const t of tac.techs) {
+    techIndex[t.id] ??= { name: t.name, tacticId: tac.id, tacticName: tac.name };
+    for (const sb of t.subs || []) {
+      techIndex[sb.id] ??= { name: `${t.name}：${sb.name}`, tacticId: tac.id, tacticName: tac.name };
+    }
+  }
+}
+const migrated = migrateDemoTtps(demo, out.ATTACK_REVOKED || {}, techIndex);
+if (migrated) console.log(`  已將 ${migrated} 筆作廢的 ATT&CK 編號遷移至 ${out.ATTACK_VERSION}`);
 
 writeFileSync(resolve(root, 'seed/reference.json'), JSON.stringify(reference), 'utf8');
 writeFileSync(resolve(root, 'seed/demo.json'), JSON.stringify(demo), 'utf8');

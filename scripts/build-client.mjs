@@ -21,6 +21,7 @@ const root = resolve(here, '..');
 const src = readFileSync(resolve(root, 'client/index.html'), 'utf8');
 const datalayer = readFileSync(resolve(root, 'client/datalayer.js'), 'utf8');
 const prodViews = readFileSync(resolve(root, 'client/prod-views.js'), 'utf8');
+const attackData = readFileSync(resolve(root, 'client/attack-data.js'), 'utf8');
 const exchange = readFileSync(resolve(root, 'client/exchange.js'), 'utf8');
 const exchangeActions = readFileSync(resolve(root, 'client/exchange-actions.js'), 'utf8');
 const extraCss = readFileSync(resolve(root, 'client/prod.css'), 'utf8');
@@ -88,6 +89,7 @@ function build(mode) {
   }
 
   out = out
+    .replace('/*__BTMS_ATTACK_DATA__*/', () => attackData)
     .replace('/*__BTMS_DATALAYER__*/', () => datalayer.replace('__BTMS_MODE__', mode))
     .replace('/*__BTMS_EXCHANGE__*/', () => exchange)
     .replace('/*__BTMS_EXCHANGE_ACTIONS__*/', () => exchangeActions)
@@ -96,7 +98,7 @@ function build(mode) {
 
   if (out.includes('__BTMS_MODE__')) throw new Error('MODE 佔位符未被取代');
   // 佔位符沒被取代表示模組沒嵌進去，頁面會在執行期才炸——提早擋下
-  for (const ph of ['DATALAYER', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
+  for (const ph of ['ATTACK_DATA', 'DATALAYER', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
     if (out.includes(`/*__BTMS_${ph}__*/`)) throw new Error(`${ph} 模組未嵌入`);
   }
   return out;

@@ -47,6 +47,8 @@ handle = (
     "  get S(){return S}, get STORE(){return STORE},\n"
     "  buildXlsx, buildCsv, parseCsv, assetCsvTemplate, validateAssetRows,\n"
     "  commitAssetImport, ASSET_COLUMNS, assetCellValue, svgToPng, printDoc,\n"
+    "  analystTtps, ttpLayers, get ATTACK_FULL(){return ATTACK_FULL},\n"
+    "  get TECH_INDEX(){return TECH_INDEX}, get TTP_HIDDEN(){return TTP_HIDDEN},\n"
     "};\n"
 )
 i = src.rindex('</script>')

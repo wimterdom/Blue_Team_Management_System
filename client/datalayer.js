@@ -154,7 +154,13 @@ function ServerStore() {
     applyDashboard(b.dashboard);
     replaceAll(TTP_HIDDEN, b.settings?.ttpHidden || {});
     replaceAll(USERS, Object.fromEntries((b.users || []).map(u => [u.id, u])));
+
+    // 順序要緊：先以伺服器的原樣建立快照，再遷移作廢的 ATT&CK 編號。
+    // 反過來的話 diff 看不出編號被改過，遷移結果就永遠寫不回伺服器。
     shadow = snapshot();
+    const fixed = migrateTtpIds();
+    if (fixed) console.info(`[ATT&CK] 已將 ${fixed} 筆作廢技術編號遷移至 ${ATTACK_VERSION}`);
+    return fixed;
   }
 
   return {
@@ -189,7 +195,12 @@ function ServerStore() {
     },
 
     async load() {
-      applyBootstrap(await call('/bootstrap'));
+      const fixed = applyBootstrap(await call('/bootstrap'));
+      // 編號遷移後寫回伺服器，全隊都看到同一份現行編號，而不是每個人
+      // 在自己的瀏覽器裡各自換算一次。
+      if (fixed) {
+        try { await this.flush(); } catch { /* 下次載入會再試 */ }
+      }
     },
 
     async reload() {
@@ -384,6 +395,8 @@ function DemoStore() {
           }
         } catch { /* 毀損就沿用種子資料 */ }
       }
+      const fixed = migrateTtpIds();
+      if (fixed) write();
       recompute();
     },
 

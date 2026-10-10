@@ -118,3 +118,11 @@
 .dropzone svg{width:20px; height:20px; stroke:var(--ink-3); fill:none; stroke-width:1.7}
 .imp-sum{display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-top:14px}
 .spec-tbl th,.spec-tbl td{padding:5px 8px; font-size:12px; vertical-align:top}
+
+/* ATT&CK 版本標示 */
+.atk-ver{
+  margin-left:9px; padding:1px 7px; border-radius:10px;
+  background:var(--surface-3); border:1px solid var(--rule);
+  font-family:var(--mono); font-size:10px; font-weight:500;
+  color:var(--ink-3); vertical-align:middle; letter-spacing:.01em;
+}
