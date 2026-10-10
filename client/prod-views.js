@@ -222,3 +222,101 @@ function toggleAuditDetail(tr, x){
       el('div',{class:'chglist'}, ...rows)));
   tr.after(det);
 }
+
+/* ============================================================
+   外部資料來源（僅系統管理員）
+   ============================================================ */
+
+/**
+ * 系統有兩份來自外部的參照資料：IEEE 的 MAC 配發登錄檔，以及 MITRE 的
+ * ATT&CK 技術表。兩者都會更新，本機副本放久了就會與官方脫節。
+ * 這一區讓管理員看得到目前用的是哪一版、何時取得，並直接檢查與更新。
+ */
+function viewDataSources() {
+  const page = el('div', { class: 'wrap' },
+    el('div', { class: 'pagehead' },
+      el('div', {},
+        el('div', { class: 'eyebrow' }, '系統管理'),
+        el('h1', {}, '外部資料來源'),
+        el('p', { class: 'lead' },
+          '比對一律在本機進行——系統可能部署在不能連外的環境，' +
+          '而且每查一個 MAC 就打一次外部網站既慢又會把內部資產資訊送出去。' +
+          '這裡檢查官方有無更新，並把本機副本換成新版。'))),
+    el('div', { id: 'ds-body' },
+      el('p', { class: 'hint', style: 'padding:14px 0' }, '載入中…')));
+  setTimeout(loadDataSources, 0);
+  return page;
+}
+
+async function loadDataSources() {
+  const host = $('#ds-body');
+  if (!host) return;
+  let oui = null;
+  try { oui = await STORE.oui.status(); } catch (e) { /* 顯示為不可用 */ }
+
+  host.innerHTML = '';
+  host.append(
+    el('section', { class: 'card sec' },
+      el('h3', {}, 'IEEE MAC 位址配發登錄檔'),
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);line-height:1.75;margin:4px 0 12px' },
+        '資產填入 MAC 後自動帶出製造商與國別。收錄 MA-L（/24）、MA-M（/28）與 MA-S（/36）三個登錄檔，' +
+        '查詢時由長前綴往短的找，小廠商拿到的區段才不會被持有整段的大廠蓋掉。'),
+      el('div', { class: 'meta' },
+        row('來源', el('span', { class: 'mono', style: 'font-size:11.5px' }, 'standards-oui.ieee.org')),
+        row('本機筆數', el('span', { class: 'tnum' }, oui ? oui.loaded.toLocaleString() : '—'),
+          oui?.subset ? '展示版使用子集' : '完整登錄檔'),
+        row('取得日期', el('span', { class: 'mono', style: 'font-size:12px' }, oui?.retrieved || '—')),
+        row('查得到國別', el('span', { class: 'tnum' }, oui?.withCountry ? oui.withCountry.toLocaleString() : '—'))),
+      el('p', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.7' },
+        '登錄檔記的是「註冊地址」的國別，不一定等於品牌母國——TP-Link 有 79 個前綴登記在美國、' +
+        'Lenovo 有 142 個。資產的「製造商（國家）」是用來辨識設備來源的，' +
+        '因此系統對知名品牌另以母國為準（對照表在 seed/vendor-origin.json），' +
+        '查詢結果會同時回傳登錄國別，判斷依據不會被藏起來。'),
+      el('div', { style: 'display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap' },
+        el('button', { class: 'btn', id: 'ds-check', onclick: () => refreshOui(true) },
+          el('span', { html: svgIcon(I.search) }), '檢查有無更新'),
+        el('button', { class: 'btn btn-primary', id: 'ds-update', onclick: () => refreshOui(false) },
+          el('span', { html: svgIcon(I.download) }), '立即更新本機資料'),
+        el('span', { class: 'hint', id: 'ds-msg' }, '需要容器能連外；封閉環境請在有網路的機器上執行 scripts/update-oui.mjs 後帶入 seed/')),
+      el('pre', { class: 'file-pre hidden', id: 'ds-out', style: 'margin-top:12px;max-height:240px' })),
+
+    el('section', { class: 'card sec', style: 'margin-top:14px' },
+      el('h3', {}, 'MITRE ATT&CK Enterprise'),
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);line-height:1.75;margin:4px 0 12px' },
+        '情資系統的 TTP Mapping 熱圖與各系統的技術挑選器都用這份技術表。'),
+      el('div', { class: 'meta' },
+        row('來源', el('span', { class: 'mono', style: 'font-size:11.5px' }, 'github.com/mitre-attack/attack-stix-data')),
+        row('目前版本', el('span', { class: 'mono', style: 'font-size:12.5px' }, ATTACK_VERSION)),
+        row('戰術', el('span', { class: 'tnum' }, String(ATTACK_FULL.length))),
+        row('技術', el('span', { class: 'tnum' },
+          String(ATTACK_FULL.reduce((n, t) => n + t.techs.length
+            + t.techs.reduce((m, p) => m + p.subs.length, 0), 0)))),
+        row('作廢編號對照', el('span', { class: 'tnum' }, String(Object.keys(ATTACK_REVOKED).length)),
+          '載入舊資料時自動換成現行編號')),
+      el('p', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.7' },
+        '技術表與中文名稱是建置時產生的，更新需重新建置映像檔：在原始碼目錄執行 ' +
+        el('code', {}, 'node scripts/update-attack.mjs').textContent +
+        '（加 --check 只檢查有無新版，有新版以離開碼 10 回報，便於排程或 CI），' +
+        '官方新增而尚未翻譯的技術會列出清單。')));
+}
+
+async function refreshOui(checkOnly) {
+  const msg = $('#ds-msg');
+  const pre = $('#ds-out');
+  const btns = [$('#ds-check'), $('#ds-update')].filter(Boolean);
+  btns.forEach(b => { b.disabled = true; });
+  msg.textContent = checkOnly ? '檢查中…' : '更新中，IEEE 的檔案約 5 MB，請稍候…';
+  try {
+    const r = await STORE.oui.refresh(checkOnly);
+    if (r.subset) { msg.textContent = '展示版使用內建子集，更新功能需在正式部署環境操作'; return; }
+    msg.textContent = checkOnly
+      ? (r.updateAvailable ? '官方已有更新，可按「立即更新本機資料」' : '本機資料與官方一致')
+      : (r.ok ? '已更新完成' : '更新失敗，詳見下方輸出');
+    if (r.output) { pre.classList.remove('hidden'); pre.textContent = r.output; }
+    if (!checkOnly && r.ok) setTimeout(loadDataSources, 600);
+  } catch (e) {
+    msg.textContent = '操作失敗：' + e.message;
+  } finally {
+    btns.forEach(b => { b.disabled = false; });
+  }
+}

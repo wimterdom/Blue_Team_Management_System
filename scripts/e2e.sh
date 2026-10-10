@@ -48,6 +48,8 @@ handle = (
     "  buildXlsx, buildCsv, parseCsv, assetCsvTemplate, validateAssetRows,\n"
     "  commitAssetImport, ASSET_COLUMNS, assetCellValue, svgToPng, printDoc,\n"
     "  analystTtps, ttpLayers, get ATTACK_FULL(){return ATTACK_FULL},\n"
+    "  parseNmap, nmapToRows, detectNmapFormat, nmapRowsToCsv, mergeServices,\n"
+    "  downloadShot, downloadDoc, lookupMacVendor,\n"
     "  get TECH_INDEX(){return TECH_INDEX}, get TTP_HIDDEN(){return TTP_HIDDEN},\n"
     "};\n"
 )

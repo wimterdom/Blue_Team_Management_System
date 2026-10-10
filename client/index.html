@@ -3787,6 +3787,7 @@ function md(src){
 }
 
 /*__BTMS_DATALAYER__*/
+/*__BTMS_NMAP__*/
 /*__BTMS_EXCHANGE__*/
 /*__BTMS_EXCHANGE_ACTIONS__*/
 /*__BTMS_PRODVIEWS__*/
@@ -4012,6 +4013,9 @@ function openUserMenu(e){
       : null,
     (STORE.mode==='server' && USERS[S.me]?.perm==='admin')
       ? el('button',{class:'mi', onclick:()=>go('audit')}, el('span',{html:svgIcon(I.search)}),'稽核紀錄')
+      : null,
+    (STORE.mode==='server' && me.perm==='admin')
+      ? el('button',{class:'mi', onclick:()=>go('datasrc')}, el('span',{html:svgIcon(I.exchange)}),'外部資料來源')
       : null,
     STORE.mode==='server'
       ? el('button',{class:'mi', onclick:()=>go('pwchange')}, el('span',{html:svgIcon(I.key)}),'變更密碼')
@@ -4844,6 +4848,9 @@ function openLightbox(shots, idx){
     el('div',{class:'lb-head'},
       el('div',{class:'lb-title', id:'lb-title'}),
       el('div',{class:'lb-dim', id:'lb-dim'}),
+      el('button',{class:'lb-btn', title:'下載這張附圖','aria-label':'下載附圖',
+        onclick:e=>{e.stopPropagation(); downloadShot(LB.shots[LB.i]);},
+        html:svgIcon(I.download)}),
       el('button',{class:'lb-btn', title:'關閉（Esc）','aria-label':'關閉',
         onclick:closeLightbox, html:svgIcon(I.close)})),
     stage,
@@ -5629,6 +5636,7 @@ function openPicker(){
 
 /* ---------- spec notes ---------- */
 const RFI_NOTES=[
+  ['附圖可下載','附圖放大檢視時，右上角有下載鈕可取得原圖。'],
   ['匯出 PDF 走瀏覽器列印','報告的「匯出 PDF」會開啟列印對話框，選「另存為 PDF」即得檔案。' +
     '之所以不自行產生 PDF 位元組：本系統的報告是繁體中文，自行輸出就得內嵌一套中日韓字型' +
     '（完整 Noto Sans TC 約 8 MB），映像檔與每份輸出都會變大，排版品質還不如瀏覽器本身。' +
@@ -5652,6 +5660,26 @@ const RFI_NOTES=[
 ];
 
 const ASSET_NOTES=[
+  ['可直接匯入 nmap 掃描報告','匯入對話框除了 CSV，也接受 nmap 的 **XML（`-oX`）** 與 **greppable（`-oG`）** 輸出，' +
+    '系統先轉成與範本相同的 CSV 再讓你預覽，轉換後的 CSV 也可以下載留存或自行編修。' +
+    'XML 的欄位最齊全：IPv4／IPv6／MAC、MAC 廠商、OS 指紋（取吻合度最高者）與各開放埠的服務版本，' +
+    '服務會寫進資產明細的「服務與開放埠」，OS 指紋與埠清單寫進用途說明。' +
+    '只收掃描當下存活的主機，closed 的埠不列入。主機名稱優先取 PTR 反解記錄的第一段網域標籤' +
+    '（TPE-WEB-11.corp.local → TPE-WEB-11）；掃不到名稱者以 IP 命名為 HOST-10-32-7-44。' +
+    '**掃描看不出來的就留空**，不猜測——唯一的例外是網段依 IPv4 推定為 /24，且會在預覽中標示。' +
+    '重要性、放置地點、上層網通設備請匯入後補齊。'],
+  ['MAC 自動比對製造商','填入或匯入 MAC 後，系統以 IEEE 官方登錄檔比對出配發廠商，' +
+    '自動帶入「製造商（國家）」欄位（地址不帶入）。收錄 MA-L（/24）、MA-M（/28）、MA-S（/36）' +
+    '三個登錄檔共五萬多筆，查詢由長前綴往短的找，小廠商拿到的區段不會被持有整段的大廠蓋掉。' +
+    '**比對在本機完成**，不會把內部 MAC 送到外部網站，封閉環境也能用。' +
+    '製造商欄已有內容時不覆寫，只在空白或先前也是自動帶入時才填。'],
+  ['登錄國別 ≠ 品牌母國','IEEE 記的是註冊地址——TP-Link 有 79 個前綴登記在美國、Lenovo 有 142 個。' +
+    '「製造商（國家）」是用來辨識設備來源的（例如標註中國製造商），若照登錄地址走就會漏掉。' +
+    '系統因此對知名品牌另以母國為準，對照表獨立存放於 `seed/vendor-origin.json`，' +
+    '與 IEEE 原始資料分開；查詢結果同時回傳登錄國別與是否覆寫，判斷依據不會被藏起來。' +
+    '管理員可在「外部資料來源」頁檢查官方有無更新並更新本機副本。'],
+  ['附件可下載','資產的組態檔與 log 附件在展開後可直接下載；調查報告與請求表的附圖在放大檢視時，' +
+    '右上角也有下載鈕。'],
   ['資產匯出 XLSX','「匯出」選單可輸出 .xlsx——依目前篩選或全部皆可，另有 CSV 版本。' +
     '檔案為單一工作表，首列凍結、含自動篩選，並在標準欄位之外多帶服務數、漏洞數與待立即修補數。' +
     'XLSX 是自行組出的 OOXML，不引入試算表函式庫：正式版的 CSP 只允許自家資源，' +
@@ -7006,7 +7034,7 @@ function viewAssetForm(){
         el('div',{class:'field'},
           el('label',{for:'as-vendor'},'製造商（國家）'),
           el('input',{class:'inp', id:'as-vendor', value:editing?(a.vendor||''):'', placeholder:'Dell（美國）'}),
-          el('span',{class:'hint'},'供應鏈風險檢視時會用到，請含國別')),
+          el('span',{class:'hint'},'供應鏈風險檢視時會用到，請含國別。填入 MAC 後會自動帶入')),
         el('div',{class:'field'},
           el('label',{for:'as-ip'},'IPv4'),
           el('input',{class:'inp mono', id:'as-ip', value:editing?a.ip:'', placeholder:'10.32.9.10'}),
@@ -7020,7 +7048,10 @@ function viewAssetForm(){
           el('input',{class:'inp mono', id:'as-ipv6', value:editing?(a.ipv6||''):'', placeholder:'2001:db8:32:9::10'})),
         el('div',{class:'field'},
           el('label',{for:'as-mac'},'MAC'),
-          el('input',{class:'inp mono', id:'as-mac', value:editing?(a.mac||''):'', placeholder:'B0:83:FE:11:2A:01'})),
+          el('input',{class:'inp mono', id:'as-mac', value:editing?(a.mac||''):'', placeholder:'B0:83:FE:11:2A:01',
+            oninput:()=>{ clearTimeout(MAC_T); MAC_T=setTimeout(lookupMacVendor,400); },
+            onblur:lookupMacVendor}),
+          el('span',{class:'hint', id:'as-mac-oui'},'填入後自動比對 IEEE 登錄檔並帶出製造商')),
         el('div',{class:'field'},
           el('label',{for:'as-uplink'},'上層網通設備'),
           el('input',{class:'inp mono', id:'as-uplink', value:editing?(a.uplink||''):'', placeholder:'TPE-SW-CORE'}),
@@ -7141,6 +7172,44 @@ function renderAssetTags(){
       S.aform.tags.push(e.target.value.trim().replace(/^#/,'')); renderAssetTags(); $('#as-tags').focus();} }}));
 }
 
+/* ---- MAC → 製造商（IEEE OUI 比對）---- */
+let MAC_T=null;
+let MAC_LAST='';
+
+/**
+ * 依 MAC 前綴帶出製造商。
+ *
+ * 只在製造商欄為空、或上一次也是由比對填入時才覆寫——使用者自己打過的
+ * 內容不該被蓋掉。比對在本機／伺服器端完成，不會把 MAC 送到外部網站。
+ */
+async function lookupMacVendor(){
+  const macEl=$('#as-mac'), venEl=$('#as-vendor'), hint=$('#as-mac-oui');
+  if(!macEl||!venEl||!hint) return;
+  const hex=(macEl.value||'').toUpperCase().replace(/[^0-9A-F]/g,'');
+  if(hex.length<6){
+    hint.textContent='填入後自動比對 IEEE 登錄檔並帶出製造商';
+    hint.removeAttribute('data-ok');
+    return;
+  }
+  let m=null;
+  try{ m=await STORE.oui.lookup(macEl.value); }catch(e){ /* 查不到不擋填表 */ }
+  if(!m){
+    hint.textContent='IEEE 登錄檔查無此前綴，請自行填寫製造商';
+    hint.removeAttribute('data-ok');
+    return;
+  }
+  const cur=venEl.value.trim();
+  if(!cur || cur===MAC_LAST){
+    venEl.value=m.vendor;
+    MAC_LAST=m.vendor;
+  }
+  hint.dataset.ok='1';
+  hint.textContent = `${m.prefix} → ${m.org}`
+    + (m.countryName ? `（${m.countryName}）` : '')
+    + (m.originOverridden ? `　※ IEEE 登錄地址為 ${m.registryCountry}，此處以品牌母國為準` : '')
+    + (cur && cur!==MAC_LAST ? '　（製造商欄已有內容，未覆寫）' : '');
+}
+
 function saveAsset(){
   const val=s=>{const n=$(s); return n?n.value.trim():'';};
   const pick=n=>{const x=document.querySelector(`input[name="${n}"]:checked`); return x?x.value:'';};
@@ -7226,7 +7295,9 @@ function fileRow(f,i){
         + (f.truncated?` · 僅顯示前 ${MAX_DOC_KEEP.toLocaleString()} 字元`:'')),
       el('button',{class:'btn btn-sm', onclick:e=>{e.stopPropagation();
         copyText(f.text, `已複製 ${f.name} 的內容`);}},
-        el('span',{html:svgIcon(I.copy)}),'複製全文')),
+        el('span',{html:svgIcon(I.copy)}),'複製全文'),
+      el('button',{class:'btn btn-sm', onclick:e=>{e.stopPropagation(); downloadDoc(f);}},
+        el('span',{html:svgIcon(I.download)}),'下載檔案')),
     el('pre',{class:'file-pre'}, el('code',{}, f.text)));
   return el('div',{class:'file-item'},
     el('button',{class:'file-head', 'aria-expanded':'false',
@@ -9758,6 +9829,7 @@ function render(){
   app.append(topbar());
   if(S.route==='pwchange'){ app.append(viewPwChange()); applyTheme(); return; }
   if(S.route==='audit'){ app.append(viewAudit()); applyTheme(); return; }
+  if(S.route==='datasrc'){ app.append(viewDataSources()); applyTheme(); return; }
   const bb=backBar();
   if(bb){ const holder=el('div',{class:'wrap', style:'padding-bottom:0'}, bb); app.append(holder); }
   if(S.route==='users'){ app.append(viewUsers()); }

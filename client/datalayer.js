@@ -298,6 +298,14 @@ function ServerStore() {
       actions: () => call('/audit/actions'),
     },
 
+    /* ---- MAC 配發廠商（IEEE OUI）---- */
+    oui: {
+      lookup: mac => call('/oui?mac=' + encodeURIComponent(mac)).then(r => r.match),
+      batch: macs => call('/oui/batch', { method: 'POST', body: { macs } }).then(r => r.results),
+      status: () => call('/oui/status'),
+      refresh: check => call('/oui/refresh' + (check ? '?check=true' : ''), { method: 'POST' }),
+    },
+
     /* ---- 即時推播 ---- */
     subscribe(onChange) {
       if (es) es.close();
@@ -441,6 +449,24 @@ function DemoStore() {
       async actions() { return { actions: [] }; },
     },
 
+    /* 展示版帶的是 OUI 子集（每家廠商數個前綴），足以試出功能；
+       正式部署用的是 IEEE 三個登錄檔的完整資料，五萬多筆。 */
+    oui: {
+      async lookup(mac) { return localOuiLookup(mac); },
+      async batch(macs) {
+        const out = {};
+        for (const m of macs) out[m] = localOuiLookup(m);
+        return out;
+      },
+      async status() {
+        return { loaded: Object.keys(OUI_SUBSET).length, retrieved: OUI_SUBSET_DATE, subset: true };
+      },
+      async refresh() {
+        toast('展示版使用內建的 OUI 子集，更新功能需在正式部署環境操作');
+        return { ok: false, subset: true };
+      },
+    },
+
     subscribe() { return () => {}; },
 
     /** 展示模式專屬：回到出廠資料。 */
@@ -454,6 +480,25 @@ function DemoStore() {
       if (!USERS[S.me]) S.me = null;
     },
   };
+}
+
+/* ---- 展示版內建的 OUI 子集 ---- */
+/*__BTMS_OUI_SUBSET__*/
+
+/** 與伺服器端 lookupMac() 同樣的比對規則：由長前綴往短的找。 */
+function localOuiLookup(mac) {
+  const hex = String(mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
+  if (hex.length < 6) return null;
+  for (const len of [9, 7, 6]) {
+    const hit = OUI_SUBSET[hex.slice(0, len)];
+    if (!hit) continue;
+    const [org, cc] = hit;
+    const name = cc ? (COUNTRY_ZH[cc] || cc) : '';
+    return { prefix: hex.slice(0, len), org, country: cc || '', countryName: name,
+             registryCountry: cc || '', originOverridden: false,
+             vendor: name ? `${org}（${name}）` : org };
+  }
+  return null;
 }
 
 const STORE = IS_SERVER ? ServerStore() : DemoStore();

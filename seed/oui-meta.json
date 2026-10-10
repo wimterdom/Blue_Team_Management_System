@@ -1,0 +1,29 @@
+{
+  "retrieved": "2026-10-10",
+  "entries": 54170,
+  "withCountry": 53893,
+  "subsetEntries": 1228,
+  "sources": {
+    "MA-L": {
+      "url": "https://standards-oui.ieee.org/oui/oui.csv",
+      "bits": 24,
+      "sha256": "d2e8eb02bc98337a44e246b11e1a63467ac37dd51bd6490bbdde0ad3a8f7b559",
+      "lastModified": "Sat, 10 Oct 2026 02:01:32 GMT",
+      "parsed": 40316
+    },
+    "MA-M": {
+      "url": "https://standards-oui.ieee.org/oui28/mam.csv",
+      "bits": 28,
+      "sha256": "32751a54c008c2eeab8493e979f6223d6fdc1d7370ecc7f10399e7d19a03dcb1",
+      "lastModified": "Sat, 10 Oct 2026 02:01:16 GMT",
+      "parsed": 6628
+    },
+    "MA-S": {
+      "url": "https://standards-oui.ieee.org/oui36/oui36.csv",
+      "bits": 36,
+      "sha256": "db7b936eb75cc6695623956dd9b9baebaf422822aeea3c57c2db05b3ff6d9079",
+      "lastModified": "Sat, 10 Oct 2026 02:01:42 GMT",
+      "parsed": 7226
+    }
+  }
+}

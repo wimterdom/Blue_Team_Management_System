@@ -98,12 +98,33 @@ cross-system jump can be reversed with one click back to where you were.
 - **Assets → XLSX.** Current filter or the full inventory, as a single sheet with
   a frozen header row and autofilter. The OOXML is assembled directly; no
   spreadsheet library, so nothing to load past the CSP
-- **Assets ← CSV.** Bulk create or update, with a downloadable template. Every
-  import is **previewed before it is written**: each row is marked create or
-  update, and rows failing validation (duplicate hostname, malformed IPv4 / MAC /
-  CIDR, invalid importance, unknown asset ID, duplicates within the file) are
-  listed and skipped while the rest import normally. Imports take the same path as
-  manual edits, so they carry the same audit trail and permission checks
+- **Assets ← CSV or an nmap scan.** Bulk create or update, with a downloadable
+  template. The import dialog also takes nmap output directly — XML (`-oX`) or
+  greppable (`-oG`) — converts it to the same CSV shape (which you can download)
+  and previews it identically. From XML it carries IPv4/IPv6/MAC, MAC vendor, the
+  best-matching OS fingerprint and per-port service versions; open ports become
+  the asset's service list. Every import is **previewed before it is written**:
+  each row is marked create or update, and rows failing validation (duplicate
+  hostname, malformed IPv4 / MAC / CIDR, invalid importance, unknown asset ID,
+  duplicates within the file) are listed and skipped while the rest import
+  normally. Imports take the same path as manual edits, so they carry the same
+  audit trail and permission checks
+- **Attachments download.** Report and request figures download from the lightbox;
+  asset config/log attachments download from the file list
+
+**Reference data from authoritative sources**
+
+- **MITRE ATT&CK Enterprise** (currently v19.2) is generated from MITRE's own STIX
+  release by `scripts/update-attack.mjs`, not hand-maintained — 15 tactics, 254
+  techniques, 618 sub-techniques, all named in Traditional Chinese. 149 revoked-ID
+  mappings ship with it, so a report written against an older ATT&CK still lands on
+  the right cell after MITRE renumbers something
+- **IEEE MAC address registry** (MA-L / MA-M / MA-S, ~54k assignments) resolves a
+  MAC to its vendor and country, filling the asset's manufacturer field
+  automatically. Lookups run locally — the system may be deployed without internet
+  access, and sending internal MACs to an outside site for every lookup is both
+  slow and a disclosure. Administrators can check for upstream updates and refresh
+  the local copy from the "外部資料來源" page
 
 **Interface**
 
@@ -498,6 +519,20 @@ npm install
 npm run build:client          # client/ → public/ and dist/
 BTMS_DATA_DIR=./data BTMS_SEED_DEMO=true npm run dev
 ```
+
+Reference data is regenerated from upstream, not edited by hand:
+
+```bash
+node scripts/update-attack.mjs           # MITRE ATT&CK → client/attack-data.js
+node scripts/update-attack.mjs --check   # exit 10 if MITRE has a newer release
+node scripts/update-oui.mjs              # IEEE registry → seed/oui*.json
+node scripts/update-oui.mjs --check      # exit 10 if IEEE has changed
+```
+
+Both `--check` forms exit 10 when upstream moved, so a scheduled job or CI step can
+act on it. Chinese technique names live in `seed/attack-zh.json`; the generator
+lists anything upstream added that is not translated yet rather than silently
+emitting a half-translated table.
 
 `npm run dev` runs with `--watch`, so server changes restart automatically.
 Changes under `client/` need `npm run build:client` to take effect.

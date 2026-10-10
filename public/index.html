@@ -1316,6 +1316,9 @@ textarea.inp{resize:vertical; min-height:150px; line-height:1.8; font-family:var
   color:var(--ink-3); vertical-align:middle; letter-spacing:.01em;
 }
 
+/* MAC 比對結果提示 */
+.hint[data-ok]{color:var(--good)}
+
 </style>
 
 <div id="app"></div>
@@ -3303,6 +3306,14 @@ function ServerStore() {
       actions: () => call('/audit/actions'),
     },
 
+    /* ---- MAC 配發廠商（IEEE OUI）---- */
+    oui: {
+      lookup: mac => call('/oui?mac=' + encodeURIComponent(mac)).then(r => r.match),
+      batch: macs => call('/oui/batch', { method: 'POST', body: { macs } }).then(r => r.results),
+      status: () => call('/oui/status'),
+      refresh: check => call('/oui/refresh' + (check ? '?check=true' : ''), { method: 'POST' }),
+    },
+
     /* ---- 即時推播 ---- */
     subscribe(onChange) {
       if (es) es.close();
@@ -3446,6 +3457,24 @@ function DemoStore() {
       async actions() { return { actions: [] }; },
     },
 
+    /* 展示版帶的是 OUI 子集（每家廠商數個前綴），足以試出功能；
+       正式部署用的是 IEEE 三個登錄檔的完整資料，五萬多筆。 */
+    oui: {
+      async lookup(mac) { return localOuiLookup(mac); },
+      async batch(macs) {
+        const out = {};
+        for (const m of macs) out[m] = localOuiLookup(m);
+        return out;
+      },
+      async status() {
+        return { loaded: Object.keys(OUI_SUBSET).length, retrieved: OUI_SUBSET_DATE, subset: true };
+      },
+      async refresh() {
+        toast('展示版使用內建的 OUI 子集，更新功能需在正式部署環境操作');
+        return { ok: false, subset: true };
+      },
+    },
+
     subscribe() { return () => {}; },
 
     /** 展示模式專屬：回到出廠資料。 */
@@ -3461,6 +3490,25 @@ function DemoStore() {
   };
 }
 
+/* ---- 展示版內建的 OUI 子集 ---- */
+const OUI_SUBSET = {}, COUNTRY_ZH = {}, OUI_SUBSET_DATE = null;
+
+/** 與伺服器端 lookupMac() 同樣的比對規則：由長前綴往短的找。 */
+function localOuiLookup(mac) {
+  const hex = String(mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
+  if (hex.length < 6) return null;
+  for (const len of [9, 7, 6]) {
+    const hit = OUI_SUBSET[hex.slice(0, len)];
+    if (!hit) continue;
+    const [org, cc] = hit;
+    const name = cc ? (COUNTRY_ZH[cc] || cc) : '';
+    return { prefix: hex.slice(0, len), org, country: cc || '', countryName: name,
+             registryCountry: cc || '', originOverridden: false,
+             vendor: name ? `${org}（${name}）` : org };
+  }
+  return null;
+}
+
 const STORE = IS_SERVER ? ServerStore() : DemoStore();
 
 /** 上層沿用的儲存入口。所有畫面呼叫 persist() 的地方都不必改。 */
@@ -3472,6 +3520,230 @@ function resetDemoData() {
   STORE.reset();
   closeOverlay(); render();
   toast('已重設為預設示範資料');
+}
+
+/* ============================================================
+   nmap 報告 → 資產欄位
+   ------------------------------------------------------------
+   掃描結果直接丟進來就能建檔，不必先人工整理成 CSV。
+
+   支援兩種輸出：
+     -oX  XML      欄位最齊全（MAC、廠商、OS 指紋、服務版本），優先使用
+     -oG  greppable 只有 IP／主機名／開放埠，資訊較少但常見於既有流程
+
+   解析遵循 nmap 官方 DTD（docs/nmap.dtd）：
+     address[@addrtype=ipv4|ipv6|mac]、address/@vendor
+     hostnames/hostname/@name、os/osmatch/@name+@accuracy
+     ports/port[state/@state='open']/service/@product+@version
+   ============================================================ */
+
+/** 這份文字看起來是哪一種 nmap 輸出？ */
+function detectNmapFormat(text) {
+  const head = text.slice(0, 4000);
+  if (/<nmaprun\b/.test(head)) return 'xml';
+  if (/^#\s*Nmap\s.*scan initiated/mi.test(head) && /\bHost:\s/m.test(text)) return 'gnmap';
+  return null;
+}
+
+/**
+ * 挑主機名稱。
+ *
+ * nmap 會同時給好幾個名稱並標示來源：PTR 是反解記錄（權威），
+ * user 是使用者在命令列給的寫法。優先用 PTR，再取第一段網域標籤，
+ * TPE-WEB-11.corp.local 就會成為 TPE-WEB-11——與系統既有的命名一致。
+ * 純 IP 形式的「名稱」不算數。
+ */
+function pickHostname(entries) {
+  if (!entries.length) return '';
+  const label = n => (n.includes('.') && !/^\d+(\.\d+)*$/.test(n) ? n.split('.')[0] : n);
+  const usable = entries.filter(e => e.name && !/^\d+(\.\d+)*$/.test(e.name));
+  if (!usable.length) return '';
+  const ptr = usable.find(e => e.type === 'PTR');
+  return label((ptr || usable[0]).name);
+}
+
+const cidrOf = ip => {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}$/.exec(ip || '');
+  // 掃描結果不含遮罩，依慣例以 /24 推定，匯入預覽中可改
+  return m ? `${m[1]}.${m[2]}.${m[3]}.0/24` : '';
+};
+
+/* ---------- XML ---------- */
+
+function parseNmapXml(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('XML 格式不正確，無法解析');
+
+  const run = doc.querySelector('nmaprun');
+  const meta = {
+    tool: `${run?.getAttribute('scanner') || 'nmap'} ${run?.getAttribute('version') || ''}`.trim(),
+    args: run?.getAttribute('args') || '',
+    when: run?.querySelector('runstats finished')?.getAttribute('timestr') || '',
+  };
+
+  const hosts = [];
+  for (const h of doc.querySelectorAll('host')) {
+    // 只收掃描時存活的主機；down 的沒有建檔價值
+    if (h.querySelector('status')?.getAttribute('state') !== 'up') continue;
+
+    let ip = '';
+    let ipv6 = '';
+    let mac = '';
+    let macVendor = '';
+    for (const a of h.querySelectorAll('address')) {
+      const t = a.getAttribute('addrtype');
+      if (t === 'ipv4') ip = a.getAttribute('addr') || '';
+      else if (t === 'ipv6') ipv6 = a.getAttribute('addr') || '';
+      else if (t === 'mac') {
+        mac = (a.getAttribute('addr') || '').toUpperCase();
+        macVendor = a.getAttribute('vendor') || '';
+      }
+    }
+
+    const entries = [...h.querySelectorAll('hostnames hostname')]
+      .map(n => ({ name: n.getAttribute('name') || '', type: n.getAttribute('type') || '' }))
+      .filter(e => e.name);
+    const names = entries.map(e => e.name);
+
+    const osm = [...h.querySelectorAll('os osmatch')]
+      .sort((a, b) => Number(b.getAttribute('accuracy')) - Number(a.getAttribute('accuracy')))[0];
+
+    const services = [];
+    for (const p of h.querySelectorAll('ports port')) {
+      if (p.querySelector('state')?.getAttribute('state') !== 'open') continue;
+      const s = p.querySelector('service');
+      const product = s?.getAttribute('product') || '';
+      const version = s?.getAttribute('version') || '';
+      services.push({
+        name: s?.getAttribute('name') || `port-${p.getAttribute('portid')}`,
+        port: p.getAttribute('portid') || '',
+        version: [product, version].filter(Boolean).join(' '),
+      });
+    }
+
+    hosts.push({
+      ip, ipv6, mac, macVendor,
+      hostname: pickHostname(entries),
+      allHostnames: names,
+      os: osm?.getAttribute('name') || '',
+      osAccuracy: osm ? Number(osm.getAttribute('accuracy')) : null,
+      cidr: cidrOf(ip),
+      services,
+    });
+  }
+  return { meta, hosts };
+}
+
+/* ---------- greppable ---------- */
+
+/**
+ * -oG 的每一行長這樣：
+ *   Host: 10.32.9.10 (TPE-DC-01.corp.local)  Status: Up
+ *   Host: 10.32.9.10 (TPE-DC-01.corp.local)  Ports: 53/open/tcp//domain///, 88/open/tcp//kerberos-sec///
+ * 同一台主機會分散在多行，依 IP 合併。
+ */
+function parseNmapGrepable(text) {
+  const byIp = new Map();
+  const meta = { tool: 'nmap (greppable)', args: '', when: '' };
+
+  const banner = /^#\s*Nmap\s+(\S+)\s+scan initiated\s+(.+?)\s+as:\s*(.+)$/mi.exec(text);
+  if (banner) {
+    meta.tool = `nmap ${banner[1]}`;
+    meta.when = banner[2];
+    meta.args = banner[3];
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^Host:\s+(\S+)\s+\(([^)]*)\)\s*(.*)$/.exec(line.trim());
+    if (!m) continue;
+    const [, ip, nameRaw, rest] = m;
+    const entry = byIp.get(ip) || {
+      ip, ipv6: '', mac: '', macVendor: '', hostname: '', allHostnames: [],
+      os: '', osAccuracy: null, cidr: cidrOf(ip), services: [],
+    };
+    if (nameRaw && !entry.allHostnames.includes(nameRaw)) entry.allHostnames.push(nameRaw);
+
+    const ports = /Ports:\s*(.+?)(?:\tIgnored|$)/.exec(rest);
+    if (ports) {
+      for (const chunk of ports[1].split(',')) {
+        // portid/state/protocol/owner/service/rpc/version/
+        const f = chunk.trim().split('/');
+        if (f[1] !== 'open') continue;
+        entry.services.push({ name: f[4] || `port-${f[0]}`, port: f[0] || '', version: f[6] || '' });
+      }
+    }
+    const os = /OS:\s*([^\t]+)/.exec(rest);
+    if (os) entry.os = os[1].trim();
+
+    byIp.set(ip, entry);
+  }
+
+  const hosts = [...byIp.values()];
+  hosts.forEach(h => { h.hostname = pickHostname(h.allHostnames.map(n => ({ name: n, type: 'PTR' }))); });
+  return { meta, hosts };
+}
+
+function parseNmap(text) {
+  const fmt = detectNmapFormat(text);
+  if (fmt === 'xml') return { format: 'xml', ...parseNmapXml(text) };
+  if (fmt === 'gnmap') return { format: 'gnmap', ...parseNmapGrepable(text) };
+  throw new Error('看起來不是 nmap 的 XML（-oX）或 greppable（-oG）輸出');
+}
+
+/**
+ * 把 nmap 主機轉成匯入用的 CSV 列。
+ *
+ * 沒有的欄位一律留空，不猜測——網段依 IPv4 推定 /24 是唯一的例外，
+ * 且會在預覽中標示出來讓人確認。製造商優先用 nmap 自己判定的 MAC 廠商，
+ * 查不到時再回退到系統的 IEEE 對照。
+ */
+async function nmapToRows(parsed) {
+  const macs = parsed.hosts.map(h => h.mac).filter(Boolean);
+  let oui = {};
+  if (macs.length) {
+    try { oui = await STORE.oui.batch(macs); } catch (e) { /* 查不到就留空 */ }
+  }
+
+  return parsed.hosts.map(h => {
+    const hit = h.mac ? oui[h.mac] : null;
+    // nmap 的廠商名沒有國別，系統的 OUI 對照有，所以優先用後者
+    const vendor = hit?.vendor || h.macVendor || '';
+    const svc = h.services;
+    return {
+      values: {
+        id: '',
+        hostname: h.hostname || (h.ip ? `HOST-${h.ip.replace(/\./g, '-')}` : ''),
+        device: '',
+        vendor,
+        os: h.os,
+        ip: h.ip,
+        cidr: h.cidr,
+        ipv6: h.ipv6,
+        mac: h.mac,
+        uplink: '',
+        vlan: '',
+        location: '',
+        importance: '',
+        analyst: '',
+        tags: ['nmap', ...(svc.some(s => /^(http|https)$/.test(s.name)) ? ['web'] : [])].join(';'),
+        purpose: buildPurpose(h),
+      },
+      services: svc,
+      source: h,
+    };
+  });
+}
+
+function buildPurpose(h) {
+  const parts = [];
+  if (h.os) parts.push(`nmap 指紋判定為 ${h.os}${h.osAccuracy ? `（吻合度 ${h.osAccuracy}%）` : ''}。`);
+  if (h.services.length) {
+    const list = h.services.slice(0, 12)
+      .map(s => `${s.port}/${s.name}${s.version ? ` ${s.version}` : ''}`).join('、');
+    parts.push(`掃描到的開放埠：${list}${h.services.length > 12 ? ` 等 ${h.services.length} 項` : ''}。`);
+  }
+  if (h.allHostnames.length > 1) parts.push(`其他名稱：${h.allHostnames.join('、')}。`);
+  return parts.join('\n\n');
 }
 
 /* ============================================================
@@ -4490,6 +4762,15 @@ function openAssetImport() {
     el('p', { style: 'font-size:12.5px;line-height:1.8;color:var(--ink-2)' },
       '以 CSV 批次建立或更新資產。第一列必須是標題列，欄位名稱需與範本一致；' +
       '欄位順序不拘，多餘的欄會被忽略。'),
+    el('p', { style: 'font-size:12.5px;line-height:1.8;color:var(--ink-2);margin-top:6px' },
+      '也可以直接丟 ',
+      el('b', {}, 'nmap 的掃描報告'),
+      '：XML（',
+      el('code', {}, 'nmap -oX'),
+      '）或 greppable（',
+      el('code', {}, 'nmap -oG'),
+      '）都可以，系統會轉成上述格式後一樣先讓你預覽。' +
+      'XML 的欄位最齊全——含 MAC、製造商、OS 指紋與服務版本。'),
 
     el('div', { style: 'display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap' },
       el('button', { class: 'btn', onclick: downloadAssetTemplate },
@@ -4509,10 +4790,11 @@ function openAssetImport() {
       } },
       el('span', { html: svgIcon(I.upload) }),
       el('div', {},
-        el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳 CSV 檔案'),
+        el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳 CSV 或 nmap 報告'),
         el('div', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:3px' },
-          '以 UTF-8 編碼儲存；Excel 請選「CSV UTF-8（逗號分隔）」')),
-      el('input', { type: 'file', id: 'csv-file', accept: '.csv,text/csv', style: 'display:none',
+          'CSV 請以 UTF-8 儲存（Excel 選「CSV UTF-8（逗號分隔）」）；nmap 接受 .xml 與 .gnmap')),
+      el('input', { type: 'file', id: 'csv-file', style: 'display:none',
+        accept: '.csv,.xml,.gnmap,.nmap,text/csv,text/xml,application/xml',
         onchange: e => { const f = e.target.files[0]; if (f) readAssetCsv(f); } })),
 
     el('div', { id: 'csv-result' }));
@@ -4555,16 +4837,45 @@ async function readAssetCsv(file) {
     return;
   }
 
-  const result = validateAssetRows(parseCsv(text));
+  // nmap 報告先轉成與範本相同的 CSV，之後走完全一樣的驗證與預覽流程
+  let table;
+  let converted = null;
+  if (detectNmapFormat(text)) {
+    try {
+      const parsed = parseNmap(text);
+      const rows = await nmapToRows(parsed);
+      converted = { parsed, rows, csv: nmapRowsToCsv(rows) };
+      table = parseCsv(converted.csv);
+    } catch (e) {
+      host.innerHTML = '';
+      host.append(el('p', { class: 'login-err' }, 'nmap 報告解析失敗：' + e.message));
+      return;
+    }
+  } else {
+    table = parseCsv(text);
+  }
+
+  const result = validateAssetRows(table);
   host.innerHTML = '';
   if (result.error) {
     host.append(el('p', { class: 'login-err' }, result.error));
     return;
   }
-  renderImportPreview(host, result, file.name);
+  // 掃到的服務依列號掛回去，匯入時一併寫進資產明細
+  if (converted) {
+    result.items.forEach((item, i) => { item.services = converted.rows[i]?.services || []; });
+  }
+  renderImportPreview(host, result, file.name, converted);
 }
 
-function renderImportPreview(host, result, filename) {
+/** 轉成與匯入範本完全相同的欄位順序，使用者也能把它存下來自行編修。 */
+function nmapRowsToCsv(rows) {
+  return buildCsv(
+    IMPORTABLE.map(c => c.label),
+    rows.map(r => IMPORTABLE.map(c => r.values[c.key] ?? '')));
+}
+
+function renderImportPreview(host, result, filename, converted) {
   const { items, unknown } = result;
   const bad = items.filter(x => x.errors.length);
   const ok = items.filter(x => !x.errors.length);
@@ -4583,6 +4894,26 @@ function renderImportPreview(host, result, filename) {
       bad.length ? el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--critical)' }),
         `無法匯入 ${bad.length}`) : null,
       el('span', { class: 'hint', style: 'margin-left:auto' }, filename)),
+
+    converted
+      ? el('div', { class: 'nmap-note' },
+          el('div', {},
+            el('b', {}, '已自 nmap 報告轉換'),
+            `　${converted.parsed.meta.tool}`,
+            converted.parsed.meta.when ? `　${converted.parsed.meta.when}` : '',
+            converted.parsed.hosts.length ? `　存活主機 ${converted.parsed.hosts.length} 台` : '',
+            converted.parsed.meta.args
+              ? el('div', { class: 'hint', style: 'margin-top:3px;font-family:var(--mono)' },
+                  converted.parsed.meta.args)
+              : null,
+            el('div', { class: 'hint', style: 'margin-top:4px' },
+              '網段以 IPv4 推定為 /24，重要性、放置地點與上層設備掃描不到，請匯入後補齊。')),
+          el('button', { class: 'btn btn-sm', style: 'margin-left:auto;flex:none',
+            onclick: () => saveBlob(
+              new Blob([converted.csv], { type: 'text/csv;charset=utf-8' }),
+              `nmap轉換-${stampSlug()}.csv`, { text: converted.csv }) },
+            el('span', { html: svgIcon(I.download) }), '下載轉換後的 CSV'))
+      : null,
 
     unknown.length
       ? el('p', { class: 'hint', style: 'margin-top:8px' },
@@ -4622,6 +4953,20 @@ function renderImportPreview(host, result, filename) {
         : null));
 }
 
+/** 依「埠＋服務名」合併，重掃同一台主機不會把既有紀錄洗成重複項。 */
+function mergeServices(existing, incoming) {
+  const key = s => `${s.port}/${s.name}`;
+  const map = new Map((existing || []).map(s => [key(s), s]));
+  for (const s of incoming) {
+    const k = key(s);
+    if (map.has(k)) {
+      // 版本資訊以新掃到的為準，但不要用空值蓋掉既有的
+      if (s.version) map.get(k).version = s.version;
+    } else map.set(k, { ...s });
+  }
+  return [...map.values()].sort((a, b) => Number(a.port) - Number(b.port));
+}
+
 function commitAssetImport(items) {
   if (!items.length) return;
   const me = USERS[S.me];
@@ -4649,13 +4994,14 @@ function commitAssetImport(items) {
       Object.assign(a, fields);
       const d = (ADETAIL[a.id] ||= { purpose: '', services: [], vulns: [], files: [], audit: [] });
       if (v.purpose) d.purpose = v.purpose;
+      if (x.services?.length) d.services = mergeServices(d.services, x.services);
       (d.audit ||= []).unshift({ who: me.name, role: me.role, act: `自 CSV 匯入更新（第 ${x.line} 列）`, when: nowStamp() });
       updated += 1;
     } else {
       const id = nextAssetId();
       ASSETS.push({ id, ...fields, created: nowStamp() });
       ADETAIL[id] = {
-        purpose: v.purpose || '', services: [], vulns: [], files: [],
+        purpose: v.purpose || '', services: x.services || [], vulns: [], files: [],
         audit: [{ who: me.name, role: me.role, act: `自 CSV 匯入建立（第 ${x.line} 列）`, when: nowStamp() }],
       };
       created += 1;
@@ -4666,6 +5012,51 @@ function commitAssetImport(items) {
   closeOverlay();
   render();
   toast(`匯入完成：新建 ${created} 筆、更新 ${updated} 筆`);
+}
+
+
+/* ============================================================
+   附件下載
+   ============================================================ */
+
+/**
+ * 下載一張附圖。
+ *
+ * 正式部署的附圖存在伺服器上（/api/v1/attachments/...），先取回再交付；
+ * 展示版的附圖是 data URL，直接轉成 blob。兩種情形都走同一個 saveBlob，
+ * 所以沙箱環境下的替代交付方式也一併適用。
+ */
+async function downloadShot(shot) {
+  if (!shot || !shot.url) return toast('這張附圖沒有實際檔案，無法下載');
+  try {
+    const res = await fetch(shot.url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`伺服器回應 ${res.status}`);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const base = (shot.cap || shot.name || '附圖').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+    saveBlob(blob, /\.[a-z0-9]+$/i.test(base) ? base : `${base}.${ext}`);
+  } catch (e) {
+    toast('附圖下載失敗：' + e.message);
+  }
+}
+
+/** 下載資產的文字附件（組態檔、log）。內容本來就在記憶體裡，直接成檔。 */
+function downloadDoc(f) {
+  if (!f || f.text == null) return toast('這個附件沒有內容可下載');
+  const name = (f.name || 'attachment.txt').replace(/[\\/:*?"<>|]/g, '_');
+  saveBlob(new Blob([f.text], { type: 'text/plain;charset=utf-8' }), name, { text: f.text });
+}
+
+/** 一次下載某筆紀錄的全部附圖。 */
+async function downloadAllShots(shots, label) {
+  const real = (shots || []).filter(s => s.url);
+  if (!real.length) return toast('這筆紀錄沒有可下載的附圖');
+  for (const s of real) {
+    await downloadShot(s);
+    // 逐張確認，避免一次彈出一堆存檔提示
+    await new Promise(r => setTimeout(r, 300));
+  }
+  toast(`已送出 ${real.length} 張附圖${label ? `（${label}）` : ''}`);
 }
 
 /* ============================================================
@@ -4931,6 +5322,104 @@ function toggleAuditDetail(tr, x){
   tr.after(det);
 }
 
+/* ============================================================
+   外部資料來源（僅系統管理員）
+   ============================================================ */
+
+/**
+ * 系統有兩份來自外部的參照資料：IEEE 的 MAC 配發登錄檔，以及 MITRE 的
+ * ATT&CK 技術表。兩者都會更新，本機副本放久了就會與官方脫節。
+ * 這一區讓管理員看得到目前用的是哪一版、何時取得，並直接檢查與更新。
+ */
+function viewDataSources() {
+  const page = el('div', { class: 'wrap' },
+    el('div', { class: 'pagehead' },
+      el('div', {},
+        el('div', { class: 'eyebrow' }, '系統管理'),
+        el('h1', {}, '外部資料來源'),
+        el('p', { class: 'lead' },
+          '比對一律在本機進行——系統可能部署在不能連外的環境，' +
+          '而且每查一個 MAC 就打一次外部網站既慢又會把內部資產資訊送出去。' +
+          '這裡檢查官方有無更新，並把本機副本換成新版。'))),
+    el('div', { id: 'ds-body' },
+      el('p', { class: 'hint', style: 'padding:14px 0' }, '載入中…')));
+  setTimeout(loadDataSources, 0);
+  return page;
+}
+
+async function loadDataSources() {
+  const host = $('#ds-body');
+  if (!host) return;
+  let oui = null;
+  try { oui = await STORE.oui.status(); } catch (e) { /* 顯示為不可用 */ }
+
+  host.innerHTML = '';
+  host.append(
+    el('section', { class: 'card sec' },
+      el('h3', {}, 'IEEE MAC 位址配發登錄檔'),
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);line-height:1.75;margin:4px 0 12px' },
+        '資產填入 MAC 後自動帶出製造商與國別。收錄 MA-L（/24）、MA-M（/28）與 MA-S（/36）三個登錄檔，' +
+        '查詢時由長前綴往短的找，小廠商拿到的區段才不會被持有整段的大廠蓋掉。'),
+      el('div', { class: 'meta' },
+        row('來源', el('span', { class: 'mono', style: 'font-size:11.5px' }, 'standards-oui.ieee.org')),
+        row('本機筆數', el('span', { class: 'tnum' }, oui ? oui.loaded.toLocaleString() : '—'),
+          oui?.subset ? '展示版使用子集' : '完整登錄檔'),
+        row('取得日期', el('span', { class: 'mono', style: 'font-size:12px' }, oui?.retrieved || '—')),
+        row('查得到國別', el('span', { class: 'tnum' }, oui?.withCountry ? oui.withCountry.toLocaleString() : '—'))),
+      el('p', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.7' },
+        '登錄檔記的是「註冊地址」的國別，不一定等於品牌母國——TP-Link 有 79 個前綴登記在美國、' +
+        'Lenovo 有 142 個。資產的「製造商（國家）」是用來辨識設備來源的，' +
+        '因此系統對知名品牌另以母國為準（對照表在 seed/vendor-origin.json），' +
+        '查詢結果會同時回傳登錄國別，判斷依據不會被藏起來。'),
+      el('div', { style: 'display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap' },
+        el('button', { class: 'btn', id: 'ds-check', onclick: () => refreshOui(true) },
+          el('span', { html: svgIcon(I.search) }), '檢查有無更新'),
+        el('button', { class: 'btn btn-primary', id: 'ds-update', onclick: () => refreshOui(false) },
+          el('span', { html: svgIcon(I.download) }), '立即更新本機資料'),
+        el('span', { class: 'hint', id: 'ds-msg' }, '需要容器能連外；封閉環境請在有網路的機器上執行 scripts/update-oui.mjs 後帶入 seed/')),
+      el('pre', { class: 'file-pre hidden', id: 'ds-out', style: 'margin-top:12px;max-height:240px' })),
+
+    el('section', { class: 'card sec', style: 'margin-top:14px' },
+      el('h3', {}, 'MITRE ATT&CK Enterprise'),
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);line-height:1.75;margin:4px 0 12px' },
+        '情資系統的 TTP Mapping 熱圖與各系統的技術挑選器都用這份技術表。'),
+      el('div', { class: 'meta' },
+        row('來源', el('span', { class: 'mono', style: 'font-size:11.5px' }, 'github.com/mitre-attack/attack-stix-data')),
+        row('目前版本', el('span', { class: 'mono', style: 'font-size:12.5px' }, ATTACK_VERSION)),
+        row('戰術', el('span', { class: 'tnum' }, String(ATTACK_FULL.length))),
+        row('技術', el('span', { class: 'tnum' },
+          String(ATTACK_FULL.reduce((n, t) => n + t.techs.length
+            + t.techs.reduce((m, p) => m + p.subs.length, 0), 0)))),
+        row('作廢編號對照', el('span', { class: 'tnum' }, String(Object.keys(ATTACK_REVOKED).length)),
+          '載入舊資料時自動換成現行編號')),
+      el('p', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.7' },
+        '技術表與中文名稱是建置時產生的，更新需重新建置映像檔：在原始碼目錄執行 ' +
+        el('code', {}, 'node scripts/update-attack.mjs').textContent +
+        '（加 --check 只檢查有無新版，有新版以離開碼 10 回報，便於排程或 CI），' +
+        '官方新增而尚未翻譯的技術會列出清單。')));
+}
+
+async function refreshOui(checkOnly) {
+  const msg = $('#ds-msg');
+  const pre = $('#ds-out');
+  const btns = [$('#ds-check'), $('#ds-update')].filter(Boolean);
+  btns.forEach(b => { b.disabled = true; });
+  msg.textContent = checkOnly ? '檢查中…' : '更新中，IEEE 的檔案約 5 MB，請稍候…';
+  try {
+    const r = await STORE.oui.refresh(checkOnly);
+    if (r.subset) { msg.textContent = '展示版使用內建子集，更新功能需在正式部署環境操作'; return; }
+    msg.textContent = checkOnly
+      ? (r.updateAvailable ? '官方已有更新，可按「立即更新本機資料」' : '本機資料與官方一致')
+      : (r.ok ? '已更新完成' : '更新失敗，詳見下方輸出');
+    if (r.output) { pre.classList.remove('hidden'); pre.textContent = r.output; }
+    if (!checkOnly && r.ok) setTimeout(loadDataSources, 600);
+  } catch (e) {
+    msg.textContent = '操作失敗：' + e.message;
+  } finally {
+    btns.forEach(b => { b.disabled = false; });
+  }
+}
+
 
 /* ============================================================
    STATE
@@ -5153,6 +5642,9 @@ function openUserMenu(e){
       : null,
     (STORE.mode==='server' && USERS[S.me]?.perm==='admin')
       ? el('button',{class:'mi', onclick:()=>go('audit')}, el('span',{html:svgIcon(I.search)}),'稽核紀錄')
+      : null,
+    (STORE.mode==='server' && me.perm==='admin')
+      ? el('button',{class:'mi', onclick:()=>go('datasrc')}, el('span',{html:svgIcon(I.exchange)}),'外部資料來源')
       : null,
     STORE.mode==='server'
       ? el('button',{class:'mi', onclick:()=>go('pwchange')}, el('span',{html:svgIcon(I.key)}),'變更密碼')
@@ -5985,6 +6477,9 @@ function openLightbox(shots, idx){
     el('div',{class:'lb-head'},
       el('div',{class:'lb-title', id:'lb-title'}),
       el('div',{class:'lb-dim', id:'lb-dim'}),
+      el('button',{class:'lb-btn', title:'下載這張附圖','aria-label':'下載附圖',
+        onclick:e=>{e.stopPropagation(); downloadShot(LB.shots[LB.i]);},
+        html:svgIcon(I.download)}),
       el('button',{class:'lb-btn', title:'關閉（Esc）','aria-label':'關閉',
         onclick:closeLightbox, html:svgIcon(I.close)})),
     stage,
@@ -6770,6 +7265,7 @@ function openPicker(){
 
 /* ---------- spec notes ---------- */
 const RFI_NOTES=[
+  ['附圖可下載','附圖放大檢視時，右上角有下載鈕可取得原圖。'],
   ['匯出 PDF 走瀏覽器列印','報告的「匯出 PDF」會開啟列印對話框，選「另存為 PDF」即得檔案。' +
     '之所以不自行產生 PDF 位元組：本系統的報告是繁體中文，自行輸出就得內嵌一套中日韓字型' +
     '（完整 Noto Sans TC 約 8 MB），映像檔與每份輸出都會變大，排版品質還不如瀏覽器本身。' +
@@ -6793,6 +7289,26 @@ const RFI_NOTES=[
 ];
 
 const ASSET_NOTES=[
+  ['可直接匯入 nmap 掃描報告','匯入對話框除了 CSV，也接受 nmap 的 **XML（`-oX`）** 與 **greppable（`-oG`）** 輸出，' +
+    '系統先轉成與範本相同的 CSV 再讓你預覽，轉換後的 CSV 也可以下載留存或自行編修。' +
+    'XML 的欄位最齊全：IPv4／IPv6／MAC、MAC 廠商、OS 指紋（取吻合度最高者）與各開放埠的服務版本，' +
+    '服務會寫進資產明細的「服務與開放埠」，OS 指紋與埠清單寫進用途說明。' +
+    '只收掃描當下存活的主機，closed 的埠不列入。主機名稱優先取 PTR 反解記錄的第一段網域標籤' +
+    '（TPE-WEB-11.corp.local → TPE-WEB-11）；掃不到名稱者以 IP 命名為 HOST-10-32-7-44。' +
+    '**掃描看不出來的就留空**，不猜測——唯一的例外是網段依 IPv4 推定為 /24，且會在預覽中標示。' +
+    '重要性、放置地點、上層網通設備請匯入後補齊。'],
+  ['MAC 自動比對製造商','填入或匯入 MAC 後，系統以 IEEE 官方登錄檔比對出配發廠商，' +
+    '自動帶入「製造商（國家）」欄位（地址不帶入）。收錄 MA-L（/24）、MA-M（/28）、MA-S（/36）' +
+    '三個登錄檔共五萬多筆，查詢由長前綴往短的找，小廠商拿到的區段不會被持有整段的大廠蓋掉。' +
+    '**比對在本機完成**，不會把內部 MAC 送到外部網站，封閉環境也能用。' +
+    '製造商欄已有內容時不覆寫，只在空白或先前也是自動帶入時才填。'],
+  ['登錄國別 ≠ 品牌母國','IEEE 記的是註冊地址——TP-Link 有 79 個前綴登記在美國、Lenovo 有 142 個。' +
+    '「製造商（國家）」是用來辨識設備來源的（例如標註中國製造商），若照登錄地址走就會漏掉。' +
+    '系統因此對知名品牌另以母國為準，對照表獨立存放於 `seed/vendor-origin.json`，' +
+    '與 IEEE 原始資料分開；查詢結果同時回傳登錄國別與是否覆寫，判斷依據不會被藏起來。' +
+    '管理員可在「外部資料來源」頁檢查官方有無更新並更新本機副本。'],
+  ['附件可下載','資產的組態檔與 log 附件在展開後可直接下載；調查報告與請求表的附圖在放大檢視時，' +
+    '右上角也有下載鈕。'],
   ['資產匯出 XLSX','「匯出」選單可輸出 .xlsx——依目前篩選或全部皆可，另有 CSV 版本。' +
     '檔案為單一工作表，首列凍結、含自動篩選，並在標準欄位之外多帶服務數、漏洞數與待立即修補數。' +
     'XLSX 是自行組出的 OOXML，不引入試算表函式庫：正式版的 CSP 只允許自家資源，' +
@@ -8147,7 +8663,7 @@ function viewAssetForm(){
         el('div',{class:'field'},
           el('label',{for:'as-vendor'},'製造商（國家）'),
           el('input',{class:'inp', id:'as-vendor', value:editing?(a.vendor||''):'', placeholder:'Dell（美國）'}),
-          el('span',{class:'hint'},'供應鏈風險檢視時會用到，請含國別')),
+          el('span',{class:'hint'},'供應鏈風險檢視時會用到，請含國別。填入 MAC 後會自動帶入')),
         el('div',{class:'field'},
           el('label',{for:'as-ip'},'IPv4'),
           el('input',{class:'inp mono', id:'as-ip', value:editing?a.ip:'', placeholder:'10.32.9.10'}),
@@ -8161,7 +8677,10 @@ function viewAssetForm(){
           el('input',{class:'inp mono', id:'as-ipv6', value:editing?(a.ipv6||''):'', placeholder:'2001:db8:32:9::10'})),
         el('div',{class:'field'},
           el('label',{for:'as-mac'},'MAC'),
-          el('input',{class:'inp mono', id:'as-mac', value:editing?(a.mac||''):'', placeholder:'B0:83:FE:11:2A:01'})),
+          el('input',{class:'inp mono', id:'as-mac', value:editing?(a.mac||''):'', placeholder:'B0:83:FE:11:2A:01',
+            oninput:()=>{ clearTimeout(MAC_T); MAC_T=setTimeout(lookupMacVendor,400); },
+            onblur:lookupMacVendor}),
+          el('span',{class:'hint', id:'as-mac-oui'},'填入後自動比對 IEEE 登錄檔並帶出製造商')),
         el('div',{class:'field'},
           el('label',{for:'as-uplink'},'上層網通設備'),
           el('input',{class:'inp mono', id:'as-uplink', value:editing?(a.uplink||''):'', placeholder:'TPE-SW-CORE'}),
@@ -8282,6 +8801,44 @@ function renderAssetTags(){
       S.aform.tags.push(e.target.value.trim().replace(/^#/,'')); renderAssetTags(); $('#as-tags').focus();} }}));
 }
 
+/* ---- MAC → 製造商（IEEE OUI 比對）---- */
+let MAC_T=null;
+let MAC_LAST='';
+
+/**
+ * 依 MAC 前綴帶出製造商。
+ *
+ * 只在製造商欄為空、或上一次也是由比對填入時才覆寫——使用者自己打過的
+ * 內容不該被蓋掉。比對在本機／伺服器端完成，不會把 MAC 送到外部網站。
+ */
+async function lookupMacVendor(){
+  const macEl=$('#as-mac'), venEl=$('#as-vendor'), hint=$('#as-mac-oui');
+  if(!macEl||!venEl||!hint) return;
+  const hex=(macEl.value||'').toUpperCase().replace(/[^0-9A-F]/g,'');
+  if(hex.length<6){
+    hint.textContent='填入後自動比對 IEEE 登錄檔並帶出製造商';
+    hint.removeAttribute('data-ok');
+    return;
+  }
+  let m=null;
+  try{ m=await STORE.oui.lookup(macEl.value); }catch(e){ /* 查不到不擋填表 */ }
+  if(!m){
+    hint.textContent='IEEE 登錄檔查無此前綴，請自行填寫製造商';
+    hint.removeAttribute('data-ok');
+    return;
+  }
+  const cur=venEl.value.trim();
+  if(!cur || cur===MAC_LAST){
+    venEl.value=m.vendor;
+    MAC_LAST=m.vendor;
+  }
+  hint.dataset.ok='1';
+  hint.textContent = `${m.prefix} → ${m.org}`
+    + (m.countryName ? `（${m.countryName}）` : '')
+    + (m.originOverridden ? `　※ IEEE 登錄地址為 ${m.registryCountry}，此處以品牌母國為準` : '')
+    + (cur && cur!==MAC_LAST ? '　（製造商欄已有內容，未覆寫）' : '');
+}
+
 function saveAsset(){
   const val=s=>{const n=$(s); return n?n.value.trim():'';};
   const pick=n=>{const x=document.querySelector(`input[name="${n}"]:checked`); return x?x.value:'';};
@@ -8367,7 +8924,9 @@ function fileRow(f,i){
         + (f.truncated?` · 僅顯示前 ${MAX_DOC_KEEP.toLocaleString()} 字元`:'')),
       el('button',{class:'btn btn-sm', onclick:e=>{e.stopPropagation();
         copyText(f.text, `已複製 ${f.name} 的內容`);}},
-        el('span',{html:svgIcon(I.copy)}),'複製全文')),
+        el('span',{html:svgIcon(I.copy)}),'複製全文'),
+      el('button',{class:'btn btn-sm', onclick:e=>{e.stopPropagation(); downloadDoc(f);}},
+        el('span',{html:svgIcon(I.download)}),'下載檔案')),
     el('pre',{class:'file-pre'}, el('code',{}, f.text)));
   return el('div',{class:'file-item'},
     el('button',{class:'file-head', 'aria-expanded':'false',
@@ -10899,6 +11458,7 @@ function render(){
   app.append(topbar());
   if(S.route==='pwchange'){ app.append(viewPwChange()); applyTheme(); return; }
   if(S.route==='audit'){ app.append(viewAudit()); applyTheme(); return; }
+  if(S.route==='datasrc'){ app.append(viewDataSources()); applyTheme(); return; }
   const bb=backBar();
   if(bb){ const holder=el('div',{class:'wrap', style:'padding-bottom:0'}, bb); app.append(holder); }
   if(S.route==='users'){ app.append(viewUsers()); }

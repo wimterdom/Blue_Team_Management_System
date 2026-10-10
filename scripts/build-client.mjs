@@ -22,6 +22,18 @@ const src = readFileSync(resolve(root, 'client/index.html'), 'utf8');
 const datalayer = readFileSync(resolve(root, 'client/datalayer.js'), 'utf8');
 const prodViews = readFileSync(resolve(root, 'client/prod-views.js'), 'utf8');
 const attackData = readFileSync(resolve(root, 'client/attack-data.js'), 'utf8');
+
+/* 展示版沒有伺服器可查 OUI，嵌入子集讓功能仍可操作；
+   正式版留空，一律走 /api/v1/oui。 */
+const ouiSubset = JSON.parse(readFileSync(resolve(root, 'seed/oui-subset.json'), 'utf8'));
+const countryZh = JSON.parse(readFileSync(resolve(root, 'seed/country-zh.json'), 'utf8'));
+const ouiMeta = JSON.parse(readFileSync(resolve(root, 'seed/oui-meta.json'), 'utf8'));
+const ouiBlockFor = mode => mode === 'demo'
+  ? `const OUI_SUBSET = ${JSON.stringify(ouiSubset)};\n`
+    + `const COUNTRY_ZH = ${JSON.stringify(countryZh)};\n`
+    + `const OUI_SUBSET_DATE = ${JSON.stringify(ouiMeta.retrieved)};`
+  : 'const OUI_SUBSET = {}, COUNTRY_ZH = {}, OUI_SUBSET_DATE = null;';
+const nmap = readFileSync(resolve(root, 'client/nmap.js'), 'utf8');
 const exchange = readFileSync(resolve(root, 'client/exchange.js'), 'utf8');
 const exchangeActions = readFileSync(resolve(root, 'client/exchange-actions.js'), 'utf8');
 const extraCss = readFileSync(resolve(root, 'client/prod.css'), 'utf8');
@@ -90,7 +102,11 @@ function build(mode) {
 
   out = out
     .replace('/*__BTMS_ATTACK_DATA__*/', () => attackData)
-    .replace('/*__BTMS_DATALAYER__*/', () => datalayer.replace('__BTMS_MODE__', mode))
+    // OUI 子集的佔位符位在 datalayer 之內，所以先填好再整段注入
+    .replace('/*__BTMS_DATALAYER__*/', () => datalayer
+      .replace('__BTMS_MODE__', mode)
+      .replace('/*__BTMS_OUI_SUBSET__*/', () => ouiBlockFor(mode)))
+    .replace('/*__BTMS_NMAP__*/', () => nmap)
     .replace('/*__BTMS_EXCHANGE__*/', () => exchange)
     .replace('/*__BTMS_EXCHANGE_ACTIONS__*/', () => exchangeActions)
     .replace('/*__BTMS_PRODVIEWS__*/', () => prodViews)
@@ -98,7 +114,7 @@ function build(mode) {
 
   if (out.includes('__BTMS_MODE__')) throw new Error('MODE 佔位符未被取代');
   // 佔位符沒被取代表示模組沒嵌進去，頁面會在執行期才炸——提早擋下
-  for (const ph of ['ATTACK_DATA', 'DATALAYER', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
+  for (const ph of ['ATTACK_DATA', 'OUI_SUBSET', 'DATALAYER', 'NMAP', 'EXCHANGE', 'EXCHANGE_ACTIONS', 'PRODVIEWS', 'PROD_CSS']) {
     if (out.includes(`/*__BTMS_${ph}__*/`)) throw new Error(`${ph} 模組未嵌入`);
   }
   return out;

@@ -448,6 +448,15 @@ function openAssetImport() {
     el('p', { style: 'font-size:12.5px;line-height:1.8;color:var(--ink-2)' },
       '以 CSV 批次建立或更新資產。第一列必須是標題列，欄位名稱需與範本一致；' +
       '欄位順序不拘，多餘的欄會被忽略。'),
+    el('p', { style: 'font-size:12.5px;line-height:1.8;color:var(--ink-2);margin-top:6px' },
+      '也可以直接丟 ',
+      el('b', {}, 'nmap 的掃描報告'),
+      '：XML（',
+      el('code', {}, 'nmap -oX'),
+      '）或 greppable（',
+      el('code', {}, 'nmap -oG'),
+      '）都可以，系統會轉成上述格式後一樣先讓你預覽。' +
+      'XML 的欄位最齊全——含 MAC、製造商、OS 指紋與服務版本。'),
 
     el('div', { style: 'display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap' },
       el('button', { class: 'btn', onclick: downloadAssetTemplate },
@@ -467,10 +476,11 @@ function openAssetImport() {
       } },
       el('span', { html: svgIcon(I.upload) }),
       el('div', {},
-        el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳 CSV 檔案'),
+        el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳 CSV 或 nmap 報告'),
         el('div', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:3px' },
-          '以 UTF-8 編碼儲存；Excel 請選「CSV UTF-8（逗號分隔）」')),
-      el('input', { type: 'file', id: 'csv-file', accept: '.csv,text/csv', style: 'display:none',
+          'CSV 請以 UTF-8 儲存（Excel 選「CSV UTF-8（逗號分隔）」）；nmap 接受 .xml 與 .gnmap')),
+      el('input', { type: 'file', id: 'csv-file', style: 'display:none',
+        accept: '.csv,.xml,.gnmap,.nmap,text/csv,text/xml,application/xml',
         onchange: e => { const f = e.target.files[0]; if (f) readAssetCsv(f); } })),
 
     el('div', { id: 'csv-result' }));
@@ -513,16 +523,45 @@ async function readAssetCsv(file) {
     return;
   }
 
-  const result = validateAssetRows(parseCsv(text));
+  // nmap 報告先轉成與範本相同的 CSV，之後走完全一樣的驗證與預覽流程
+  let table;
+  let converted = null;
+  if (detectNmapFormat(text)) {
+    try {
+      const parsed = parseNmap(text);
+      const rows = await nmapToRows(parsed);
+      converted = { parsed, rows, csv: nmapRowsToCsv(rows) };
+      table = parseCsv(converted.csv);
+    } catch (e) {
+      host.innerHTML = '';
+      host.append(el('p', { class: 'login-err' }, 'nmap 報告解析失敗：' + e.message));
+      return;
+    }
+  } else {
+    table = parseCsv(text);
+  }
+
+  const result = validateAssetRows(table);
   host.innerHTML = '';
   if (result.error) {
     host.append(el('p', { class: 'login-err' }, result.error));
     return;
   }
-  renderImportPreview(host, result, file.name);
+  // 掃到的服務依列號掛回去，匯入時一併寫進資產明細
+  if (converted) {
+    result.items.forEach((item, i) => { item.services = converted.rows[i]?.services || []; });
+  }
+  renderImportPreview(host, result, file.name, converted);
 }
 
-function renderImportPreview(host, result, filename) {
+/** 轉成與匯入範本完全相同的欄位順序，使用者也能把它存下來自行編修。 */
+function nmapRowsToCsv(rows) {
+  return buildCsv(
+    IMPORTABLE.map(c => c.label),
+    rows.map(r => IMPORTABLE.map(c => r.values[c.key] ?? '')));
+}
+
+function renderImportPreview(host, result, filename, converted) {
   const { items, unknown } = result;
   const bad = items.filter(x => x.errors.length);
   const ok = items.filter(x => !x.errors.length);
@@ -541,6 +580,26 @@ function renderImportPreview(host, result, filename) {
       bad.length ? el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--critical)' }),
         `無法匯入 ${bad.length}`) : null,
       el('span', { class: 'hint', style: 'margin-left:auto' }, filename)),
+
+    converted
+      ? el('div', { class: 'nmap-note' },
+          el('div', {},
+            el('b', {}, '已自 nmap 報告轉換'),
+            `　${converted.parsed.meta.tool}`,
+            converted.parsed.meta.when ? `　${converted.parsed.meta.when}` : '',
+            converted.parsed.hosts.length ? `　存活主機 ${converted.parsed.hosts.length} 台` : '',
+            converted.parsed.meta.args
+              ? el('div', { class: 'hint', style: 'margin-top:3px;font-family:var(--mono)' },
+                  converted.parsed.meta.args)
+              : null,
+            el('div', { class: 'hint', style: 'margin-top:4px' },
+              '網段以 IPv4 推定為 /24，重要性、放置地點與上層設備掃描不到，請匯入後補齊。')),
+          el('button', { class: 'btn btn-sm', style: 'margin-left:auto;flex:none',
+            onclick: () => saveBlob(
+              new Blob([converted.csv], { type: 'text/csv;charset=utf-8' }),
+              `nmap轉換-${stampSlug()}.csv`, { text: converted.csv }) },
+            el('span', { html: svgIcon(I.download) }), '下載轉換後的 CSV'))
+      : null,
 
     unknown.length
       ? el('p', { class: 'hint', style: 'margin-top:8px' },
@@ -580,6 +639,20 @@ function renderImportPreview(host, result, filename) {
         : null));
 }
 
+/** 依「埠＋服務名」合併，重掃同一台主機不會把既有紀錄洗成重複項。 */
+function mergeServices(existing, incoming) {
+  const key = s => `${s.port}/${s.name}`;
+  const map = new Map((existing || []).map(s => [key(s), s]));
+  for (const s of incoming) {
+    const k = key(s);
+    if (map.has(k)) {
+      // 版本資訊以新掃到的為準，但不要用空值蓋掉既有的
+      if (s.version) map.get(k).version = s.version;
+    } else map.set(k, { ...s });
+  }
+  return [...map.values()].sort((a, b) => Number(a.port) - Number(b.port));
+}
+
 function commitAssetImport(items) {
   if (!items.length) return;
   const me = USERS[S.me];
@@ -607,13 +680,14 @@ function commitAssetImport(items) {
       Object.assign(a, fields);
       const d = (ADETAIL[a.id] ||= { purpose: '', services: [], vulns: [], files: [], audit: [] });
       if (v.purpose) d.purpose = v.purpose;
+      if (x.services?.length) d.services = mergeServices(d.services, x.services);
       (d.audit ||= []).unshift({ who: me.name, role: me.role, act: `自 CSV 匯入更新（第 ${x.line} 列）`, when: nowStamp() });
       updated += 1;
     } else {
       const id = nextAssetId();
       ASSETS.push({ id, ...fields, created: nowStamp() });
       ADETAIL[id] = {
-        purpose: v.purpose || '', services: [], vulns: [], files: [],
+        purpose: v.purpose || '', services: x.services || [], vulns: [], files: [],
         audit: [{ who: me.name, role: me.role, act: `自 CSV 匯入建立（第 ${x.line} 列）`, when: nowStamp() }],
       };
       created += 1;
@@ -624,6 +698,51 @@ function commitAssetImport(items) {
   closeOverlay();
   render();
   toast(`匯入完成：新建 ${created} 筆、更新 ${updated} 筆`);
+}
+
+
+/* ============================================================
+   附件下載
+   ============================================================ */
+
+/**
+ * 下載一張附圖。
+ *
+ * 正式部署的附圖存在伺服器上（/api/v1/attachments/...），先取回再交付；
+ * 展示版的附圖是 data URL，直接轉成 blob。兩種情形都走同一個 saveBlob，
+ * 所以沙箱環境下的替代交付方式也一併適用。
+ */
+async function downloadShot(shot) {
+  if (!shot || !shot.url) return toast('這張附圖沒有實際檔案，無法下載');
+  try {
+    const res = await fetch(shot.url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`伺服器回應 ${res.status}`);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const base = (shot.cap || shot.name || '附圖').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+    saveBlob(blob, /\.[a-z0-9]+$/i.test(base) ? base : `${base}.${ext}`);
+  } catch (e) {
+    toast('附圖下載失敗：' + e.message);
+  }
+}
+
+/** 下載資產的文字附件（組態檔、log）。內容本來就在記憶體裡，直接成檔。 */
+function downloadDoc(f) {
+  if (!f || f.text == null) return toast('這個附件沒有內容可下載');
+  const name = (f.name || 'attachment.txt').replace(/[\\/:*?"<>|]/g, '_');
+  saveBlob(new Blob([f.text], { type: 'text/plain;charset=utf-8' }), name, { text: f.text });
+}
+
+/** 一次下載某筆紀錄的全部附圖。 */
+async function downloadAllShots(shots, label) {
+  const real = (shots || []).filter(s => s.url);
+  if (!real.length) return toast('這筆紀錄沒有可下載的附圖');
+  for (const s of real) {
+    await downloadShot(s);
+    // 逐張確認，避免一次彈出一堆存檔提示
+    await new Promise(r => setTimeout(r, 300));
+  }
+  toast(`已送出 ${real.length} 張附圖${label ? `（${label}）` : ''}`);
 }
 
 /* ============================================================
