@@ -5736,6 +5736,13 @@ const TOPO_NOTES=[
 ];
 
 const INTEL_NOTES=[
+  ['獵補計畫任何分析員都可編輯','威脅獵補計畫是全隊一起推進的工作——假說由一個人提出，' +
+    '抽象分析、所需資料、資料缺口與調查結果常由網路、主機、惡意程式分析員各自補上，' +
+    '綁在建立者或單一職務上反而擋住正常的協作。因此**任何分析員都能編輯任何一份獵補計畫**，' +
+    'TTP 標註同理（全隊共用的覆蓋圖層）。APT 組織報告與情資報告維持原樣，' +
+    '僅情資分析員與隊長可編輯。這條規則在伺服器端強制（hunts 與 ttp_marks 標為共用集合），' +
+    '不是只把按鈕打開——先前「調查結果開放所有分析員修改」只改了介面，' +
+    '非建立者實際存檔時會被伺服器擋下，一併修正。'],
   ['ATT&CK 技術表由官方資料產生','技術表不再手寫，改由 `scripts/update-attack.mjs` 自 MITRE 官方的 STIX 資料產生，' +
     '目前為 **Enterprise v19.2**（15 個戰術、254 項母技術、618 項子技術）。' +
     '每項技術的中文名稱集中在 `seed/attack-zh.json`，官方新增而未翻譯者腳本會列出清單，不會默默產出半套。' +
@@ -8466,9 +8473,22 @@ function exportTopo(){
 /* ============================================================
    情資管理系統
    ============================================================ */
-const canEditIntel = () => {
+/**
+ * 情資管理系統的編輯權限，依項目種類而定。
+ *
+ *   APT 組織報告、情資報告 — 情資分析員與隊長
+ *   威脅獵補計畫           — 任何分析員
+ *
+ * 獵補計畫是全隊一起推進的工作：假說由一個人提出，抽象分析、資料缺口與
+ * 調查結果常由網路、主機、惡意程式分析員各自補上，綁在單一職務上
+ * 反而擋住正常的協作。伺服器端把 hunts 標為 shared 集合，
+ * 不再要求必須是建立者。
+ */
+const canEditIntel = (kind) => {
   const u=USERS[S.me]||{};
-  return u.role==='情資分析員' || u.perm==='admin' || u.perm==='manage';
+  if(u.perm==='admin' || u.perm==='manage') return true;
+  if(kind==='hunt') return !!S.me;
+  return u.role==='情資分析員';
 };
 
 /* ---- 受檢環境風險評估 ----
@@ -8556,7 +8576,7 @@ function viewIntelDash(){
             menuItem('整合用 JSON（複製）', exportIntel, I.copy),
           ])},
           el('span',{html:svgIcon(I.download)}),'匯出', el('span',{class:'caret'},'▾')),
-        canEditIntel()
+        (canEditIntel('apt') || canEditIntel('hunt'))
           ? el('div',{class:'newwrap'},
               el('button',{class:'btn btn-primary', id:'new-btn',
                 onclick:e=>{e.stopPropagation(); openNewMenu();}},
@@ -8603,11 +8623,12 @@ function openNewMenu(){
     onclick:()=>{ closeOverlay(); S.iKind=kind; S.iId=null; S.iform=null; go('form'); }},
     el('span',{class:'appmi-mark', html:svgIcon(kind==='apt'?I.intel:kind==='intel'?I.reply:I.grid)}),
     el('span',{class:'appmi-txt'}, label, el('small',{},desc)));
+  // 權限不足的種類不列出來，免得點進去才被擋
   const menu=el('div',{class:'menu newmenu'},
     el('div',{class:'mh'}, el('div',{class:'eyebrow'},'建立新項目')),
-    mk('apt','APT 組織報告','組織名稱、類型、國家、TTP 列表'),
-    mk('intel','情資報告','來源、內容、分析結果、IOC 與 TTP'),
-    mk('hunt','威脅獵補計畫','Hypothesis 到 Implement 六階段'));
+    canEditIntel('apt')   ? mk('apt','APT 組織報告','組織名稱、類型、國家、TTP 列表') : null,
+    canEditIntel('intel') ? mk('intel','情資報告','來源、內容、分析結果、IOC 與 TTP') : null,
+    canEditIntel('hunt')  ? mk('hunt','威脅獵補計畫','Hypothesis 到 Implement 六階段') : null);
   ov.innerHTML=''; ov.append(menu);
   armOutsideClose();
   menu.addEventListener('click',e=>e.stopPropagation());
@@ -9083,7 +9104,7 @@ function viewMatrix(){
   const shown=ATTACK_FULL.reduce((n,t)=>n+t.techs.filter(x=>techVisible(t.id,x.id)).length
     +t.techs.reduce((m,x)=>m+x.subs.filter(sb=>techVisible(t.id,sb.id)).length,0),0);
   const all=ATTACK_FULL.reduce((n,t)=>n+t.techs.length+t.techs.reduce((m,x)=>m+x.subs.length,0),0);
-  const editable=canEditIntel();
+  const editable=canEditIntel('hunt');   // TTP 標註為全隊共用圖層
 
   const wrap=el('div',{class:'wrap topo-wrap'},
     el('div',{class:'page-head'},
@@ -9338,10 +9359,10 @@ function intelBack(){
     el('span',{html:svgIcon(I.back)}),'返回情資總覽');
 }
 function editBtn(kind,id){
-  return canEditIntel()
+  return canEditIntel(kind)
     ? el('button',{class:'btn', onclick:()=>{S.iKind=kind; S.iId=id; go('form');}},
         el('span',{html:svgIcon(I.edit)}),'編輯')
-    : el('button',{class:'btn', disabled:true, title:'僅情資分析員與隊長可編輯'},
+    : el('button',{class:'btn', disabled:true, title:'APT 組織報告與情資報告僅情資分析員與隊長可編輯'},
         el('span',{html:svgIcon(I.edit)}),'編輯');
 }
 
@@ -9546,11 +9567,12 @@ function viewHunt(){
 
 /* ---- 表單：三種都在同一支，依 S.iKind 切換 ---- */
 function viewIntelForm(){
-  if(!canEditIntel()){
+  if(!canEditIntel(S.iKind)){
     return el('div',{class:'wrap'}, el('div',{class:'card sec'},
       el('h3',{},'沒有編輯權限'),
       el('p',{style:'font-size:13px;color:var(--ink-2);margin-top:6px'},
-        `情資管理系統僅開放情資分析員與隊長編輯。你目前的身分是 ${USERS[S.me].name}（${USERS[S.me].role}）。`),
+        `APT 組織報告與情資報告僅開放情資分析員與隊長編輯；威脅獵補計畫則任何分析員都可編輯。` +
+        `你目前的身分是 ${USERS[S.me].name}（${USERS[S.me].role}）。`),
       el('button',{class:'btn', style:'margin-top:14px', onclick:()=>go('dashboard')},
         el('span',{html:svgIcon(I.back)}),'返回情資總覽')));
   }

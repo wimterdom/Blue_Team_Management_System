@@ -166,7 +166,7 @@ export default async function collectionRoutes(app) {
 
     // detail 類集合本身沒有擁有者欄位，改看母紀錄
     const ownerSource = cfg.parent ? getRecord(cfg.parent, id)?.data : current.data;
-    assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`);
+    assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`, cfg.shared);
 
     const data = { ...body.data, id };
     const { before, after } = updateRecord(
@@ -191,7 +191,7 @@ export default async function collectionRoutes(app) {
     if (!current) throw notFound();
 
     const ownerSource = cfg.parent ? getRecord(cfg.parent, id)?.data : current.data;
-    assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`);
+    assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`, cfg.shared);
 
     deleteRecord(name, id, req.user.id);
     audit({
@@ -225,7 +225,7 @@ export default async function collectionRoutes(app) {
           const current = getRecord(name, id);
           if (!current) { results.push({ id, collection: name, ok: true, skipped: 'not_found' }); continue; }
           const ownerSource = cfg.parent ? getRecord(cfg.parent, id)?.data : current.data;
-          assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`);
+          assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`, cfg.shared);
           deleteRecord(name, id, req.user.id);
           audit({
             ...reqMeta(req), action: 'delete', collection: name, recordId: id,
@@ -240,7 +240,7 @@ export default async function collectionRoutes(app) {
         const existing = getRecord(name, id);
         if (existing) {
           const ownerSource = cfg.parent ? getRecord(cfg.parent, id)?.data : existing.data;
-          assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`);
+          assertCanMutate(req.user, ownerSource, `${cfg.label} ${id}`, cfg.shared);
           const { before, after } = updateRecord(
             name, id, data, req.user.id,
             op.version === undefined ? null : op.version,

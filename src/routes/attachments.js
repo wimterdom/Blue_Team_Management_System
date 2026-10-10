@@ -47,7 +47,7 @@ function assertOwnerOfRecord(req, collection, recordId) {
   const parent = cfg.parent || collection;
   const rec = getRecord(parent, recordId);
   if (!rec) throw notFound(`${parent}/${recordId} 不存在`);
-  assertCanMutate(req.user, rec.data, `${cfg.label} ${recordId}`);
+  assertCanMutate(req.user, rec.data, `${cfg.label} ${recordId}`, cfg.shared);
 }
 
 export default async function attachmentRoutes(app) {

@@ -5,6 +5,10 @@
  * 以及該集合在用戶端狀態樹中的鍵名（bootstrap 與同步時據此對應）。
  *
  * detail 類集合以「母紀錄的 id」為主鍵，所以沒有自己的編號序列。
+ *
+ * shared:true 代表「團隊共同維護」——任何登入者都能編輯，不限建立者。
+ * 獵補計畫是全隊一起推進的工作（假說由一個人提出，分析與調查結果常由
+ * 不同人補上），TTP 標註則是共用的覆蓋圖層，都不該綁在建立者身上。
  */
 export const COLLECTIONS = {
   cases:          { label: '調查報告',     clientKey: 'cases',    idPrefix: 'CASE',  kind: 'list' },
@@ -16,8 +20,8 @@ export const COLLECTIONS = {
   sensors:        { label: '感測器佈署',   clientKey: 'sensors',  idPrefix: 'S',     kind: 'list' },
   apts:           { label: 'APT 組織報告', clientKey: 'apts',     idPrefix: 'APT',   kind: 'list' },
   intels:         { label: '情資報告',     clientKey: 'intels',   idPrefix: 'INTEL', kind: 'list' },
-  hunts:          { label: '威脅獵補計畫', clientKey: 'hunts',    idPrefix: 'HUNT',  kind: 'list' },
-  ttp_marks:      { label: 'TTP 標註',     clientKey: 'marks',    idPrefix: 'MARK',  kind: 'list' },
+  hunts:          { label: '威脅獵補計畫', clientKey: 'hunts',    idPrefix: 'HUNT',  kind: 'list', shared: true },
+  ttp_marks:      { label: 'TTP 標註',     clientKey: 'marks',    idPrefix: 'MARK',  kind: 'list', shared: true },
 };
 
 export const COLLECTION_NAMES = Object.keys(COLLECTIONS);

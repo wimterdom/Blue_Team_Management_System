@@ -44,6 +44,8 @@ handle = (
     "\n/* e2e 測試把手 */\nwindow.__T = {\n"
     "  get ASSETS(){return ASSETS}, get ADETAIL(){return ADETAIL},\n"
     "  get CASES(){return CASES}, get DETAIL(){return DETAIL},\n"
+    "  get HUNTS(){return HUNTS}, get INTELS(){return INTELS}, get APTS(){return APTS},\n"
+    "  get TTP_MARKS(){return TTP_MARKS}, canEditIntel,\n"
     "  get S(){return S}, get STORE(){return STORE},\n"
     "  buildXlsx, buildCsv, parseCsv, assetCsvTemplate, validateAssetRows,\n"
     "  commitAssetImport, ASSET_COLUMNS, assetCellValue, svgToPng, printDoc,\n"

@@ -64,7 +64,9 @@ cross-system jump can be reversed with one click back to where you were.
 - Three permission levels: system administrator / case management (team lead and
   deputy) / analyst
 - An analyst may only modify records they created — enforced **server-side**, not
-  by hiding buttons
+  by hiding buttons. Two collections are exempt as team-shared work: threat hunt
+  plans (the hypothesis comes from one person, the analytics, data gaps and
+  findings from others) and ATT&CK marks (a shared overlay)
 - Every login, create, update and delete is written to an audit log including the
   before/after values of changed fields. Administrators can query and export CSV
 

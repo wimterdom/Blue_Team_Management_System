@@ -27,15 +27,23 @@ export function requirePerm(min) {
 export const ownerOf = data =>
   (data && (data.analyst ?? data.applicant)) || null;
 
-export function canMutate(user, existingData) {
+/**
+ * 能不能改這筆紀錄。
+ *
+ * @param shared 該集合是否為團隊共同維護（見 lib/collections.js）。
+ *   獵補計畫與 TTP 標註屬於這一類：假說由一個人提出，分析、資料缺口與
+ *   調查結果常由不同人補上，綁在建立者身上反而擋住正常的協作。
+ */
+export function canMutate(user, existingData, shared = false) {
   if (!user) return false;
   if (user.perm === 'admin' || user.perm === 'manage') return true;
   if (!existingData) return true; // 新建：任何登入者皆可
+  if (shared) return true;
   return ownerOf(existingData) === user.id;
 }
 
-export function assertCanMutate(user, existingData, what = '這筆紀錄') {
-  if (!canMutate(user, existingData)) {
+export function assertCanMutate(user, existingData, what = '這筆紀錄', shared = false) {
+  if (!canMutate(user, existingData, shared)) {
     throw forbidden(`一般分析員僅能修改自己建立的紀錄，無法變更${what}`);
   }
 }
