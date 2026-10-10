@@ -130,6 +130,7 @@ function assemble(data, zh) {
     out.push({
       id: tac.id,
       name: zh.tactics[tac.id] || tac.en,
+      en: tac.en,
       techs: parents
         .sort((a, b) => a.id.localeCompare(b.id))
         .map(p => {
@@ -146,10 +147,12 @@ function assemble(data, zh) {
           return {
             id: p.id,
             name: nameOf(p.id),
+            en: p.en,
             common: commonSet.has(p.id),
             subs: subs.map(s => ({
               id: s.id,
               name: nameOf(s.id),
+              en: s.en,
               common: commonSet.has(p.id) && subCommon.has(s.id),
             })),
           };
@@ -179,19 +182,21 @@ function emit(matrix, revoked, meta) {
   lines.push(`   版本：Enterprise v${meta.version}${meta.released ? `（${meta.released.slice(0, 10)} 發布）` : ''}`);
   lines.push(`   取得：${meta.retrieved}`);
   lines.push('');
-  lines.push('   中文名稱來自 seed/attack-zh.json；common 為預設顯示與否，');
+  lines.push('   每項技術同時帶中文與官方英文原名（en）——分析員要與 attack.mitre.org 對照，');
+  lines.push('   只有中文反而難找。中文名稱來自 seed/attack-zh.json；');
+  lines.push('   common 為預設顯示與否，');
   lines.push('   依 MITRE 自身的「被威脅組織與工具引用次數」取每個戰術前 8 名。');
   lines.push('   ============================================================ */');
   lines.push(`const ATTACK_VERSION = ${JSON.stringify(`v${meta.version}`)};`);
   lines.push('const ATTACK_FULL=[');
   for (const tac of matrix) {
-    lines.push(`  {id:${JSON.stringify(tac.id)}, name:${JSON.stringify(tac.name)}, techs:[`);
+    lines.push(`  {id:${JSON.stringify(tac.id)}, name:${JSON.stringify(tac.name)}, en:${JSON.stringify(tac.en)}, techs:[`);
     for (const p of tac.techs) {
-      const head = `    {id:${JSON.stringify(p.id)}, name:${JSON.stringify(p.name)}, common:${p.common}, subs:[`;
+      const head = `    {id:${JSON.stringify(p.id)}, name:${JSON.stringify(p.name)}, en:${JSON.stringify(p.en)}, common:${p.common}, subs:[`;
       if (!p.subs.length) { lines.push(head + ']},'); continue; }
       lines.push(head);
       for (const s of p.subs) {
-        lines.push(`      {id:${JSON.stringify(s.id)}, name:${JSON.stringify(s.name)}, common:${s.common}},`);
+        lines.push(`      {id:${JSON.stringify(s.id)}, name:${JSON.stringify(s.name)}, en:${JSON.stringify(s.en)}, common:${s.common}},`);
       }
       lines.push('    ]},');
     }

@@ -1319,6 +1319,21 @@ textarea.inp{resize:vertical; min-height:150px; line-height:1.8; font-family:var
 /* MAC 比對結果提示 */
 .hint[data-ok]{color:var(--good)}
 
+/* ATT&CK 技術名稱中英並列：英文以較淡的樣式呈現，方便與 attack.mitre.org
+   對照，又不至於與中文搶視覺重量。 */
+.ttp-en{
+  margin-left:7px; font-size:11px; color:var(--ink-3);
+  font-family:var(--sans); font-weight:400;
+}
+.ttp-nm{display:inline-flex; align-items:baseline; min-width:0; flex-wrap:wrap}
+
+/* 挑選視窗是一長串清單，英文固定自成一行——
+   有時貼在同行、有時換行，掃讀時反而更吃力。 */
+.tech .tname{display:flex; flex-direction:column; gap:1px; min-width:0}
+.tech .tname .ttp-en{margin-left:0; line-height:1.45}
+
+.tagopt-sub .ttp-en{margin-left:5px}
+
 </style>
 
 <div id="app"></div>
@@ -1672,1036 +1687,1038 @@ const TACTICS = [
    版本：Enterprise v19.2
    取得：2026-10-10
 
-   中文名稱來自 seed/attack-zh.json；common 為預設顯示與否，
+   每項技術同時帶中文與官方英文原名（en）——分析員要與 attack.mitre.org 對照，
+   只有中文反而難找。中文名稱來自 seed/attack-zh.json；
+   common 為預設顯示與否，
    依 MITRE 自身的「被威脅組織與工具引用次數」取每個戰術前 8 名。
    ============================================================ */
 const ATTACK_VERSION = "v19.2";
 const ATTACK_FULL=[
-  {id:"TA0043", name:"偵察", techs:[
-    {id:"T1589", name:"蒐集受害者身分資訊", common:true, subs:[
-      {id:"T1589.001", name:"憑證", common:true},
-      {id:"T1589.002", name:"電子郵件地址", common:true},
-      {id:"T1589.003", name:"員工姓名", common:true},
+  {id:"TA0043", name:"偵察", en:"Reconnaissance", techs:[
+    {id:"T1589", name:"蒐集受害者身分資訊", en:"Gather Victim Identity Information", common:true, subs:[
+      {id:"T1589.001", name:"憑證", en:"Credentials", common:true},
+      {id:"T1589.002", name:"電子郵件地址", en:"Email Addresses", common:true},
+      {id:"T1589.003", name:"員工姓名", en:"Employee Names", common:true},
     ]},
-    {id:"T1590", name:"蒐集受害者網路資訊", common:true, subs:[
-      {id:"T1590.001", name:"網域屬性", common:true},
-      {id:"T1590.002", name:"DNS", common:false},
-      {id:"T1590.003", name:"網路信任相依關係", common:false},
-      {id:"T1590.004", name:"網路拓撲", common:true},
-      {id:"T1590.005", name:"IP 位址", common:true},
-      {id:"T1590.006", name:"網路安全設備", common:true},
+    {id:"T1590", name:"蒐集受害者網路資訊", en:"Gather Victim Network Information", common:true, subs:[
+      {id:"T1590.001", name:"網域屬性", en:"Domain Properties", common:true},
+      {id:"T1590.002", name:"DNS", en:"DNS", common:false},
+      {id:"T1590.003", name:"網路信任相依關係", en:"Network Trust Dependencies", common:false},
+      {id:"T1590.004", name:"網路拓撲", en:"Network Topology", common:true},
+      {id:"T1590.005", name:"IP 位址", en:"IP Addresses", common:true},
+      {id:"T1590.006", name:"網路安全設備", en:"Network Security Appliances", common:true},
     ]},
-    {id:"T1591", name:"蒐集受害者組織資訊", common:true, subs:[
-      {id:"T1591.001", name:"實體位置", common:true},
-      {id:"T1591.002", name:"商業關係", common:true},
-      {id:"T1591.003", name:"掌握營運節奏", common:true},
-      {id:"T1591.004", name:"身分角色", common:true},
+    {id:"T1591", name:"蒐集受害者組織資訊", en:"Gather Victim Org Information", common:true, subs:[
+      {id:"T1591.001", name:"實體位置", en:"Determine Physical Locations", common:true},
+      {id:"T1591.002", name:"商業關係", en:"Business Relationships", common:true},
+      {id:"T1591.003", name:"掌握營運節奏", en:"Identify Business Tempo", common:true},
+      {id:"T1591.004", name:"身分角色", en:"Identify Roles", common:true},
     ]},
-    {id:"T1592", name:"蒐集受害者主機資訊", common:true, subs:[
-      {id:"T1592.001", name:"硬體", common:true},
-      {id:"T1592.002", name:"軟體", common:true},
-      {id:"T1592.003", name:"韌體", common:true},
-      {id:"T1592.004", name:"用戶端組態", common:true},
+    {id:"T1592", name:"蒐集受害者主機資訊", en:"Gather Victim Host Information", common:true, subs:[
+      {id:"T1592.001", name:"硬體", en:"Hardware", common:true},
+      {id:"T1592.002", name:"軟體", en:"Software", common:true},
+      {id:"T1592.003", name:"韌體", en:"Firmware", common:true},
+      {id:"T1592.004", name:"用戶端組態", en:"Client Configurations", common:true},
     ]},
-    {id:"T1593", name:"搜尋公開網站與網域", common:true, subs:[
-      {id:"T1593.001", name:"社群媒體", common:true},
-      {id:"T1593.002", name:"搜尋引擎", common:true},
-      {id:"T1593.003", name:"程式碼儲存庫", common:true},
+    {id:"T1593", name:"搜尋公開網站與網域", en:"Search Open Websites/Domains", common:true, subs:[
+      {id:"T1593.001", name:"社群媒體", en:"Social Media", common:true},
+      {id:"T1593.002", name:"搜尋引擎", en:"Search Engines", common:true},
+      {id:"T1593.003", name:"程式碼儲存庫", en:"Code Repositories", common:true},
     ]},
-    {id:"T1594", name:"搜尋受害者自有網站", common:true, subs:[]},
-    {id:"T1595", name:"主動掃描", common:true, subs:[
-      {id:"T1595.001", name:"掃描 IP 區塊", common:true},
-      {id:"T1595.002", name:"漏洞掃描", common:true},
-      {id:"T1595.003", name:"字典式掃描", common:true},
+    {id:"T1594", name:"搜尋受害者自有網站", en:"Search Victim-Owned Websites", common:true, subs:[]},
+    {id:"T1595", name:"主動掃描", en:"Active Scanning", common:true, subs:[
+      {id:"T1595.001", name:"掃描 IP 區塊", en:"Scanning IP Blocks", common:true},
+      {id:"T1595.002", name:"漏洞掃描", en:"Vulnerability Scanning", common:true},
+      {id:"T1595.003", name:"字典式掃描", en:"Wordlist Scanning", common:true},
     ]},
-    {id:"T1596", name:"搜尋公開技術資料庫", common:false, subs:[
-      {id:"T1596.001", name:"DNS/被動 DNS", common:false},
-      {id:"T1596.002", name:"WHOIS", common:false},
-      {id:"T1596.003", name:"數位憑證", common:false},
-      {id:"T1596.004", name:"內容傳遞網路（CDN）", common:false},
-      {id:"T1596.005", name:"掃描資料庫", common:false},
+    {id:"T1596", name:"搜尋公開技術資料庫", en:"Search Open Technical Databases", common:false, subs:[
+      {id:"T1596.001", name:"DNS/被動 DNS", en:"DNS/Passive DNS", common:false},
+      {id:"T1596.002", name:"WHOIS", en:"WHOIS", common:false},
+      {id:"T1596.003", name:"數位憑證", en:"Digital Certificates", common:false},
+      {id:"T1596.004", name:"內容傳遞網路（CDN）", en:"CDNs", common:false},
+      {id:"T1596.005", name:"掃描資料庫", en:"Scan Databases", common:false},
     ]},
-    {id:"T1597", name:"搜尋封閉來源", common:false, subs:[
-      {id:"T1597.001", name:"威脅情資供應商", common:false},
-      {id:"T1597.002", name:"購買技術資料", common:false},
+    {id:"T1597", name:"搜尋封閉來源", en:"Search Closed Sources", common:false, subs:[
+      {id:"T1597.001", name:"威脅情資供應商", en:"Threat Intel Vendors", common:false},
+      {id:"T1597.002", name:"購買技術資料", en:"Purchase Technical Data", common:false},
     ]},
-    {id:"T1598", name:"網路釣魚以蒐集資訊", common:true, subs:[
-      {id:"T1598.001", name:"魚叉式服務", common:true},
-      {id:"T1598.002", name:"魚叉式附件", common:true},
-      {id:"T1598.003", name:"魚叉式連結", common:true},
-      {id:"T1598.004", name:"語音式魚叉釣魚", common:true},
+    {id:"T1598", name:"網路釣魚以蒐集資訊", en:"Phishing for Information", common:true, subs:[
+      {id:"T1598.001", name:"魚叉式服務", en:"Spearphishing Service", common:true},
+      {id:"T1598.002", name:"魚叉式附件", en:"Spearphishing Attachment", common:true},
+      {id:"T1598.003", name:"魚叉式連結", en:"Spearphishing Link", common:true},
+      {id:"T1598.004", name:"語音式魚叉釣魚", en:"Spearphishing Voice", common:true},
     ]},
-    {id:"T1681", name:"搜尋資安廠商公開資料", common:false, subs:[]},
-    {id:"T1682", name:"查詢公開 AI 服務", common:false, subs:[]},
+    {id:"T1681", name:"搜尋資安廠商公開資料", en:"Search Threat Vendor Data", common:false, subs:[]},
+    {id:"T1682", name:"查詢公開 AI 服務", en:"Query Public AI Services", common:false, subs:[]},
   ]},
-  {id:"TA0042", name:"資源開發", techs:[
-    {id:"T1583", name:"取得基礎設施", common:true, subs:[
-      {id:"T1583.001", name:"網域", common:true},
-      {id:"T1583.002", name:"DNS 伺服器", common:false},
-      {id:"T1583.003", name:"虛擬私人伺服器", common:true},
-      {id:"T1583.004", name:"伺服器", common:true},
-      {id:"T1583.005", name:"殭屍網路", common:false},
-      {id:"T1583.006", name:"Web 服務", common:true},
-      {id:"T1583.007", name:"無伺服器服務", common:false},
-      {id:"T1583.008", name:"惡意廣告", common:false},
+  {id:"TA0042", name:"資源開發", en:"Resource Development", techs:[
+    {id:"T1583", name:"取得基礎設施", en:"Acquire Infrastructure", common:true, subs:[
+      {id:"T1583.001", name:"網域", en:"Domains", common:true},
+      {id:"T1583.002", name:"DNS 伺服器", en:"DNS Server", common:false},
+      {id:"T1583.003", name:"虛擬私人伺服器", en:"Virtual Private Server", common:true},
+      {id:"T1583.004", name:"伺服器", en:"Server", common:true},
+      {id:"T1583.005", name:"殭屍網路", en:"Botnet", common:false},
+      {id:"T1583.006", name:"Web 服務", en:"Web Services", common:true},
+      {id:"T1583.007", name:"無伺服器服務", en:"Serverless", common:false},
+      {id:"T1583.008", name:"惡意廣告", en:"Malvertising", common:false},
     ]},
-    {id:"T1584", name:"入侵基礎設施", common:true, subs:[
-      {id:"T1584.001", name:"網域", common:true},
-      {id:"T1584.002", name:"DNS 伺服器", common:false},
-      {id:"T1584.003", name:"虛擬專用伺服器", common:false},
-      {id:"T1584.004", name:"伺服器", common:true},
-      {id:"T1584.005", name:"殭屍網路", common:true},
-      {id:"T1584.006", name:"網路服務", common:false},
-      {id:"T1584.007", name:"無伺服器服務", common:false},
-      {id:"T1584.008", name:"網通設備", common:true},
+    {id:"T1584", name:"入侵基礎設施", en:"Compromise Infrastructure", common:true, subs:[
+      {id:"T1584.001", name:"網域", en:"Domains", common:true},
+      {id:"T1584.002", name:"DNS 伺服器", en:"DNS Server", common:false},
+      {id:"T1584.003", name:"虛擬專用伺服器", en:"Virtual Private Server", common:false},
+      {id:"T1584.004", name:"伺服器", en:"Server", common:true},
+      {id:"T1584.005", name:"殭屍網路", en:"Botnet", common:true},
+      {id:"T1584.006", name:"網路服務", en:"Web Services", common:false},
+      {id:"T1584.007", name:"無伺服器服務", en:"Serverless", common:false},
+      {id:"T1584.008", name:"網通設備", en:"Network Devices", common:true},
     ]},
-    {id:"T1585", name:"建立帳號", common:true, subs:[
-      {id:"T1585.001", name:"社群媒體帳號", common:true},
-      {id:"T1585.002", name:"電子郵件帳號", common:true},
-      {id:"T1585.003", name:"雲端帳號", common:true},
+    {id:"T1585", name:"建立帳號", en:"Establish Accounts", common:true, subs:[
+      {id:"T1585.001", name:"社群媒體帳號", en:"Social Media Accounts", common:true},
+      {id:"T1585.002", name:"電子郵件帳號", en:"Email Accounts", common:true},
+      {id:"T1585.003", name:"雲端帳號", en:"Cloud Accounts", common:true},
     ]},
-    {id:"T1586", name:"入侵帳號", common:true, subs:[
-      {id:"T1586.001", name:"社群媒體帳號", common:true},
-      {id:"T1586.002", name:"電子郵件帳號", common:true},
-      {id:"T1586.003", name:"雲端帳號", common:true},
+    {id:"T1586", name:"入侵帳號", en:"Compromise Accounts", common:true, subs:[
+      {id:"T1586.001", name:"社群媒體帳號", en:"Social Media Accounts", common:true},
+      {id:"T1586.002", name:"電子郵件帳號", en:"Email Accounts", common:true},
+      {id:"T1586.003", name:"雲端帳號", en:"Cloud Accounts", common:true},
     ]},
-    {id:"T1587", name:"開發能力", common:true, subs:[
-      {id:"T1587.001", name:"惡意程式", common:true},
-      {id:"T1587.002", name:"程式碼簽章憑證", common:true},
-      {id:"T1587.003", name:"數位憑證", common:true},
-      {id:"T1587.004", name:"漏洞利用程式", common:true},
+    {id:"T1587", name:"開發能力", en:"Develop Capabilities", common:true, subs:[
+      {id:"T1587.001", name:"惡意程式", en:"Malware", common:true},
+      {id:"T1587.002", name:"程式碼簽章憑證", en:"Code Signing Certificates", common:true},
+      {id:"T1587.003", name:"數位憑證", en:"Digital Certificates", common:true},
+      {id:"T1587.004", name:"漏洞利用程式", en:"Exploits", common:true},
     ]},
-    {id:"T1588", name:"取得能力", common:true, subs:[
-      {id:"T1588.001", name:"惡意程式", common:true},
-      {id:"T1588.002", name:"工具", common:true},
-      {id:"T1588.003", name:"程式碼簽章憑證", common:true},
-      {id:"T1588.004", name:"數位憑證", common:true},
-      {id:"T1588.005", name:"漏洞利用程式", common:false},
-      {id:"T1588.006", name:"漏洞情報", common:false},
-      {id:"T1588.007", name:"人工智慧工具", common:false},
+    {id:"T1588", name:"取得能力", en:"Obtain Capabilities", common:true, subs:[
+      {id:"T1588.001", name:"惡意程式", en:"Malware", common:true},
+      {id:"T1588.002", name:"工具", en:"Tool", common:true},
+      {id:"T1588.003", name:"程式碼簽章憑證", en:"Code Signing Certificates", common:true},
+      {id:"T1588.004", name:"數位憑證", en:"Digital Certificates", common:true},
+      {id:"T1588.005", name:"漏洞利用程式", en:"Exploits", common:false},
+      {id:"T1588.006", name:"漏洞情報", en:"Vulnerabilities", common:false},
+      {id:"T1588.007", name:"人工智慧工具", en:"Artificial Intelligence", common:false},
     ]},
-    {id:"T1608", name:"部署能力", common:true, subs:[
-      {id:"T1608.001", name:"上傳惡意程式", common:true},
-      {id:"T1608.002", name:"上傳工具", common:true},
-      {id:"T1608.003", name:"安裝數位憑證", common:false},
-      {id:"T1608.004", name:"水坑式網站", common:true},
-      {id:"T1608.005", name:"連結目標", common:true},
-      {id:"T1608.006", name:"搜尋引擎毒化", common:false},
+    {id:"T1608", name:"部署能力", en:"Stage Capabilities", common:true, subs:[
+      {id:"T1608.001", name:"上傳惡意程式", en:"Upload Malware", common:true},
+      {id:"T1608.002", name:"上傳工具", en:"Upload Tool", common:true},
+      {id:"T1608.003", name:"安裝數位憑證", en:"Install Digital Certificate", common:false},
+      {id:"T1608.004", name:"水坑式網站", en:"Drive-by Target", common:true},
+      {id:"T1608.005", name:"連結目標", en:"Link Target", common:true},
+      {id:"T1608.006", name:"搜尋引擎毒化", en:"SEO Poisoning", common:false},
     ]},
-    {id:"T1650", name:"購買既有存取權", common:false, subs:[]},
-    {id:"T1683", name:"生成內容", common:true, subs:[
-      {id:"T1683.001", name:"文字內容", common:true},
-      {id:"T1683.002", name:"影音內容", common:true},
-    ]},
-  ]},
-  {id:"TA0001", name:"初始存取", techs:[
-    {id:"T1078", name:"有效帳號", common:true, subs:[
-      {id:"T1078.001", name:"預設帳號", common:true},
-      {id:"T1078.002", name:"網域帳號", common:true},
-      {id:"T1078.003", name:"本機帳號", common:true},
-      {id:"T1078.004", name:"雲端帳號", common:true},
-    ]},
-    {id:"T1091", name:"透過可移除媒體複製", common:true, subs:[]},
-    {id:"T1133", name:"對外遠端服務", common:true, subs:[]},
-    {id:"T1189", name:"路過式入侵", common:true, subs:[]},
-    {id:"T1190", name:"利用對外服務漏洞", common:true, subs:[]},
-    {id:"T1195", name:"供應鏈入侵", common:true, subs:[
-      {id:"T1195.001", name:"軟體相依套件", common:true},
-      {id:"T1195.002", name:"軟體供應鏈", common:true},
-      {id:"T1195.003", name:"硬體供應鏈", common:true},
-    ]},
-    {id:"T1199", name:"信任關係", common:true, subs:[]},
-    {id:"T1200", name:"硬體植入", common:false, subs:[]},
-    {id:"T1566", name:"網路釣魚", common:true, subs:[
-      {id:"T1566.001", name:"附件", common:true},
-      {id:"T1566.002", name:"連結", common:true},
-      {id:"T1566.003", name:"透過服務", common:true},
-      {id:"T1566.004", name:"語音釣魚", common:true},
-    ]},
-    {id:"T1659", name:"內容注入", common:false, subs:[]},
-    {id:"T1669", name:"Wi-Fi 網路", common:false, subs:[]},
-  ]},
-  {id:"TA0002", name:"執行", techs:[
-    {id:"T1047", name:"Windows Management Instrumentation", common:true, subs:[]},
-    {id:"T1053", name:"排程工作／作業", common:true, subs:[
-      {id:"T1053.002", name:"At 排程", common:true},
-      {id:"T1053.003", name:"Cron", common:true},
-      {id:"T1053.005", name:"Scheduled Task", common:true},
-      {id:"T1053.006", name:"Systemd Timers", common:true},
-      {id:"T1053.007", name:"容器調度工作", common:false},
-    ]},
-    {id:"T1059", name:"指令與腳本直譯器", common:true, subs:[
-      {id:"T1059.001", name:"PowerShell", common:true},
-      {id:"T1059.002", name:"AppleScript", common:false},
-      {id:"T1059.003", name:"Windows Command Shell", common:true},
-      {id:"T1059.004", name:"Unix Shell", common:false},
-      {id:"T1059.005", name:"Visual Basic", common:true},
-      {id:"T1059.006", name:"Python", common:false},
-      {id:"T1059.007", name:"JavaScript", common:true},
-      {id:"T1059.008", name:"網通設備命令列", common:false},
-      {id:"T1059.009", name:"雲端 API", common:false},
-      {id:"T1059.010", name:"AutoHotKey 與 AutoIT", common:false},
-      {id:"T1059.011", name:"Lua", common:false},
-      {id:"T1059.012", name:"Hypervisor 命令列", common:false},
-      {id:"T1059.013", name:"容器命令列與 API", common:false},
-    ]},
-    {id:"T1072", name:"軟體部署工具", common:false, subs:[]},
-    {id:"T1106", name:"原生 API", common:true, subs:[]},
-    {id:"T1127", name:"藉可信開發工具代理執行", common:false, subs:[
-      {id:"T1127.001", name:"MSBuild", common:false},
-      {id:"T1127.002", name:"ClickOnce", common:false},
-      {id:"T1127.003", name:"JamPlus", common:false},
-    ]},
-    {id:"T1129", name:"共用模組", common:false, subs:[]},
-    {id:"T1197", name:"BITS 工作", common:false, subs:[]},
-    {id:"T1203", name:"用戶端執行漏洞利用", common:true, subs:[]},
-    {id:"T1204", name:"使用者執行", common:true, subs:[
-      {id:"T1204.001", name:"惡意連結", common:true},
-      {id:"T1204.002", name:"惡意檔案", common:true},
-      {id:"T1204.003", name:"惡意映像檔", common:true},
-      {id:"T1204.004", name:"誘導複製貼上執行", common:true},
-      {id:"T1204.005", name:"誘導載入惡意程式庫", common:false},
-    ]},
-    {id:"T1559", name:"行程間通訊", common:false, subs:[
-      {id:"T1559.001", name:"元件物件模型（COM）", common:false},
-      {id:"T1559.002", name:"動態資料交換（DDE）", common:false},
-      {id:"T1559.003", name:"XPC 服務", common:false},
-    ]},
-    {id:"T1569", name:"系統服務", common:true, subs:[
-      {id:"T1569.001", name:"Launchctl", common:true},
-      {id:"T1569.002", name:"Service Execution", common:true},
-      {id:"T1569.003", name:"systemctl", common:true},
-    ]},
-    {id:"T1574", name:"綁架執行流程", common:true, subs:[
-      {id:"T1574.001", name:"DLL 搜尋順序綁架", common:true},
-      {id:"T1574.004", name:"Dylib 劫持", common:false},
-      {id:"T1574.005", name:"安裝程式檔案權限缺失", common:false},
-      {id:"T1574.006", name:"動態連結器劫持", common:true},
-      {id:"T1574.007", name:"藉 PATH 環境變數攔截路徑", common:true},
-      {id:"T1574.008", name:"藉搜尋順序攔截路徑", common:true},
-      {id:"T1574.009", name:"藉未加引號路徑攔截", common:false},
-      {id:"T1574.010", name:"服務檔案權限缺失", common:false},
-      {id:"T1574.011", name:"服務登錄權限", common:false},
-      {id:"T1574.012", name:"COR_PROFILER", common:false},
-      {id:"T1574.013", name:"KernelCallbackTable", common:false},
-      {id:"T1574.014", name:"AppDomainManager", common:false},
-    ]},
-    {id:"T1609", name:"容器管理命令", common:false, subs:[]},
-    {id:"T1610", name:"部署容器", common:false, subs:[]},
-    {id:"T1648", name:"無伺服器執行", common:false, subs:[]},
-    {id:"T1651", name:"雲端管理命令", common:false, subs:[]},
-    {id:"T1674", name:"輸入注入", common:false, subs:[]},
-    {id:"T1675", name:"ESXi 管理命令", common:false, subs:[]},
-    {id:"T1677", name:"毒化 CI/CD 管線執行", common:false, subs:[]},
-  ]},
-  {id:"TA0003", name:"持續性", techs:[
-    {id:"T1037", name:"開機或登入初始化指令稿", common:false, subs:[
-      {id:"T1037.001", name:"登入指令稿（Windows）", common:false},
-      {id:"T1037.002", name:"登入掛鉤（Login Hook）", common:false},
-      {id:"T1037.003", name:"網路登入指令稿", common:false},
-      {id:"T1037.004", name:"RC 指令稿", common:false},
-      {id:"T1037.005", name:"啟動項目", common:false},
-    ]},
-    {id:"T1053", name:"排程工作／作業", common:true, subs:[
-      {id:"T1053.002", name:"At 排程", common:true},
-      {id:"T1053.003", name:"Cron", common:true},
-      {id:"T1053.005", name:"Scheduled Task", common:true},
-      {id:"T1053.006", name:"Systemd Timers", common:true},
-      {id:"T1053.007", name:"容器調度工作", common:false},
-    ]},
-    {id:"T1078", name:"有效帳號", common:true, subs:[
-      {id:"T1078.001", name:"預設帳號", common:true},
-      {id:"T1078.002", name:"網域帳號", common:true},
-      {id:"T1078.003", name:"本機帳號", common:true},
-      {id:"T1078.004", name:"雲端帳號", common:true},
-    ]},
-    {id:"T1098", name:"帳號操弄", common:false, subs:[
-      {id:"T1098.001", name:"額外雲端憑證", common:false},
-      {id:"T1098.002", name:"額外郵件委派權限", common:false},
-      {id:"T1098.003", name:"額外雲端角色", common:false},
-      {id:"T1098.004", name:"SSH 授權金鑰", common:false},
-      {id:"T1098.005", name:"裝置註冊", common:false},
-      {id:"T1098.006", name:"新增容器叢集角色", common:false},
-      {id:"T1098.007", name:"新增本機或網域群組", common:false},
-    ]},
-    {id:"T1112", name:"修改登錄機碼", common:true, subs:[]},
-    {id:"T1133", name:"對外遠端服務", common:false, subs:[]},
-    {id:"T1136", name:"建立帳號", common:true, subs:[
-      {id:"T1136.001", name:"本機帳號", common:true},
-      {id:"T1136.002", name:"網域帳號", common:true},
-      {id:"T1136.003", name:"雲端帳號", common:true},
-    ]},
-    {id:"T1137", name:"Office 應用程式啟動", common:false, subs:[
-      {id:"T1137.001", name:"Office 範本巨集", common:false},
-      {id:"T1137.002", name:"Office Test 登錄機碼", common:false},
-      {id:"T1137.003", name:"Outlook 表單", common:false},
-      {id:"T1137.004", name:"Outlook 首頁", common:false},
-      {id:"T1137.005", name:"Outlook 規則", common:false},
-      {id:"T1137.006", name:"增益集", common:false},
-    ]},
-    {id:"T1176", name:"軟體擴充套件", common:false, subs:[
-      {id:"T1176.001", name:"瀏覽器擴充套件", common:false},
-      {id:"T1176.002", name:"IDE 擴充套件", common:false},
-    ]},
-    {id:"T1197", name:"BITS 工作", common:false, subs:[]},
-    {id:"T1205", name:"流量訊號", common:false, subs:[
-      {id:"T1205.001", name:"埠敲門", common:false},
-      {id:"T1205.002", name:"通訊端過濾器", common:false},
-    ]},
-    {id:"T1505", name:"伺服器軟體元件", common:true, subs:[
-      {id:"T1505.001", name:"SQL 儲存程序", common:true},
-      {id:"T1505.002", name:"傳輸代理程式", common:false},
-      {id:"T1505.003", name:"Web Shell", common:true},
-      {id:"T1505.004", name:"IIS 元件", common:true},
-      {id:"T1505.005", name:"終端機服務 DLL", common:false},
-      {id:"T1505.006", name:"vSphere 安裝套件", common:true},
-    ]},
-    {id:"T1525", name:"植入內部映像檔", common:false, subs:[]},
-    {id:"T1542", name:"開機前階段", common:false, subs:[
-      {id:"T1542.001", name:"系統韌體", common:false},
-      {id:"T1542.002", name:"元件韌體", common:false},
-      {id:"T1542.003", name:"Bootkit", common:false},
-      {id:"T1542.004", name:"ROMMONkit", common:false},
-      {id:"T1542.005", name:"TFTP 開機", common:false},
-    ]},
-    {id:"T1543", name:"建立或修改系統程序", common:true, subs:[
-      {id:"T1543.001", name:"Launch Agent", common:true},
-      {id:"T1543.002", name:"Systemd 服務", common:true},
-      {id:"T1543.003", name:"Windows 服務", common:true},
-      {id:"T1543.004", name:"Launch Daemon", common:true},
-      {id:"T1543.005", name:"容器服務", common:false},
-    ]},
-    {id:"T1546", name:"事件觸發執行", common:true, subs:[
-      {id:"T1546.001", name:"變更預設檔案關聯", common:false},
-      {id:"T1546.002", name:"螢幕保護程式", common:false},
-      {id:"T1546.003", name:"WMI 訂閱", common:true},
-      {id:"T1546.004", name:"修改 Unix Shell 組態", common:true},
-      {id:"T1546.005", name:"Trap 訊號攔截", common:false},
-      {id:"T1546.006", name:"新增 LC_LOAD_DYLIB", common:false},
-      {id:"T1546.007", name:"Netsh 協助程式 DLL", common:false},
-      {id:"T1546.008", name:"協助工具功能", common:true},
-      {id:"T1546.009", name:"AppCert DLL", common:false},
-      {id:"T1546.010", name:"AppInit DLL", common:false},
-      {id:"T1546.011", name:"應用程式相容性填充（Shimming）", common:false},
-      {id:"T1546.012", name:"映像檔執行選項注入", common:false},
-      {id:"T1546.013", name:"PowerShell 設定檔", common:false},
-      {id:"T1546.014", name:"Emond", common:false},
-      {id:"T1546.015", name:"元件物件模型綁架", common:true},
-      {id:"T1546.016", name:"安裝程式套件", common:false},
-      {id:"T1546.017", name:"udev 規則", common:false},
-      {id:"T1546.018", name:"Python 啟動掛鉤", common:false},
-    ]},
-    {id:"T1547", name:"開機或登入自動啟動", common:true, subs:[
-      {id:"T1547.001", name:"登錄機碼／啟動資料夾", common:true},
-      {id:"T1547.002", name:"驗證套件", common:false},
-      {id:"T1547.003", name:"時間提供者", common:false},
-      {id:"T1547.004", name:"Winlogon Helper DLL", common:true},
-      {id:"T1547.005", name:"安全性支援提供者", common:false},
-      {id:"T1547.006", name:"核心模組與擴充功能", common:false},
-      {id:"T1547.007", name:"重新開啟的應用程式", common:false},
-      {id:"T1547.008", name:"LSASS 驅動程式", common:false},
-      {id:"T1547.009", name:"捷徑竄改", common:true},
-      {id:"T1547.010", name:"連接埠監視器", common:false},
-      {id:"T1547.012", name:"列印處理器", common:false},
-      {id:"T1547.013", name:"XDG 自動啟動項目", common:true},
-      {id:"T1547.014", name:"Active Setup", common:false},
-      {id:"T1547.015", name:"登入項目", common:false},
-    ]},
-    {id:"T1554", name:"竄改主機上的軟體執行檔", common:false, subs:[]},
-    {id:"T1556", name:"竄改驗證流程", common:false, subs:[
-      {id:"T1556.001", name:"網域控制站驗證", common:false},
-      {id:"T1556.002", name:"密碼篩選器 DLL", common:false},
-      {id:"T1556.003", name:"可插拔驗證模組（PAM）", common:false},
-      {id:"T1556.004", name:"網通設備驗證", common:false},
-      {id:"T1556.005", name:"可逆加密", common:false},
-      {id:"T1556.006", name:"多重要素驗證", common:false},
-      {id:"T1556.007", name:"混合式身分", common:false},
-      {id:"T1556.008", name:"網路提供者 DLL", common:false},
-      {id:"T1556.009", name:"條件式存取原則", common:false},
-    ]},
-    {id:"T1653", name:"電源設定", common:false, subs:[]},
-    {id:"T1668", name:"排他控制", common:false, subs:[]},
-    {id:"T1671", name:"雲端應用程式整合", common:false, subs:[]},
-  ]},
-  {id:"TA0004", name:"權限提升", techs:[
-    {id:"T1037", name:"開機或登入初始化指令稿", common:false, subs:[
-      {id:"T1037.001", name:"登入指令稿（Windows）", common:false},
-      {id:"T1037.002", name:"登入掛鉤（Login Hook）", common:false},
-      {id:"T1037.003", name:"網路登入指令稿", common:false},
-      {id:"T1037.004", name:"RC 指令稿", common:false},
-      {id:"T1037.005", name:"啟動項目", common:false},
-    ]},
-    {id:"T1053", name:"排程工作／作業", common:true, subs:[
-      {id:"T1053.002", name:"At 排程", common:true},
-      {id:"T1053.003", name:"Cron", common:true},
-      {id:"T1053.005", name:"Scheduled Task", common:true},
-      {id:"T1053.006", name:"Systemd Timers", common:true},
-      {id:"T1053.007", name:"容器調度工作", common:false},
-    ]},
-    {id:"T1055", name:"程序注入", common:true, subs:[
-      {id:"T1055.001", name:"DLL 注入", common:true},
-      {id:"T1055.002", name:"可攜式執行檔注入", common:true},
-      {id:"T1055.003", name:"執行緒執行劫持", common:false},
-      {id:"T1055.004", name:"非同步程序呼叫", common:true},
-      {id:"T1055.005", name:"執行緒區域儲存區", common:false},
-      {id:"T1055.008", name:"ptrace 系統呼叫", common:false},
-      {id:"T1055.009", name:"proc 記憶體", common:false},
-      {id:"T1055.011", name:"額外視窗記憶體注入", common:false},
-      {id:"T1055.012", name:"程序空洞化", common:true},
-      {id:"T1055.013", name:"程序偽裝（Doppelgänging）", common:false},
-      {id:"T1055.014", name:"VDSO 劫持", common:false},
-      {id:"T1055.015", name:"ListPlanting", common:false},
-    ]},
-    {id:"T1068", name:"利用漏洞提權", common:false, subs:[]},
-    {id:"T1078", name:"有效帳號", common:true, subs:[
-      {id:"T1078.001", name:"預設帳號", common:true},
-      {id:"T1078.002", name:"網域帳號", common:true},
-      {id:"T1078.003", name:"本機帳號", common:true},
-      {id:"T1078.004", name:"雲端帳號", common:true},
-    ]},
-    {id:"T1098", name:"帳號操弄", common:false, subs:[
-      {id:"T1098.001", name:"額外雲端憑證", common:false},
-      {id:"T1098.002", name:"額外郵件委派權限", common:false},
-      {id:"T1098.003", name:"額外雲端角色", common:false},
-      {id:"T1098.004", name:"SSH 授權金鑰", common:false},
-      {id:"T1098.005", name:"裝置註冊", common:false},
-      {id:"T1098.006", name:"新增容器叢集角色", common:false},
-      {id:"T1098.007", name:"新增本機或網域群組", common:false},
-    ]},
-    {id:"T1134", name:"存取權杖操弄", common:true, subs:[
-      {id:"T1134.001", name:"權杖模擬／竊取", common:true},
-      {id:"T1134.002", name:"以權杖建立程序", common:true},
-      {id:"T1134.003", name:"建立並冒用權杖", common:true},
-      {id:"T1134.004", name:"偽造父程序 PID", common:true},
-      {id:"T1134.005", name:"SID 歷程注入", common:false},
-    ]},
-    {id:"T1484", name:"網域或租戶原則修改", common:false, subs:[
-      {id:"T1484.001", name:"群組原則修改", common:false},
-      {id:"T1484.002", name:"信任修改", common:false},
-    ]},
-    {id:"T1543", name:"建立或修改系統程序", common:true, subs:[
-      {id:"T1543.001", name:"Launch Agent", common:true},
-      {id:"T1543.002", name:"Systemd 服務", common:true},
-      {id:"T1543.003", name:"Windows 服務", common:true},
-      {id:"T1543.004", name:"Launch Daemon", common:true},
-      {id:"T1543.005", name:"容器服務", common:false},
-    ]},
-    {id:"T1546", name:"事件觸發執行", common:true, subs:[
-      {id:"T1546.001", name:"變更預設檔案關聯", common:false},
-      {id:"T1546.002", name:"螢幕保護程式", common:false},
-      {id:"T1546.003", name:"WMI 訂閱", common:true},
-      {id:"T1546.004", name:"修改 Unix Shell 組態", common:true},
-      {id:"T1546.005", name:"Trap 訊號攔截", common:false},
-      {id:"T1546.006", name:"新增 LC_LOAD_DYLIB", common:false},
-      {id:"T1546.007", name:"Netsh 協助程式 DLL", common:false},
-      {id:"T1546.008", name:"協助工具功能", common:true},
-      {id:"T1546.009", name:"AppCert DLL", common:false},
-      {id:"T1546.010", name:"AppInit DLL", common:false},
-      {id:"T1546.011", name:"應用程式相容性填充（Shimming）", common:false},
-      {id:"T1546.012", name:"映像檔執行選項注入", common:false},
-      {id:"T1546.013", name:"PowerShell 設定檔", common:false},
-      {id:"T1546.014", name:"Emond", common:false},
-      {id:"T1546.015", name:"元件物件模型綁架", common:true},
-      {id:"T1546.016", name:"安裝程式套件", common:false},
-      {id:"T1546.017", name:"udev 規則", common:false},
-      {id:"T1546.018", name:"Python 啟動掛鉤", common:false},
-    ]},
-    {id:"T1547", name:"開機或登入自動啟動", common:true, subs:[
-      {id:"T1547.001", name:"登錄機碼／啟動資料夾", common:true},
-      {id:"T1547.002", name:"驗證套件", common:false},
-      {id:"T1547.003", name:"時間提供者", common:false},
-      {id:"T1547.004", name:"Winlogon Helper DLL", common:true},
-      {id:"T1547.005", name:"安全性支援提供者", common:false},
-      {id:"T1547.006", name:"核心模組與擴充功能", common:false},
-      {id:"T1547.007", name:"重新開啟的應用程式", common:false},
-      {id:"T1547.008", name:"LSASS 驅動程式", common:false},
-      {id:"T1547.009", name:"捷徑竄改", common:true},
-      {id:"T1547.010", name:"連接埠監視器", common:false},
-      {id:"T1547.012", name:"列印處理器", common:false},
-      {id:"T1547.013", name:"XDG 自動啟動項目", common:true},
-      {id:"T1547.014", name:"Active Setup", common:false},
-      {id:"T1547.015", name:"登入項目", common:false},
-    ]},
-    {id:"T1548", name:"權限提升控制機制濫用", common:true, subs:[
-      {id:"T1548.001", name:"Setuid/Setgid", common:true},
-      {id:"T1548.002", name:"繞過使用者帳戶控制", common:true},
-      {id:"T1548.003", name:"Sudo 快取", common:true},
-      {id:"T1548.004", name:"提示提權執行", common:true},
-      {id:"T1548.005", name:"暫時性雲端提權存取", common:false},
-      {id:"T1548.006", name:"TCC 權限操弄", common:false},
-    ]},
-    {id:"T1611", name:"逃逸至主機", common:false, subs:[]},
-  ]},
-  {id:"TA0005", name:"隱匿規避", techs:[
-    {id:"T1006", name:"直接存取磁碟區", common:false, subs:[]},
-    {id:"T1014", name:"Rootkit", common:false, subs:[]},
-    {id:"T1027", name:"混淆的檔案或資訊", common:true, subs:[
-      {id:"T1027.001", name:"二進位檔填充", common:false},
-      {id:"T1027.002", name:"加殼", common:true},
-      {id:"T1027.003", name:"隱寫術", common:false},
-      {id:"T1027.004", name:"投遞後才編譯", common:false},
-      {id:"T1027.005", name:"自工具中移除特徵", common:false},
-      {id:"T1027.006", name:"HTML 夾帶", common:false},
-      {id:"T1027.007", name:"動態解析 API", common:false},
-      {id:"T1027.008", name:"去除符號的酬載", common:false},
-      {id:"T1027.009", name:"內嵌酬載", common:false},
-      {id:"T1027.010", name:"指令碼混淆", common:true},
-      {id:"T1027.011", name:"無檔案式儲存", common:false},
-      {id:"T1027.012", name:"LNK 圖示夾帶", common:false},
-      {id:"T1027.013", name:"加密／編碼檔案", common:true},
-      {id:"T1027.014", name:"多型程式碼", common:false},
-      {id:"T1027.015", name:"壓縮", common:true},
-      {id:"T1027.016", name:"插入垃圾程式碼", common:false},
-      {id:"T1027.017", name:"SVG 夾帶", common:false},
-      {id:"T1027.018", name:"不可見 Unicode 字元", common:false},
-    ]},
-    {id:"T1036", name:"偽裝", common:true, subs:[
-      {id:"T1036.001", name:"無效的程式碼簽章", common:false},
-      {id:"T1036.002", name:"由右至左覆寫", common:false},
-      {id:"T1036.003", name:"重新命名系統工具", common:true},
-      {id:"T1036.004", name:"偽裝工作或服務", common:true},
-      {id:"T1036.005", name:"使用合法名稱或位置", common:true},
-      {id:"T1036.006", name:"檔名後加空白", common:false},
-      {id:"T1036.007", name:"雙重副檔名", common:false},
-      {id:"T1036.008", name:"偽裝檔案類型", common:true},
-      {id:"T1036.009", name:"切斷程序樹", common:false},
-      {id:"T1036.010", name:"偽裝帳號名稱", common:false},
-      {id:"T1036.011", name:"覆寫程序引數", common:false},
-      {id:"T1036.012", name:"瀏覽器指紋偽裝", common:false},
-    ]},
-    {id:"T1055", name:"程序注入", common:true, subs:[
-      {id:"T1055.001", name:"DLL 注入", common:true},
-      {id:"T1055.002", name:"可攜式執行檔注入", common:true},
-      {id:"T1055.003", name:"執行緒執行劫持", common:false},
-      {id:"T1055.004", name:"非同步程序呼叫", common:true},
-      {id:"T1055.005", name:"執行緒區域儲存區", common:false},
-      {id:"T1055.008", name:"ptrace 系統呼叫", common:false},
-      {id:"T1055.009", name:"proc 記憶體", common:false},
-      {id:"T1055.011", name:"額外視窗記憶體注入", common:false},
-      {id:"T1055.012", name:"程序空洞化", common:true},
-      {id:"T1055.013", name:"程序偽裝（Doppelgänging）", common:false},
-      {id:"T1055.014", name:"VDSO 劫持", common:false},
-      {id:"T1055.015", name:"ListPlanting", common:false},
-    ]},
-    {id:"T1070", name:"主機痕跡清除", common:true, subs:[
-      {id:"T1070.003", name:"清除指令歷程", common:true},
-      {id:"T1070.004", name:"刪除檔案", common:true},
-      {id:"T1070.005", name:"移除網路共用連線紀錄", common:false},
-      {id:"T1070.006", name:"時間戳記竄改", common:true},
-      {id:"T1070.007", name:"清除網路連線紀錄與組態", common:false},
-      {id:"T1070.008", name:"清除信箱資料", common:false},
-      {id:"T1070.009", name:"清除持續性機制", common:true},
-      {id:"T1070.010", name:"搬移惡意程式", common:false},
-    ]},
-    {id:"T1078", name:"有效帳號", common:false, subs:[
-      {id:"T1078.001", name:"預設帳號", common:false},
-      {id:"T1078.002", name:"網域帳號", common:false},
-      {id:"T1078.003", name:"本機帳號", common:false},
-      {id:"T1078.004", name:"雲端帳號", common:false},
-    ]},
-    {id:"T1127", name:"藉可信開發工具代理執行", common:false, subs:[
-      {id:"T1127.001", name:"MSBuild", common:false},
-      {id:"T1127.002", name:"ClickOnce", common:false},
-      {id:"T1127.003", name:"JamPlus", common:false},
-    ]},
-    {id:"T1134", name:"存取權杖操弄", common:false, subs:[
-      {id:"T1134.001", name:"權杖模擬／竊取", common:false},
-      {id:"T1134.002", name:"以權杖建立程序", common:false},
-      {id:"T1134.003", name:"建立並冒用權杖", common:false},
-      {id:"T1134.004", name:"偽造父程序 PID", common:false},
-      {id:"T1134.005", name:"SID 歷程注入", common:false},
-    ]},
-    {id:"T1140", name:"解混淆／解碼檔案", common:true, subs:[]},
-    {id:"T1197", name:"BITS 工作", common:false, subs:[]},
-    {id:"T1202", name:"間接執行命令", common:false, subs:[]},
-    {id:"T1205", name:"流量訊號", common:false, subs:[
-      {id:"T1205.001", name:"埠敲門", common:false},
-      {id:"T1205.002", name:"通訊端過濾器", common:false},
-    ]},
-    {id:"T1211", name:"利用漏洞規避偵測", common:false, subs:[]},
-    {id:"T1216", name:"藉系統指令稿代理執行", common:false, subs:[
-      {id:"T1216.001", name:"PubPrn", common:false},
-      {id:"T1216.002", name:"SyncAppvPublishingServer", common:false},
-    ]},
-    {id:"T1218", name:"簽章二進位代理執行", common:true, subs:[
-      {id:"T1218.001", name:"已編譯 HTML 檔", common:false},
-      {id:"T1218.002", name:"控制台", common:false},
-      {id:"T1218.003", name:"CMSTP", common:false},
-      {id:"T1218.004", name:"InstallUtil", common:false},
-      {id:"T1218.005", name:"Mshta", common:true},
-      {id:"T1218.007", name:"Msiexec", common:true},
-      {id:"T1218.008", name:"Odbcconf", common:false},
-      {id:"T1218.009", name:"Regsvcs／Regasm", common:false},
-      {id:"T1218.010", name:"Regsvr32", common:true},
-      {id:"T1218.011", name:"Rundll32", common:true},
-      {id:"T1218.012", name:"Verclsid", common:false},
-      {id:"T1218.013", name:"Mavinject", common:false},
-      {id:"T1218.014", name:"MMC", common:false},
-      {id:"T1218.015", name:"Electron 應用程式", common:false},
-    ]},
-    {id:"T1220", name:"XSL 指令稿處理", common:false, subs:[]},
-    {id:"T1221", name:"範本注入", common:false, subs:[]},
-    {id:"T1480", name:"執行護欄", common:false, subs:[
-      {id:"T1480.001", name:"環境金鑰綁定", common:false},
-      {id:"T1480.002", name:"互斥鎖", common:false},
-    ]},
-    {id:"T1497", name:"虛擬化／沙箱規避", common:true, subs:[
-      {id:"T1497.001", name:"系統檢查", common:true},
-      {id:"T1497.002", name:"依使用者活動判斷沙箱", common:true},
-      {id:"T1497.003", name:"時間式規避", common:true},
-    ]},
-    {id:"T1535", name:"未使用或不支援的雲端區域", common:false, subs:[]},
-    {id:"T1542", name:"開機前階段", common:false, subs:[
-      {id:"T1542.001", name:"系統韌體", common:false},
-      {id:"T1542.002", name:"元件韌體", common:false},
-      {id:"T1542.003", name:"Bootkit", common:false},
-      {id:"T1542.004", name:"ROMMONkit", common:false},
-      {id:"T1542.005", name:"TFTP 開機", common:false},
-    ]},
-    {id:"T1564", name:"隱藏痕跡", common:true, subs:[
-      {id:"T1564.001", name:"隱藏檔案與目錄", common:true},
-      {id:"T1564.002", name:"隱藏使用者", common:false},
-      {id:"T1564.003", name:"隱藏視窗", common:true},
-      {id:"T1564.004", name:"NTFS 檔案屬性", common:true},
-      {id:"T1564.005", name:"隱藏檔案系統", common:false},
-      {id:"T1564.006", name:"在虛擬執行個體中執行", common:false},
-      {id:"T1564.007", name:"VBA Stomping", common:false},
-      {id:"T1564.008", name:"隱藏郵件規則", common:false},
-      {id:"T1564.009", name:"資源分支（Resource Fork）", common:false},
-      {id:"T1564.010", name:"偽造程序引數", common:false},
-      {id:"T1564.011", name:"忽略程序中斷訊號", common:true},
-      {id:"T1564.012", name:"檔案與路徑排除清單", common:false},
-      {id:"T1564.013", name:"綁定掛載", common:false},
-      {id:"T1564.014", name:"擴充屬性", common:false},
-    ]},
-    {id:"T1574", name:"綁架執行流程", common:false, subs:[
-      {id:"T1574.001", name:"DLL 搜尋順序綁架", common:false},
-      {id:"T1574.004", name:"Dylib 劫持", common:false},
-      {id:"T1574.005", name:"安裝程式檔案權限缺失", common:false},
-      {id:"T1574.006", name:"動態連結器劫持", common:false},
-      {id:"T1574.007", name:"藉 PATH 環境變數攔截路徑", common:false},
-      {id:"T1574.008", name:"藉搜尋順序攔截路徑", common:false},
-      {id:"T1574.009", name:"藉未加引號路徑攔截", common:false},
-      {id:"T1574.010", name:"服務檔案權限缺失", common:false},
-      {id:"T1574.011", name:"服務登錄權限", common:false},
-      {id:"T1574.012", name:"COR_PROFILER", common:false},
-      {id:"T1574.013", name:"KernelCallbackTable", common:false},
-      {id:"T1574.014", name:"AppDomainManager", common:false},
-    ]},
-    {id:"T1612", name:"在主機上建置映像檔", common:false, subs:[]},
-    {id:"T1620", name:"反射式程式碼載入", common:false, subs:[]},
-    {id:"T1622", name:"偵錯器偵測規避", common:false, subs:[]},
-    {id:"T1678", name:"延遲執行", common:false, subs:[]},
-    {id:"T1679", name:"選擇性排除", common:false, subs:[]},
-    {id:"T1684", name:"社交工程", common:false, subs:[
-      {id:"T1684.001", name:"身分冒用", common:false},
-      {id:"T1684.002", name:"電子郵件偽冒", common:false},
+    {id:"T1650", name:"購買既有存取權", en:"Acquire Access", common:false, subs:[]},
+    {id:"T1683", name:"生成內容", en:"Generate Content", common:true, subs:[
+      {id:"T1683.001", name:"文字內容", en:"Written Content", common:true},
+      {id:"T1683.002", name:"影音內容", en:"Audio-Visual Content", common:true},
     ]},
   ]},
-  {id:"TA0112", name:"防禦削弱", techs:[
-    {id:"T1112", name:"修改登錄機碼", common:true, subs:[]},
-    {id:"T1207", name:"偽造網域控制站", common:false, subs:[]},
-    {id:"T1222", name:"變更檔案與目錄權限", common:true, subs:[
-      {id:"T1222.001", name:"Windows 權限", common:true},
-      {id:"T1222.002", name:"Linux 與 Mac 權限", common:true},
+  {id:"TA0001", name:"初始存取", en:"Initial Access", techs:[
+    {id:"T1078", name:"有效帳號", en:"Valid Accounts", common:true, subs:[
+      {id:"T1078.001", name:"預設帳號", en:"Default Accounts", common:true},
+      {id:"T1078.002", name:"網域帳號", en:"Domain Accounts", common:true},
+      {id:"T1078.003", name:"本機帳號", en:"Local Accounts", common:true},
+      {id:"T1078.004", name:"雲端帳號", en:"Cloud Accounts", common:true},
     ]},
-    {id:"T1484", name:"網域或租戶原則修改", common:true, subs:[
-      {id:"T1484.001", name:"群組原則修改", common:true},
-      {id:"T1484.002", name:"信任修改", common:true},
+    {id:"T1091", name:"透過可移除媒體複製", en:"Replication Through Removable Media", common:true, subs:[]},
+    {id:"T1133", name:"對外遠端服務", en:"External Remote Services", common:true, subs:[]},
+    {id:"T1189", name:"路過式入侵", en:"Drive-by Compromise", common:true, subs:[]},
+    {id:"T1190", name:"利用對外服務漏洞", en:"Exploit Public-Facing Application", common:true, subs:[]},
+    {id:"T1195", name:"供應鏈入侵", en:"Supply Chain Compromise", common:true, subs:[
+      {id:"T1195.001", name:"軟體相依套件", en:"Compromise Software Dependencies and Development Tools", common:true},
+      {id:"T1195.002", name:"軟體供應鏈", en:"Compromise Software Supply Chain", common:true},
+      {id:"T1195.003", name:"硬體供應鏈", en:"Compromise Hardware Supply Chain", common:true},
     ]},
-    {id:"T1553", name:"顛覆信任控制", common:true, subs:[
-      {id:"T1553.001", name:"繞過 Gatekeeper", common:true},
-      {id:"T1553.002", name:"程式碼簽章", common:true},
-      {id:"T1553.003", name:"SIP 與信任提供者劫持", common:false},
-      {id:"T1553.004", name:"安裝根憑證", common:true},
-      {id:"T1553.005", name:"標記網頁來源繞過", common:true},
-      {id:"T1553.006", name:"修改程式碼簽章原則", common:false},
+    {id:"T1199", name:"信任關係", en:"Trusted Relationship", common:true, subs:[]},
+    {id:"T1200", name:"硬體植入", en:"Hardware Additions", common:false, subs:[]},
+    {id:"T1566", name:"網路釣魚", en:"Phishing", common:true, subs:[
+      {id:"T1566.001", name:"附件", en:"Spearphishing Attachment", common:true},
+      {id:"T1566.002", name:"連結", en:"Spearphishing Link", common:true},
+      {id:"T1566.003", name:"透過服務", en:"Spearphishing via Service", common:true},
+      {id:"T1566.004", name:"語音釣魚", en:"Spearphishing Voice", common:true},
     ]},
-    {id:"T1556", name:"竄改驗證流程", common:true, subs:[
-      {id:"T1556.001", name:"網域控制站驗證", common:true},
-      {id:"T1556.002", name:"密碼篩選器 DLL", common:true},
-      {id:"T1556.003", name:"可插拔驗證模組（PAM）", common:false},
-      {id:"T1556.004", name:"網通設備驗證", common:true},
-      {id:"T1556.005", name:"可逆加密", common:false},
-      {id:"T1556.006", name:"多重要素驗證", common:true},
-      {id:"T1556.007", name:"混合式身分", common:false},
-      {id:"T1556.008", name:"網路提供者 DLL", common:false},
-      {id:"T1556.009", name:"條件式存取原則", common:false},
-    ]},
-    {id:"T1578", name:"竄改雲端運算基礎架構", common:false, subs:[
-      {id:"T1578.001", name:"建立快照", common:false},
-      {id:"T1578.002", name:"建立雲端執行個體", common:false},
-      {id:"T1578.003", name:"刪除雲端執行個體", common:false},
-      {id:"T1578.004", name:"還原雲端執行個體", common:false},
-      {id:"T1578.005", name:"修改雲端運算組態", common:false},
-    ]},
-    {id:"T1599", name:"跨越網路邊界", common:false, subs:[
-      {id:"T1599.001", name:"穿越網路位址轉譯", common:false},
-    ]},
-    {id:"T1600", name:"削弱加密強度", common:false, subs:[
-      {id:"T1600.001", name:"縮減金鑰空間", common:false},
-      {id:"T1600.002", name:"停用加密硬體", common:false},
-    ]},
-    {id:"T1601", name:"竄改系統映像檔", common:false, subs:[
-      {id:"T1601.001", name:"修補系統映像檔", common:false},
-      {id:"T1601.002", name:"降版系統映像檔", common:false},
-    ]},
-    {id:"T1647", name:"竄改 plist 檔案", common:false, subs:[]},
-    {id:"T1666", name:"竄改雲端資源階層", common:false, subs:[]},
-    {id:"T1685", name:"停用或竄改防護工具", common:true, subs:[
-      {id:"T1685.001", name:"停用或竄改 Windows 事件記錄", common:true},
-      {id:"T1685.002", name:"停用或竄改雲端日誌", common:true},
-      {id:"T1685.003", name:"竄改或偽造工具介面", common:false},
-      {id:"T1685.004", name:"停用或竄改 Linux 稽核日誌", common:false},
-      {id:"T1685.005", name:"清除 Windows 事件記錄", common:true},
-      {id:"T1685.006", name:"清除 Linux 或 Mac 系統日誌", common:true},
-    ]},
-    {id:"T1686", name:"停用或竄改系統防火牆", common:true, subs:[
-      {id:"T1686.001", name:"雲端防火牆", common:true},
-      {id:"T1686.002", name:"網通設備防火牆", common:true},
-      {id:"T1686.003", name:"Windows 主機防火牆", common:true},
-    ]},
-    {id:"T1687", name:"利用漏洞削弱防禦", common:false, subs:[]},
-    {id:"T1688", name:"安全模式開機", common:false, subs:[]},
-    {id:"T1689", name:"降版攻擊", common:false, subs:[]},
-    {id:"T1690", name:"阻止命令歷史記錄", common:true, subs:[]},
+    {id:"T1659", name:"內容注入", en:"Content Injection", common:false, subs:[]},
+    {id:"T1669", name:"Wi-Fi 網路", en:"Wi-Fi Networks", common:false, subs:[]},
   ]},
-  {id:"TA0006", name:"憑證存取", techs:[
-    {id:"T1003", name:"作業系統憑證傾印", common:true, subs:[
-      {id:"T1003.001", name:"LSASS 記憶體", common:true},
-      {id:"T1003.002", name:"安全帳戶管理員", common:true},
-      {id:"T1003.003", name:"NTDS", common:true},
-      {id:"T1003.004", name:"LSA 機密", common:true},
-      {id:"T1003.005", name:"快取的網域憑證", common:false},
-      {id:"T1003.006", name:"DCSync", common:false},
-      {id:"T1003.007", name:"proc 檔案系統", common:false},
-      {id:"T1003.008", name:"/etc/passwd 與 /etc/shadow", common:false},
+  {id:"TA0002", name:"執行", en:"Execution", techs:[
+    {id:"T1047", name:"Windows Management Instrumentation", en:"Windows Management Instrumentation", common:true, subs:[]},
+    {id:"T1053", name:"排程工作／作業", en:"Scheduled Task/Job", common:true, subs:[
+      {id:"T1053.002", name:"At 排程", en:"At", common:true},
+      {id:"T1053.003", name:"Cron", en:"Cron", common:true},
+      {id:"T1053.005", name:"Scheduled Task", en:"Scheduled Task", common:true},
+      {id:"T1053.006", name:"Systemd Timers", en:"Systemd Timers", common:true},
+      {id:"T1053.007", name:"容器調度工作", en:"Container Orchestration Job", common:false},
     ]},
-    {id:"T1040", name:"網路嗅探", common:true, subs:[]},
-    {id:"T1056", name:"輸入擷取", common:true, subs:[
-      {id:"T1056.001", name:"鍵盤側錄", common:true},
-      {id:"T1056.002", name:"GUI 輸入擷取", common:true},
-      {id:"T1056.003", name:"網頁入口擷取", common:true},
-      {id:"T1056.004", name:"憑證 API 掛鉤", common:true},
+    {id:"T1059", name:"指令與腳本直譯器", en:"Command and Scripting Interpreter", common:true, subs:[
+      {id:"T1059.001", name:"PowerShell", en:"PowerShell", common:true},
+      {id:"T1059.002", name:"AppleScript", en:"AppleScript", common:false},
+      {id:"T1059.003", name:"Windows Command Shell", en:"Windows Command Shell", common:true},
+      {id:"T1059.004", name:"Unix Shell", en:"Unix Shell", common:false},
+      {id:"T1059.005", name:"Visual Basic", en:"Visual Basic", common:true},
+      {id:"T1059.006", name:"Python", en:"Python", common:false},
+      {id:"T1059.007", name:"JavaScript", en:"JavaScript", common:true},
+      {id:"T1059.008", name:"網通設備命令列", en:"Network Device CLI", common:false},
+      {id:"T1059.009", name:"雲端 API", en:"Cloud API", common:false},
+      {id:"T1059.010", name:"AutoHotKey 與 AutoIT", en:"AutoHotKey & AutoIT", common:false},
+      {id:"T1059.011", name:"Lua", en:"Lua", common:false},
+      {id:"T1059.012", name:"Hypervisor 命令列", en:"Hypervisor CLI", common:false},
+      {id:"T1059.013", name:"容器命令列與 API", en:"Container CLI/API", common:false},
     ]},
-    {id:"T1110", name:"暴力破解", common:true, subs:[
-      {id:"T1110.001", name:"密碼猜測", common:true},
-      {id:"T1110.002", name:"密碼破解", common:true},
-      {id:"T1110.003", name:"密碼噴灑", common:true},
-      {id:"T1110.004", name:"憑證填充", common:true},
+    {id:"T1072", name:"軟體部署工具", en:"Software Deployment Tools", common:false, subs:[]},
+    {id:"T1106", name:"原生 API", en:"Native API", common:true, subs:[]},
+    {id:"T1127", name:"藉可信開發工具代理執行", en:"Trusted Developer Utilities Proxy Execution", common:false, subs:[
+      {id:"T1127.001", name:"MSBuild", en:"MSBuild", common:false},
+      {id:"T1127.002", name:"ClickOnce", en:"ClickOnce", common:false},
+      {id:"T1127.003", name:"JamPlus", en:"JamPlus", common:false},
     ]},
-    {id:"T1111", name:"攔截多重要素驗證", common:false, subs:[]},
-    {id:"T1187", name:"強制驗證", common:false, subs:[]},
-    {id:"T1212", name:"利用漏洞取得憑證", common:false, subs:[]},
-    {id:"T1528", name:"竊取應用程式存取權杖", common:false, subs:[]},
-    {id:"T1539", name:"竊取 Web 工作階段 Cookie", common:true, subs:[]},
-    {id:"T1552", name:"不安全的憑證", common:true, subs:[
-      {id:"T1552.001", name:"檔案中的憑證", common:true},
-      {id:"T1552.002", name:"登錄機碼中的憑證", common:true},
-      {id:"T1552.003", name:"Shell 歷史紀錄", common:false},
-      {id:"T1552.004", name:"私密金鑰", common:true},
-      {id:"T1552.005", name:"雲端執行個體中繼資料 API", common:true},
-      {id:"T1552.006", name:"群組原則偏好設定", common:false},
-      {id:"T1552.007", name:"容器 API", common:false},
-      {id:"T1552.008", name:"聊天訊息", common:false},
+    {id:"T1129", name:"共用模組", en:"Shared Modules", common:false, subs:[]},
+    {id:"T1197", name:"BITS 工作", en:"BITS Jobs", common:false, subs:[]},
+    {id:"T1203", name:"用戶端執行漏洞利用", en:"Exploitation for Client Execution", common:true, subs:[]},
+    {id:"T1204", name:"使用者執行", en:"User Execution", common:true, subs:[
+      {id:"T1204.001", name:"惡意連結", en:"Malicious Link", common:true},
+      {id:"T1204.002", name:"惡意檔案", en:"Malicious File", common:true},
+      {id:"T1204.003", name:"惡意映像檔", en:"Malicious Image", common:true},
+      {id:"T1204.004", name:"誘導複製貼上執行", en:"Malicious Copy and Paste", common:true},
+      {id:"T1204.005", name:"誘導載入惡意程式庫", en:"Malicious Library", common:false},
     ]},
-    {id:"T1555", name:"密碼儲存區憑證", common:true, subs:[
-      {id:"T1555.001", name:"Keychain", common:true},
-      {id:"T1555.002", name:"securityd 記憶體", common:false},
-      {id:"T1555.003", name:"瀏覽器儲存的憑證", common:true},
-      {id:"T1555.004", name:"Windows 認證管理員", common:true},
-      {id:"T1555.005", name:"密碼管理員", common:true},
-      {id:"T1555.006", name:"雲端機密管理服務", common:false},
+    {id:"T1559", name:"行程間通訊", en:"Inter-Process Communication", common:false, subs:[
+      {id:"T1559.001", name:"元件物件模型（COM）", en:"Component Object Model", common:false},
+      {id:"T1559.002", name:"動態資料交換（DDE）", en:"Dynamic Data Exchange", common:false},
+      {id:"T1559.003", name:"XPC 服務", en:"XPC Services", common:false},
     ]},
-    {id:"T1556", name:"竄改驗證流程", common:true, subs:[
-      {id:"T1556.001", name:"網域控制站驗證", common:true},
-      {id:"T1556.002", name:"密碼篩選器 DLL", common:true},
-      {id:"T1556.003", name:"可插拔驗證模組（PAM）", common:false},
-      {id:"T1556.004", name:"網通設備驗證", common:true},
-      {id:"T1556.005", name:"可逆加密", common:false},
-      {id:"T1556.006", name:"多重要素驗證", common:true},
-      {id:"T1556.007", name:"混合式身分", common:false},
-      {id:"T1556.008", name:"網路提供者 DLL", common:false},
-      {id:"T1556.009", name:"條件式存取原則", common:false},
+    {id:"T1569", name:"系統服務", en:"System Services", common:true, subs:[
+      {id:"T1569.001", name:"Launchctl", en:"Launchctl", common:true},
+      {id:"T1569.002", name:"Service Execution", en:"Service Execution", common:true},
+      {id:"T1569.003", name:"systemctl", en:"Systemctl", common:true},
     ]},
-    {id:"T1557", name:"中間人攻擊", common:false, subs:[
-      {id:"T1557.001", name:"名稱解析毒化與 SMB 轉送", common:false},
-      {id:"T1557.002", name:"ARP 快取毒化", common:false},
-      {id:"T1557.003", name:"DHCP 偽冒", common:false},
-      {id:"T1557.004", name:"偽基地台（Evil Twin）", common:false},
+    {id:"T1574", name:"綁架執行流程", en:"Hijack Execution Flow", common:true, subs:[
+      {id:"T1574.001", name:"DLL 搜尋順序綁架", en:"DLL", common:true},
+      {id:"T1574.004", name:"Dylib 劫持", en:"Dylib Hijacking", common:false},
+      {id:"T1574.005", name:"安裝程式檔案權限缺失", en:"Executable Installer File Permissions Weakness", common:false},
+      {id:"T1574.006", name:"動態連結器劫持", en:"Dynamic Linker Hijacking", common:true},
+      {id:"T1574.007", name:"藉 PATH 環境變數攔截路徑", en:"Path Interception by PATH Environment Variable", common:true},
+      {id:"T1574.008", name:"藉搜尋順序攔截路徑", en:"Path Interception by Search Order Hijacking", common:true},
+      {id:"T1574.009", name:"藉未加引號路徑攔截", en:"Path Interception by Unquoted Path", common:false},
+      {id:"T1574.010", name:"服務檔案權限缺失", en:"Services File Permissions Weakness", common:false},
+      {id:"T1574.011", name:"服務登錄權限", en:"Services Registry Permissions Weakness", common:false},
+      {id:"T1574.012", name:"COR_PROFILER", en:"COR_PROFILER", common:false},
+      {id:"T1574.013", name:"KernelCallbackTable", en:"KernelCallbackTable", common:false},
+      {id:"T1574.014", name:"AppDomainManager", en:"AppDomainManager", common:false},
     ]},
-    {id:"T1558", name:"竊取或偽造 Kerberos 票證", common:false, subs:[
-      {id:"T1558.001", name:"黃金票證", common:false},
-      {id:"T1558.002", name:"白銀票證", common:false},
-      {id:"T1558.003", name:"Kerberoasting", common:false},
-      {id:"T1558.004", name:"AS-REP Roasting", common:false},
-      {id:"T1558.005", name:"Ccache 檔案", common:false},
-    ]},
-    {id:"T1606", name:"偽造網頁憑證", common:false, subs:[
-      {id:"T1606.001", name:"網頁 Cookie", common:false},
-      {id:"T1606.002", name:"SAML 權杖", common:false},
-    ]},
-    {id:"T1621", name:"多因素驗證請求產生", common:false, subs:[]},
-    {id:"T1649", name:"竊取或偽造驗證憑證", common:false, subs:[]},
+    {id:"T1609", name:"容器管理命令", en:"Container Administration Command", common:false, subs:[]},
+    {id:"T1610", name:"部署容器", en:"Deploy Container", common:false, subs:[]},
+    {id:"T1648", name:"無伺服器執行", en:"Serverless Execution", common:false, subs:[]},
+    {id:"T1651", name:"雲端管理命令", en:"Cloud Administration Command", common:false, subs:[]},
+    {id:"T1674", name:"輸入注入", en:"Input Injection", common:false, subs:[]},
+    {id:"T1675", name:"ESXi 管理命令", en:"ESXi Administration Command", common:false, subs:[]},
+    {id:"T1677", name:"毒化 CI/CD 管線執行", en:"Poisoned Pipeline Execution", common:false, subs:[]},
   ]},
-  {id:"TA0007", name:"探索", techs:[
-    {id:"T1007", name:"系統服務探索", common:false, subs:[]},
-    {id:"T1010", name:"應用程式視窗探索", common:false, subs:[]},
-    {id:"T1012", name:"查詢登錄檔", common:false, subs:[]},
-    {id:"T1016", name:"系統網路組態探索", common:true, subs:[
-      {id:"T1016.001", name:"網際網路連線探索", common:true},
-      {id:"T1016.002", name:"Wi-Fi 探索", common:true},
+  {id:"TA0003", name:"持續性", en:"Persistence", techs:[
+    {id:"T1037", name:"開機或登入初始化指令稿", en:"Boot or Logon Initialization Scripts", common:false, subs:[
+      {id:"T1037.001", name:"登入指令稿（Windows）", en:"Logon Script (Windows)", common:false},
+      {id:"T1037.002", name:"登入掛鉤（Login Hook）", en:"Login Hook", common:false},
+      {id:"T1037.003", name:"網路登入指令稿", en:"Network Logon Script", common:false},
+      {id:"T1037.004", name:"RC 指令稿", en:"RC Scripts", common:false},
+      {id:"T1037.005", name:"啟動項目", en:"Startup Items", common:false},
     ]},
-    {id:"T1018", name:"遠端系統探索", common:false, subs:[]},
-    {id:"T1033", name:"系統擁有者／使用者探索", common:true, subs:[]},
-    {id:"T1040", name:"網路嗅探", common:false, subs:[]},
-    {id:"T1046", name:"網路服務探測", common:false, subs:[]},
-    {id:"T1049", name:"系統網路連線探索", common:false, subs:[]},
-    {id:"T1057", name:"程序探索", common:true, subs:[]},
-    {id:"T1069", name:"權限群組探索", common:false, subs:[
-      {id:"T1069.001", name:"本機群組", common:false},
-      {id:"T1069.002", name:"網域群組", common:false},
-      {id:"T1069.003", name:"雲端群組", common:false},
+    {id:"T1053", name:"排程工作／作業", en:"Scheduled Task/Job", common:true, subs:[
+      {id:"T1053.002", name:"At 排程", en:"At", common:true},
+      {id:"T1053.003", name:"Cron", en:"Cron", common:true},
+      {id:"T1053.005", name:"Scheduled Task", en:"Scheduled Task", common:true},
+      {id:"T1053.006", name:"Systemd Timers", en:"Systemd Timers", common:true},
+      {id:"T1053.007", name:"容器調度工作", en:"Container Orchestration Job", common:false},
     ]},
-    {id:"T1082", name:"系統資訊探索", common:true, subs:[]},
-    {id:"T1083", name:"檔案與目錄探索", common:true, subs:[]},
-    {id:"T1087", name:"帳號探索", common:true, subs:[
-      {id:"T1087.001", name:"本機帳號", common:true},
-      {id:"T1087.002", name:"網域帳號", common:true},
-      {id:"T1087.003", name:"電子郵件帳號", common:true},
-      {id:"T1087.004", name:"雲端帳號", common:true},
+    {id:"T1078", name:"有效帳號", en:"Valid Accounts", common:true, subs:[
+      {id:"T1078.001", name:"預設帳號", en:"Default Accounts", common:true},
+      {id:"T1078.002", name:"網域帳號", en:"Domain Accounts", common:true},
+      {id:"T1078.003", name:"本機帳號", en:"Local Accounts", common:true},
+      {id:"T1078.004", name:"雲端帳號", en:"Cloud Accounts", common:true},
     ]},
-    {id:"T1120", name:"周邊裝置探索", common:false, subs:[]},
-    {id:"T1124", name:"系統時間探索", common:false, subs:[]},
-    {id:"T1135", name:"網路共用探索", common:false, subs:[]},
-    {id:"T1201", name:"密碼原則探索", common:false, subs:[]},
-    {id:"T1217", name:"瀏覽器資訊探索", common:false, subs:[]},
-    {id:"T1482", name:"網域信任探索", common:false, subs:[]},
-    {id:"T1497", name:"虛擬化／沙箱規避", common:true, subs:[
-      {id:"T1497.001", name:"系統檢查", common:true},
-      {id:"T1497.002", name:"依使用者活動判斷沙箱", common:true},
-      {id:"T1497.003", name:"時間式規避", common:true},
+    {id:"T1098", name:"帳號操弄", en:"Account Manipulation", common:false, subs:[
+      {id:"T1098.001", name:"額外雲端憑證", en:"Additional Cloud Credentials", common:false},
+      {id:"T1098.002", name:"額外郵件委派權限", en:"Additional Email Delegate Permissions", common:false},
+      {id:"T1098.003", name:"額外雲端角色", en:"Additional Cloud Roles", common:false},
+      {id:"T1098.004", name:"SSH 授權金鑰", en:"SSH Authorized Keys", common:false},
+      {id:"T1098.005", name:"裝置註冊", en:"Device Registration", common:false},
+      {id:"T1098.006", name:"新增容器叢集角色", en:"Additional Container Cluster Roles", common:false},
+      {id:"T1098.007", name:"新增本機或網域群組", en:"Additional Local or Domain Groups", common:false},
     ]},
-    {id:"T1518", name:"軟體探索", common:true, subs:[
-      {id:"T1518.001", name:"資安軟體探索", common:true},
-      {id:"T1518.002", name:"備份軟體探索", common:true},
+    {id:"T1112", name:"修改登錄機碼", en:"Modify Registry", common:true, subs:[]},
+    {id:"T1133", name:"對外遠端服務", en:"External Remote Services", common:false, subs:[]},
+    {id:"T1136", name:"建立帳號", en:"Create Account", common:true, subs:[
+      {id:"T1136.001", name:"本機帳號", en:"Local Account", common:true},
+      {id:"T1136.002", name:"網域帳號", en:"Domain Account", common:true},
+      {id:"T1136.003", name:"雲端帳號", en:"Cloud Account", common:true},
     ]},
-    {id:"T1526", name:"雲端服務探索", common:false, subs:[]},
-    {id:"T1538", name:"雲端服務儀表板", common:false, subs:[]},
-    {id:"T1580", name:"雲端基礎架構探索", common:false, subs:[]},
-    {id:"T1613", name:"容器與資源探索", common:false, subs:[]},
-    {id:"T1614", name:"系統所在地探索", common:false, subs:[
-      {id:"T1614.001", name:"系統語言探索", common:false},
+    {id:"T1137", name:"Office 應用程式啟動", en:"Office Application Startup", common:false, subs:[
+      {id:"T1137.001", name:"Office 範本巨集", en:"Office Template Macros", common:false},
+      {id:"T1137.002", name:"Office Test 登錄機碼", en:"Office Test", common:false},
+      {id:"T1137.003", name:"Outlook 表單", en:"Outlook Forms", common:false},
+      {id:"T1137.004", name:"Outlook 首頁", en:"Outlook Home Page", common:false},
+      {id:"T1137.005", name:"Outlook 規則", en:"Outlook Rules", common:false},
+      {id:"T1137.006", name:"增益集", en:"Add-ins", common:false},
     ]},
-    {id:"T1615", name:"群組原則探索", common:false, subs:[]},
-    {id:"T1619", name:"雲端儲存物件探索", common:false, subs:[]},
-    {id:"T1622", name:"偵錯器偵測規避", common:false, subs:[]},
-    {id:"T1652", name:"裝置驅動程式探索", common:false, subs:[]},
-    {id:"T1654", name:"日誌列舉", common:false, subs:[]},
-    {id:"T1673", name:"虛擬機探索", common:false, subs:[]},
-    {id:"T1680", name:"本機儲存探索", common:false, subs:[]},
+    {id:"T1176", name:"軟體擴充套件", en:"Software Extensions", common:false, subs:[
+      {id:"T1176.001", name:"瀏覽器擴充套件", en:"Browser Extensions", common:false},
+      {id:"T1176.002", name:"IDE 擴充套件", en:"IDE Extensions", common:false},
+    ]},
+    {id:"T1197", name:"BITS 工作", en:"BITS Jobs", common:false, subs:[]},
+    {id:"T1205", name:"流量訊號", en:"Traffic Signaling", common:false, subs:[
+      {id:"T1205.001", name:"埠敲門", en:"Port Knocking", common:false},
+      {id:"T1205.002", name:"通訊端過濾器", en:"Socket Filters", common:false},
+    ]},
+    {id:"T1505", name:"伺服器軟體元件", en:"Server Software Component", common:true, subs:[
+      {id:"T1505.001", name:"SQL 儲存程序", en:"SQL Stored Procedures", common:true},
+      {id:"T1505.002", name:"傳輸代理程式", en:"Transport Agent", common:false},
+      {id:"T1505.003", name:"Web Shell", en:"Web Shell", common:true},
+      {id:"T1505.004", name:"IIS 元件", en:"IIS Components", common:true},
+      {id:"T1505.005", name:"終端機服務 DLL", en:"Terminal Services DLL", common:false},
+      {id:"T1505.006", name:"vSphere 安裝套件", en:"vSphere Installation Bundles", common:true},
+    ]},
+    {id:"T1525", name:"植入內部映像檔", en:"Implant Internal Image", common:false, subs:[]},
+    {id:"T1542", name:"開機前階段", en:"Pre-OS Boot", common:false, subs:[
+      {id:"T1542.001", name:"系統韌體", en:"System Firmware", common:false},
+      {id:"T1542.002", name:"元件韌體", en:"Component Firmware", common:false},
+      {id:"T1542.003", name:"Bootkit", en:"Bootkit", common:false},
+      {id:"T1542.004", name:"ROMMONkit", en:"ROMMONkit", common:false},
+      {id:"T1542.005", name:"TFTP 開機", en:"TFTP Boot", common:false},
+    ]},
+    {id:"T1543", name:"建立或修改系統程序", en:"Create or Modify System Process", common:true, subs:[
+      {id:"T1543.001", name:"Launch Agent", en:"Launch Agent", common:true},
+      {id:"T1543.002", name:"Systemd 服務", en:"Systemd Service", common:true},
+      {id:"T1543.003", name:"Windows 服務", en:"Windows Service", common:true},
+      {id:"T1543.004", name:"Launch Daemon", en:"Launch Daemon", common:true},
+      {id:"T1543.005", name:"容器服務", en:"Container Service", common:false},
+    ]},
+    {id:"T1546", name:"事件觸發執行", en:"Event Triggered Execution", common:true, subs:[
+      {id:"T1546.001", name:"變更預設檔案關聯", en:"Change Default File Association", common:false},
+      {id:"T1546.002", name:"螢幕保護程式", en:"Screensaver", common:false},
+      {id:"T1546.003", name:"WMI 訂閱", en:"Windows Management Instrumentation Event Subscription", common:true},
+      {id:"T1546.004", name:"修改 Unix Shell 組態", en:"Unix Shell Configuration Modification", common:true},
+      {id:"T1546.005", name:"Trap 訊號攔截", en:"Trap", common:false},
+      {id:"T1546.006", name:"新增 LC_LOAD_DYLIB", en:"LC_LOAD_DYLIB Addition", common:false},
+      {id:"T1546.007", name:"Netsh 協助程式 DLL", en:"Netsh Helper DLL", common:false},
+      {id:"T1546.008", name:"協助工具功能", en:"Accessibility Features", common:true},
+      {id:"T1546.009", name:"AppCert DLL", en:"AppCert DLLs", common:false},
+      {id:"T1546.010", name:"AppInit DLL", en:"AppInit DLLs", common:false},
+      {id:"T1546.011", name:"應用程式相容性填充（Shimming）", en:"Application Shimming", common:false},
+      {id:"T1546.012", name:"映像檔執行選項注入", en:"Image File Execution Options Injection", common:false},
+      {id:"T1546.013", name:"PowerShell 設定檔", en:"PowerShell Profile", common:false},
+      {id:"T1546.014", name:"Emond", en:"Emond", common:false},
+      {id:"T1546.015", name:"元件物件模型綁架", en:"Component Object Model Hijacking", common:true},
+      {id:"T1546.016", name:"安裝程式套件", en:"Installer Packages", common:false},
+      {id:"T1546.017", name:"udev 規則", en:"Udev Rules", common:false},
+      {id:"T1546.018", name:"Python 啟動掛鉤", en:"Python Startup Hooks", common:false},
+    ]},
+    {id:"T1547", name:"開機或登入自動啟動", en:"Boot or Logon Autostart Execution", common:true, subs:[
+      {id:"T1547.001", name:"登錄機碼／啟動資料夾", en:"Registry Run Keys / Startup Folder", common:true},
+      {id:"T1547.002", name:"驗證套件", en:"Authentication Package", common:false},
+      {id:"T1547.003", name:"時間提供者", en:"Time Providers", common:false},
+      {id:"T1547.004", name:"Winlogon Helper DLL", en:"Winlogon Helper DLL", common:true},
+      {id:"T1547.005", name:"安全性支援提供者", en:"Security Support Provider", common:false},
+      {id:"T1547.006", name:"核心模組與擴充功能", en:"Kernel Modules and Extensions", common:false},
+      {id:"T1547.007", name:"重新開啟的應用程式", en:"Re-opened Applications", common:false},
+      {id:"T1547.008", name:"LSASS 驅動程式", en:"LSASS Driver", common:false},
+      {id:"T1547.009", name:"捷徑竄改", en:"Shortcut Modification", common:true},
+      {id:"T1547.010", name:"連接埠監視器", en:"Port Monitors", common:false},
+      {id:"T1547.012", name:"列印處理器", en:"Print Processors", common:false},
+      {id:"T1547.013", name:"XDG 自動啟動項目", en:"XDG Autostart Entries", common:true},
+      {id:"T1547.014", name:"Active Setup", en:"Active Setup", common:false},
+      {id:"T1547.015", name:"登入項目", en:"Login Items", common:false},
+    ]},
+    {id:"T1554", name:"竄改主機上的軟體執行檔", en:"Compromise Host Software Binary", common:false, subs:[]},
+    {id:"T1556", name:"竄改驗證流程", en:"Modify Authentication Process", common:false, subs:[
+      {id:"T1556.001", name:"網域控制站驗證", en:"Domain Controller Authentication", common:false},
+      {id:"T1556.002", name:"密碼篩選器 DLL", en:"Password Filter DLL", common:false},
+      {id:"T1556.003", name:"可插拔驗證模組（PAM）", en:"Pluggable Authentication Modules", common:false},
+      {id:"T1556.004", name:"網通設備驗證", en:"Network Device Authentication", common:false},
+      {id:"T1556.005", name:"可逆加密", en:"Reversible Encryption", common:false},
+      {id:"T1556.006", name:"多重要素驗證", en:"Multi-Factor Authentication", common:false},
+      {id:"T1556.007", name:"混合式身分", en:"Hybrid Identity", common:false},
+      {id:"T1556.008", name:"網路提供者 DLL", en:"Network Provider DLL", common:false},
+      {id:"T1556.009", name:"條件式存取原則", en:"Conditional Access Policies", common:false},
+    ]},
+    {id:"T1653", name:"電源設定", en:"Power Settings", common:false, subs:[]},
+    {id:"T1668", name:"排他控制", en:"Exclusive Control", common:false, subs:[]},
+    {id:"T1671", name:"雲端應用程式整合", en:"Cloud Application Integration", common:false, subs:[]},
   ]},
-  {id:"TA0008", name:"橫向移動", techs:[
-    {id:"T1021", name:"遠端服務", common:true, subs:[
-      {id:"T1021.001", name:"遠端桌面", common:true},
-      {id:"T1021.002", name:"SMB／Windows 管理員共用", common:true},
-      {id:"T1021.003", name:"分散式元件物件模型", common:false},
-      {id:"T1021.004", name:"SSH", common:true},
-      {id:"T1021.005", name:"VNC", common:true},
-      {id:"T1021.006", name:"Windows 遠端管理", common:false},
-      {id:"T1021.007", name:"雲端服務", common:false},
-      {id:"T1021.008", name:"直連雲端虛擬機", common:false},
+  {id:"TA0004", name:"權限提升", en:"Privilege Escalation", techs:[
+    {id:"T1037", name:"開機或登入初始化指令稿", en:"Boot or Logon Initialization Scripts", common:false, subs:[
+      {id:"T1037.001", name:"登入指令稿（Windows）", en:"Logon Script (Windows)", common:false},
+      {id:"T1037.002", name:"登入掛鉤（Login Hook）", en:"Login Hook", common:false},
+      {id:"T1037.003", name:"網路登入指令稿", en:"Network Logon Script", common:false},
+      {id:"T1037.004", name:"RC 指令稿", en:"RC Scripts", common:false},
+      {id:"T1037.005", name:"啟動項目", en:"Startup Items", common:false},
     ]},
-    {id:"T1072", name:"軟體部署工具", common:true, subs:[]},
-    {id:"T1080", name:"污染共用內容", common:true, subs:[]},
-    {id:"T1091", name:"透過可移除媒體複製", common:true, subs:[]},
-    {id:"T1210", name:"利用遠端服務漏洞", common:true, subs:[]},
-    {id:"T1534", name:"內部魚叉式網釣", common:true, subs:[]},
-    {id:"T1550", name:"替代認證materials", common:true, subs:[
-      {id:"T1550.001", name:"應用程式存取權杖", common:true},
-      {id:"T1550.002", name:"雜湊傳遞", common:true},
-      {id:"T1550.003", name:"票證傳遞", common:true},
-      {id:"T1550.004", name:"網頁工作階段 Cookie", common:true},
+    {id:"T1053", name:"排程工作／作業", en:"Scheduled Task/Job", common:true, subs:[
+      {id:"T1053.002", name:"At 排程", en:"At", common:true},
+      {id:"T1053.003", name:"Cron", en:"Cron", common:true},
+      {id:"T1053.005", name:"Scheduled Task", en:"Scheduled Task", common:true},
+      {id:"T1053.006", name:"Systemd Timers", en:"Systemd Timers", common:true},
+      {id:"T1053.007", name:"容器調度工作", en:"Container Orchestration Job", common:false},
     ]},
-    {id:"T1563", name:"遠端服務工作階段綁架", common:false, subs:[
-      {id:"T1563.001", name:"SSH 綁架", common:false},
-      {id:"T1563.002", name:"RDP 綁架", common:false},
+    {id:"T1055", name:"程序注入", en:"Process Injection", common:true, subs:[
+      {id:"T1055.001", name:"DLL 注入", en:"Dynamic-link Library Injection", common:true},
+      {id:"T1055.002", name:"可攜式執行檔注入", en:"Portable Executable Injection", common:true},
+      {id:"T1055.003", name:"執行緒執行劫持", en:"Thread Execution Hijacking", common:false},
+      {id:"T1055.004", name:"非同步程序呼叫", en:"Asynchronous Procedure Call", common:true},
+      {id:"T1055.005", name:"執行緒區域儲存區", en:"Thread Local Storage", common:false},
+      {id:"T1055.008", name:"ptrace 系統呼叫", en:"Ptrace System Calls", common:false},
+      {id:"T1055.009", name:"proc 記憶體", en:"Proc Memory", common:false},
+      {id:"T1055.011", name:"額外視窗記憶體注入", en:"Extra Window Memory Injection", common:false},
+      {id:"T1055.012", name:"程序空洞化", en:"Process Hollowing", common:true},
+      {id:"T1055.013", name:"程序偽裝（Doppelgänging）", en:"Process Doppelgänging", common:false},
+      {id:"T1055.014", name:"VDSO 劫持", en:"VDSO Hijacking", common:false},
+      {id:"T1055.015", name:"ListPlanting", en:"ListPlanting", common:false},
     ]},
-    {id:"T1570", name:"橫向工具轉移", common:true, subs:[]},
+    {id:"T1068", name:"利用漏洞提權", en:"Exploitation for Privilege Escalation", common:false, subs:[]},
+    {id:"T1078", name:"有效帳號", en:"Valid Accounts", common:true, subs:[
+      {id:"T1078.001", name:"預設帳號", en:"Default Accounts", common:true},
+      {id:"T1078.002", name:"網域帳號", en:"Domain Accounts", common:true},
+      {id:"T1078.003", name:"本機帳號", en:"Local Accounts", common:true},
+      {id:"T1078.004", name:"雲端帳號", en:"Cloud Accounts", common:true},
+    ]},
+    {id:"T1098", name:"帳號操弄", en:"Account Manipulation", common:false, subs:[
+      {id:"T1098.001", name:"額外雲端憑證", en:"Additional Cloud Credentials", common:false},
+      {id:"T1098.002", name:"額外郵件委派權限", en:"Additional Email Delegate Permissions", common:false},
+      {id:"T1098.003", name:"額外雲端角色", en:"Additional Cloud Roles", common:false},
+      {id:"T1098.004", name:"SSH 授權金鑰", en:"SSH Authorized Keys", common:false},
+      {id:"T1098.005", name:"裝置註冊", en:"Device Registration", common:false},
+      {id:"T1098.006", name:"新增容器叢集角色", en:"Additional Container Cluster Roles", common:false},
+      {id:"T1098.007", name:"新增本機或網域群組", en:"Additional Local or Domain Groups", common:false},
+    ]},
+    {id:"T1134", name:"存取權杖操弄", en:"Access Token Manipulation", common:true, subs:[
+      {id:"T1134.001", name:"權杖模擬／竊取", en:"Token Impersonation/Theft", common:true},
+      {id:"T1134.002", name:"以權杖建立程序", en:"Create Process with Token", common:true},
+      {id:"T1134.003", name:"建立並冒用權杖", en:"Make and Impersonate Token", common:true},
+      {id:"T1134.004", name:"偽造父程序 PID", en:"Parent PID Spoofing", common:true},
+      {id:"T1134.005", name:"SID 歷程注入", en:"SID-History Injection", common:false},
+    ]},
+    {id:"T1484", name:"網域或租戶原則修改", en:"Domain or Tenant Policy Modification", common:false, subs:[
+      {id:"T1484.001", name:"群組原則修改", en:"Group Policy Modification", common:false},
+      {id:"T1484.002", name:"信任修改", en:"Trust Modification", common:false},
+    ]},
+    {id:"T1543", name:"建立或修改系統程序", en:"Create or Modify System Process", common:true, subs:[
+      {id:"T1543.001", name:"Launch Agent", en:"Launch Agent", common:true},
+      {id:"T1543.002", name:"Systemd 服務", en:"Systemd Service", common:true},
+      {id:"T1543.003", name:"Windows 服務", en:"Windows Service", common:true},
+      {id:"T1543.004", name:"Launch Daemon", en:"Launch Daemon", common:true},
+      {id:"T1543.005", name:"容器服務", en:"Container Service", common:false},
+    ]},
+    {id:"T1546", name:"事件觸發執行", en:"Event Triggered Execution", common:true, subs:[
+      {id:"T1546.001", name:"變更預設檔案關聯", en:"Change Default File Association", common:false},
+      {id:"T1546.002", name:"螢幕保護程式", en:"Screensaver", common:false},
+      {id:"T1546.003", name:"WMI 訂閱", en:"Windows Management Instrumentation Event Subscription", common:true},
+      {id:"T1546.004", name:"修改 Unix Shell 組態", en:"Unix Shell Configuration Modification", common:true},
+      {id:"T1546.005", name:"Trap 訊號攔截", en:"Trap", common:false},
+      {id:"T1546.006", name:"新增 LC_LOAD_DYLIB", en:"LC_LOAD_DYLIB Addition", common:false},
+      {id:"T1546.007", name:"Netsh 協助程式 DLL", en:"Netsh Helper DLL", common:false},
+      {id:"T1546.008", name:"協助工具功能", en:"Accessibility Features", common:true},
+      {id:"T1546.009", name:"AppCert DLL", en:"AppCert DLLs", common:false},
+      {id:"T1546.010", name:"AppInit DLL", en:"AppInit DLLs", common:false},
+      {id:"T1546.011", name:"應用程式相容性填充（Shimming）", en:"Application Shimming", common:false},
+      {id:"T1546.012", name:"映像檔執行選項注入", en:"Image File Execution Options Injection", common:false},
+      {id:"T1546.013", name:"PowerShell 設定檔", en:"PowerShell Profile", common:false},
+      {id:"T1546.014", name:"Emond", en:"Emond", common:false},
+      {id:"T1546.015", name:"元件物件模型綁架", en:"Component Object Model Hijacking", common:true},
+      {id:"T1546.016", name:"安裝程式套件", en:"Installer Packages", common:false},
+      {id:"T1546.017", name:"udev 規則", en:"Udev Rules", common:false},
+      {id:"T1546.018", name:"Python 啟動掛鉤", en:"Python Startup Hooks", common:false},
+    ]},
+    {id:"T1547", name:"開機或登入自動啟動", en:"Boot or Logon Autostart Execution", common:true, subs:[
+      {id:"T1547.001", name:"登錄機碼／啟動資料夾", en:"Registry Run Keys / Startup Folder", common:true},
+      {id:"T1547.002", name:"驗證套件", en:"Authentication Package", common:false},
+      {id:"T1547.003", name:"時間提供者", en:"Time Providers", common:false},
+      {id:"T1547.004", name:"Winlogon Helper DLL", en:"Winlogon Helper DLL", common:true},
+      {id:"T1547.005", name:"安全性支援提供者", en:"Security Support Provider", common:false},
+      {id:"T1547.006", name:"核心模組與擴充功能", en:"Kernel Modules and Extensions", common:false},
+      {id:"T1547.007", name:"重新開啟的應用程式", en:"Re-opened Applications", common:false},
+      {id:"T1547.008", name:"LSASS 驅動程式", en:"LSASS Driver", common:false},
+      {id:"T1547.009", name:"捷徑竄改", en:"Shortcut Modification", common:true},
+      {id:"T1547.010", name:"連接埠監視器", en:"Port Monitors", common:false},
+      {id:"T1547.012", name:"列印處理器", en:"Print Processors", common:false},
+      {id:"T1547.013", name:"XDG 自動啟動項目", en:"XDG Autostart Entries", common:true},
+      {id:"T1547.014", name:"Active Setup", en:"Active Setup", common:false},
+      {id:"T1547.015", name:"登入項目", en:"Login Items", common:false},
+    ]},
+    {id:"T1548", name:"權限提升控制機制濫用", en:"Abuse Elevation Control Mechanism", common:true, subs:[
+      {id:"T1548.001", name:"Setuid/Setgid", en:"Setuid and Setgid", common:true},
+      {id:"T1548.002", name:"繞過使用者帳戶控制", en:"Bypass User Account Control", common:true},
+      {id:"T1548.003", name:"Sudo 快取", en:"Sudo and Sudo Caching", common:true},
+      {id:"T1548.004", name:"提示提權執行", en:"Elevated Execution with Prompt", common:true},
+      {id:"T1548.005", name:"暫時性雲端提權存取", en:"Temporary Elevated Cloud Access", common:false},
+      {id:"T1548.006", name:"TCC 權限操弄", en:"TCC Manipulation", common:false},
+    ]},
+    {id:"T1611", name:"逃逸至主機", en:"Escape to Host", common:false, subs:[]},
   ]},
-  {id:"TA0009", name:"蒐集", techs:[
-    {id:"T1005", name:"本機系統資料蒐集", common:true, subs:[]},
-    {id:"T1025", name:"自卸除式媒體取得資料", common:false, subs:[]},
-    {id:"T1039", name:"網路共用磁碟蒐集", common:false, subs:[]},
-    {id:"T1056", name:"輸入擷取", common:true, subs:[
-      {id:"T1056.001", name:"鍵盤側錄", common:true},
-      {id:"T1056.002", name:"GUI 輸入擷取", common:true},
-      {id:"T1056.003", name:"網頁入口擷取", common:true},
-      {id:"T1056.004", name:"憑證 API 掛鉤", common:true},
+  {id:"TA0005", name:"隱匿規避", en:"Stealth", techs:[
+    {id:"T1006", name:"直接存取磁碟區", en:"Direct Volume Access", common:false, subs:[]},
+    {id:"T1014", name:"Rootkit", en:"Rootkit", common:false, subs:[]},
+    {id:"T1027", name:"混淆的檔案或資訊", en:"Obfuscated Files or Information", common:true, subs:[
+      {id:"T1027.001", name:"二進位檔填充", en:"Binary Padding", common:false},
+      {id:"T1027.002", name:"加殼", en:"Software Packing", common:true},
+      {id:"T1027.003", name:"隱寫術", en:"Steganography", common:false},
+      {id:"T1027.004", name:"投遞後才編譯", en:"Compile After Delivery", common:false},
+      {id:"T1027.005", name:"自工具中移除特徵", en:"Indicator Removal from Tools", common:false},
+      {id:"T1027.006", name:"HTML 夾帶", en:"HTML Smuggling", common:false},
+      {id:"T1027.007", name:"動態解析 API", en:"Dynamic API Resolution", common:false},
+      {id:"T1027.008", name:"去除符號的酬載", en:"Stripped Payloads", common:false},
+      {id:"T1027.009", name:"內嵌酬載", en:"Embedded Payloads", common:false},
+      {id:"T1027.010", name:"指令碼混淆", en:"Command Obfuscation", common:true},
+      {id:"T1027.011", name:"無檔案式儲存", en:"Fileless Storage", common:false},
+      {id:"T1027.012", name:"LNK 圖示夾帶", en:"LNK Icon Smuggling", common:false},
+      {id:"T1027.013", name:"加密／編碼檔案", en:"Encrypted/Encoded File", common:true},
+      {id:"T1027.014", name:"多型程式碼", en:"Polymorphic Code", common:false},
+      {id:"T1027.015", name:"壓縮", en:"Compression", common:true},
+      {id:"T1027.016", name:"插入垃圾程式碼", en:"Junk Code Insertion", common:false},
+      {id:"T1027.017", name:"SVG 夾帶", en:"SVG Smuggling", common:false},
+      {id:"T1027.018", name:"不可見 Unicode 字元", en:"Invisible Unicode", common:false},
     ]},
-    {id:"T1074", name:"資料暫存", common:true, subs:[
-      {id:"T1074.001", name:"本機資料暫存", common:true},
-      {id:"T1074.002", name:"遠端資料暫存", common:true},
+    {id:"T1036", name:"偽裝", en:"Masquerading", common:true, subs:[
+      {id:"T1036.001", name:"無效的程式碼簽章", en:"Invalid Code Signature", common:false},
+      {id:"T1036.002", name:"由右至左覆寫", en:"Right-to-Left Override", common:false},
+      {id:"T1036.003", name:"重新命名系統工具", en:"Rename Legitimate Utilities", common:true},
+      {id:"T1036.004", name:"偽裝工作或服務", en:"Masquerade Task or Service", common:true},
+      {id:"T1036.005", name:"使用合法名稱或位置", en:"Match Legitimate Resource Name or Location", common:true},
+      {id:"T1036.006", name:"檔名後加空白", en:"Space after Filename", common:false},
+      {id:"T1036.007", name:"雙重副檔名", en:"Double File Extension", common:false},
+      {id:"T1036.008", name:"偽裝檔案類型", en:"Masquerade File Type", common:true},
+      {id:"T1036.009", name:"切斷程序樹", en:"Break Process Trees", common:false},
+      {id:"T1036.010", name:"偽裝帳號名稱", en:"Masquerade Account Name", common:false},
+      {id:"T1036.011", name:"覆寫程序引數", en:"Overwrite Process Arguments", common:false},
+      {id:"T1036.012", name:"瀏覽器指紋偽裝", en:"Browser Fingerprint", common:false},
     ]},
-    {id:"T1113", name:"螢幕擷取", common:true, subs:[]},
-    {id:"T1114", name:"郵件蒐集", common:true, subs:[
-      {id:"T1114.001", name:"本機郵件蒐集", common:true},
-      {id:"T1114.002", name:"遠端郵件蒐集", common:true},
-      {id:"T1114.003", name:"郵件轉寄規則", common:true},
+    {id:"T1055", name:"程序注入", en:"Process Injection", common:true, subs:[
+      {id:"T1055.001", name:"DLL 注入", en:"Dynamic-link Library Injection", common:true},
+      {id:"T1055.002", name:"可攜式執行檔注入", en:"Portable Executable Injection", common:true},
+      {id:"T1055.003", name:"執行緒執行劫持", en:"Thread Execution Hijacking", common:false},
+      {id:"T1055.004", name:"非同步程序呼叫", en:"Asynchronous Procedure Call", common:true},
+      {id:"T1055.005", name:"執行緒區域儲存區", en:"Thread Local Storage", common:false},
+      {id:"T1055.008", name:"ptrace 系統呼叫", en:"Ptrace System Calls", common:false},
+      {id:"T1055.009", name:"proc 記憶體", en:"Proc Memory", common:false},
+      {id:"T1055.011", name:"額外視窗記憶體注入", en:"Extra Window Memory Injection", common:false},
+      {id:"T1055.012", name:"程序空洞化", en:"Process Hollowing", common:true},
+      {id:"T1055.013", name:"程序偽裝（Doppelgänging）", en:"Process Doppelgänging", common:false},
+      {id:"T1055.014", name:"VDSO 劫持", en:"VDSO Hijacking", common:false},
+      {id:"T1055.015", name:"ListPlanting", en:"ListPlanting", common:false},
     ]},
-    {id:"T1115", name:"剪貼簿資料", common:true, subs:[]},
-    {id:"T1119", name:"自動化蒐集", common:true, subs:[]},
-    {id:"T1123", name:"音訊擷取", common:false, subs:[]},
-    {id:"T1125", name:"視訊擷取", common:false, subs:[]},
-    {id:"T1185", name:"瀏覽器工作階段劫持", common:false, subs:[]},
-    {id:"T1213", name:"資訊儲存庫中的資料", common:false, subs:[
-      {id:"T1213.001", name:"Confluence", common:false},
-      {id:"T1213.002", name:"SharePoint", common:false},
-      {id:"T1213.003", name:"程式碼儲存庫", common:false},
-      {id:"T1213.004", name:"客戶關係管理系統", common:false},
-      {id:"T1213.005", name:"通訊軟體", common:false},
-      {id:"T1213.006", name:"資料庫", common:false},
+    {id:"T1070", name:"主機痕跡清除", en:"Indicator Removal", common:true, subs:[
+      {id:"T1070.003", name:"清除指令歷程", en:"Clear Command History", common:true},
+      {id:"T1070.004", name:"刪除檔案", en:"File Deletion", common:true},
+      {id:"T1070.005", name:"移除網路共用連線紀錄", en:"Network Share Connection Removal", common:false},
+      {id:"T1070.006", name:"時間戳記竄改", en:"Timestomp", common:true},
+      {id:"T1070.007", name:"清除網路連線紀錄與組態", en:"Clear Network Connection History and Configurations", common:false},
+      {id:"T1070.008", name:"清除信箱資料", en:"Clear Mailbox Data", common:false},
+      {id:"T1070.009", name:"清除持續性機制", en:"Clear Persistence", common:true},
+      {id:"T1070.010", name:"搬移惡意程式", en:"Relocate Malware", common:false},
     ]},
-    {id:"T1530", name:"自雲端儲存取得資料", common:false, subs:[]},
-    {id:"T1557", name:"中間人攻擊", common:false, subs:[
-      {id:"T1557.001", name:"名稱解析毒化與 SMB 轉送", common:false},
-      {id:"T1557.002", name:"ARP 快取毒化", common:false},
-      {id:"T1557.003", name:"DHCP 偽冒", common:false},
-      {id:"T1557.004", name:"偽基地台（Evil Twin）", common:false},
+    {id:"T1078", name:"有效帳號", en:"Valid Accounts", common:false, subs:[
+      {id:"T1078.001", name:"預設帳號", en:"Default Accounts", common:false},
+      {id:"T1078.002", name:"網域帳號", en:"Domain Accounts", common:false},
+      {id:"T1078.003", name:"本機帳號", en:"Local Accounts", common:false},
+      {id:"T1078.004", name:"雲端帳號", en:"Cloud Accounts", common:false},
     ]},
-    {id:"T1560", name:"封存蒐集資料", common:true, subs:[
-      {id:"T1560.001", name:"透過工具封存", common:true},
-      {id:"T1560.002", name:"透過程式庫封存", common:true},
-      {id:"T1560.003", name:"自訂方式封存", common:true},
+    {id:"T1127", name:"藉可信開發工具代理執行", en:"Trusted Developer Utilities Proxy Execution", common:false, subs:[
+      {id:"T1127.001", name:"MSBuild", en:"MSBuild", common:false},
+      {id:"T1127.002", name:"ClickOnce", en:"ClickOnce", common:false},
+      {id:"T1127.003", name:"JamPlus", en:"JamPlus", common:false},
     ]},
-    {id:"T1602", name:"自組態儲存庫取得資料", common:false, subs:[
-      {id:"T1602.001", name:"SNMP（MIB 傾印）", common:false},
-      {id:"T1602.002", name:"網通設備組態傾印", common:false},
+    {id:"T1134", name:"存取權杖操弄", en:"Access Token Manipulation", common:false, subs:[
+      {id:"T1134.001", name:"權杖模擬／竊取", en:"Token Impersonation/Theft", common:false},
+      {id:"T1134.002", name:"以權杖建立程序", en:"Create Process with Token", common:false},
+      {id:"T1134.003", name:"建立並冒用權杖", en:"Make and Impersonate Token", common:false},
+      {id:"T1134.004", name:"偽造父程序 PID", en:"Parent PID Spoofing", common:false},
+      {id:"T1134.005", name:"SID 歷程注入", en:"SID-History Injection", common:false},
+    ]},
+    {id:"T1140", name:"解混淆／解碼檔案", en:"Deobfuscate/Decode Files or Information", common:true, subs:[]},
+    {id:"T1197", name:"BITS 工作", en:"BITS Jobs", common:false, subs:[]},
+    {id:"T1202", name:"間接執行命令", en:"Indirect Command Execution", common:false, subs:[]},
+    {id:"T1205", name:"流量訊號", en:"Traffic Signaling", common:false, subs:[
+      {id:"T1205.001", name:"埠敲門", en:"Port Knocking", common:false},
+      {id:"T1205.002", name:"通訊端過濾器", en:"Socket Filters", common:false},
+    ]},
+    {id:"T1211", name:"利用漏洞規避偵測", en:"Exploitation for Stealth", common:false, subs:[]},
+    {id:"T1216", name:"藉系統指令稿代理執行", en:"System Script Proxy Execution", common:false, subs:[
+      {id:"T1216.001", name:"PubPrn", en:"PubPrn", common:false},
+      {id:"T1216.002", name:"SyncAppvPublishingServer", en:"SyncAppvPublishingServer", common:false},
+    ]},
+    {id:"T1218", name:"簽章二進位代理執行", en:"System Binary Proxy Execution", common:true, subs:[
+      {id:"T1218.001", name:"已編譯 HTML 檔", en:"Compiled HTML File", common:false},
+      {id:"T1218.002", name:"控制台", en:"Control Panel", common:false},
+      {id:"T1218.003", name:"CMSTP", en:"CMSTP", common:false},
+      {id:"T1218.004", name:"InstallUtil", en:"InstallUtil", common:false},
+      {id:"T1218.005", name:"Mshta", en:"Mshta", common:true},
+      {id:"T1218.007", name:"Msiexec", en:"Msiexec", common:true},
+      {id:"T1218.008", name:"Odbcconf", en:"Odbcconf", common:false},
+      {id:"T1218.009", name:"Regsvcs／Regasm", en:"Regsvcs/Regasm", common:false},
+      {id:"T1218.010", name:"Regsvr32", en:"Regsvr32", common:true},
+      {id:"T1218.011", name:"Rundll32", en:"Rundll32", common:true},
+      {id:"T1218.012", name:"Verclsid", en:"Verclsid", common:false},
+      {id:"T1218.013", name:"Mavinject", en:"Mavinject", common:false},
+      {id:"T1218.014", name:"MMC", en:"MMC", common:false},
+      {id:"T1218.015", name:"Electron 應用程式", en:"Electron Applications", common:false},
+    ]},
+    {id:"T1220", name:"XSL 指令稿處理", en:"XSL Script Processing", common:false, subs:[]},
+    {id:"T1221", name:"範本注入", en:"Template Injection", common:false, subs:[]},
+    {id:"T1480", name:"執行護欄", en:"Execution Guardrails", common:false, subs:[
+      {id:"T1480.001", name:"環境金鑰綁定", en:"Environmental Keying", common:false},
+      {id:"T1480.002", name:"互斥鎖", en:"Mutual Exclusion", common:false},
+    ]},
+    {id:"T1497", name:"虛擬化／沙箱規避", en:"Virtualization/Sandbox Evasion", common:true, subs:[
+      {id:"T1497.001", name:"系統檢查", en:"System Checks", common:true},
+      {id:"T1497.002", name:"依使用者活動判斷沙箱", en:"User Activity Based Checks", common:true},
+      {id:"T1497.003", name:"時間式規避", en:"Time Based Checks", common:true},
+    ]},
+    {id:"T1535", name:"未使用或不支援的雲端區域", en:"Unused/Unsupported Cloud Regions", common:false, subs:[]},
+    {id:"T1542", name:"開機前階段", en:"Pre-OS Boot", common:false, subs:[
+      {id:"T1542.001", name:"系統韌體", en:"System Firmware", common:false},
+      {id:"T1542.002", name:"元件韌體", en:"Component Firmware", common:false},
+      {id:"T1542.003", name:"Bootkit", en:"Bootkit", common:false},
+      {id:"T1542.004", name:"ROMMONkit", en:"ROMMONkit", common:false},
+      {id:"T1542.005", name:"TFTP 開機", en:"TFTP Boot", common:false},
+    ]},
+    {id:"T1564", name:"隱藏痕跡", en:"Hide Artifacts", common:true, subs:[
+      {id:"T1564.001", name:"隱藏檔案與目錄", en:"Hidden Files and Directories", common:true},
+      {id:"T1564.002", name:"隱藏使用者", en:"Hidden Users", common:false},
+      {id:"T1564.003", name:"隱藏視窗", en:"Hidden Window", common:true},
+      {id:"T1564.004", name:"NTFS 檔案屬性", en:"NTFS File Attributes", common:true},
+      {id:"T1564.005", name:"隱藏檔案系統", en:"Hidden File System", common:false},
+      {id:"T1564.006", name:"在虛擬執行個體中執行", en:"Run Virtual Instance", common:false},
+      {id:"T1564.007", name:"VBA Stomping", en:"VBA Stomping", common:false},
+      {id:"T1564.008", name:"隱藏郵件規則", en:"Email Hiding Rules", common:false},
+      {id:"T1564.009", name:"資源分支（Resource Fork）", en:"Resource Forking", common:false},
+      {id:"T1564.010", name:"偽造程序引數", en:"Process Argument Spoofing", common:false},
+      {id:"T1564.011", name:"忽略程序中斷訊號", en:"Ignore Process Interrupts", common:true},
+      {id:"T1564.012", name:"檔案與路徑排除清單", en:"File/Path Exclusions", common:false},
+      {id:"T1564.013", name:"綁定掛載", en:"Bind Mounts", common:false},
+      {id:"T1564.014", name:"擴充屬性", en:"Extended Attributes", common:false},
+    ]},
+    {id:"T1574", name:"綁架執行流程", en:"Hijack Execution Flow", common:false, subs:[
+      {id:"T1574.001", name:"DLL 搜尋順序綁架", en:"DLL", common:false},
+      {id:"T1574.004", name:"Dylib 劫持", en:"Dylib Hijacking", common:false},
+      {id:"T1574.005", name:"安裝程式檔案權限缺失", en:"Executable Installer File Permissions Weakness", common:false},
+      {id:"T1574.006", name:"動態連結器劫持", en:"Dynamic Linker Hijacking", common:false},
+      {id:"T1574.007", name:"藉 PATH 環境變數攔截路徑", en:"Path Interception by PATH Environment Variable", common:false},
+      {id:"T1574.008", name:"藉搜尋順序攔截路徑", en:"Path Interception by Search Order Hijacking", common:false},
+      {id:"T1574.009", name:"藉未加引號路徑攔截", en:"Path Interception by Unquoted Path", common:false},
+      {id:"T1574.010", name:"服務檔案權限缺失", en:"Services File Permissions Weakness", common:false},
+      {id:"T1574.011", name:"服務登錄權限", en:"Services Registry Permissions Weakness", common:false},
+      {id:"T1574.012", name:"COR_PROFILER", en:"COR_PROFILER", common:false},
+      {id:"T1574.013", name:"KernelCallbackTable", en:"KernelCallbackTable", common:false},
+      {id:"T1574.014", name:"AppDomainManager", en:"AppDomainManager", common:false},
+    ]},
+    {id:"T1612", name:"在主機上建置映像檔", en:"Build Image on Host", common:false, subs:[]},
+    {id:"T1620", name:"反射式程式碼載入", en:"Reflective Code Loading", common:false, subs:[]},
+    {id:"T1622", name:"偵錯器偵測規避", en:"Debugger Evasion", common:false, subs:[]},
+    {id:"T1678", name:"延遲執行", en:"Delay Execution", common:false, subs:[]},
+    {id:"T1679", name:"選擇性排除", en:"Selective Exclusion", common:false, subs:[]},
+    {id:"T1684", name:"社交工程", en:"Social Engineering", common:false, subs:[
+      {id:"T1684.001", name:"身分冒用", en:"Impersonation", common:false},
+      {id:"T1684.002", name:"電子郵件偽冒", en:"Email Spoofing", common:false},
     ]},
   ]},
-  {id:"TA0011", name:"命令與控制", techs:[
-    {id:"T1001", name:"資料混淆", common:true, subs:[
-      {id:"T1001.001", name:"填充垃圾資料", common:true},
-      {id:"T1001.002", name:"隱寫術", common:true},
-      {id:"T1001.003", name:"偽裝成正常協定或服務", common:true},
+  {id:"TA0112", name:"防禦削弱", en:"Defense Impairment", techs:[
+    {id:"T1112", name:"修改登錄機碼", en:"Modify Registry", common:true, subs:[]},
+    {id:"T1207", name:"偽造網域控制站", en:"Rogue Domain Controller", common:false, subs:[]},
+    {id:"T1222", name:"變更檔案與目錄權限", en:"File and Directory Permissions Modification", common:true, subs:[
+      {id:"T1222.001", name:"Windows 權限", en:"Windows Permissions", common:true},
+      {id:"T1222.002", name:"Linux 與 Mac 權限", en:"Linux and Mac Permissions", common:true},
     ]},
-    {id:"T1008", name:"備援通道", common:false, subs:[]},
-    {id:"T1071", name:"應用層協定", common:true, subs:[
-      {id:"T1071.001", name:"Web 協定", common:true},
-      {id:"T1071.002", name:"檔案傳輸協定", common:true},
-      {id:"T1071.003", name:"郵件協定", common:true},
-      {id:"T1071.004", name:"DNS", common:true},
-      {id:"T1071.005", name:"發布／訂閱協定", common:false},
+    {id:"T1484", name:"網域或租戶原則修改", en:"Domain or Tenant Policy Modification", common:true, subs:[
+      {id:"T1484.001", name:"群組原則修改", en:"Group Policy Modification", common:true},
+      {id:"T1484.002", name:"信任修改", en:"Trust Modification", common:true},
     ]},
-    {id:"T1090", name:"代理", common:true, subs:[
-      {id:"T1090.001", name:"內部代理", common:true},
-      {id:"T1090.002", name:"外部代理", common:true},
-      {id:"T1090.003", name:"多重跳板", common:true},
-      {id:"T1090.004", name:"網域前置", common:true},
+    {id:"T1553", name:"顛覆信任控制", en:"Subvert Trust Controls", common:true, subs:[
+      {id:"T1553.001", name:"繞過 Gatekeeper", en:"Gatekeeper Bypass", common:true},
+      {id:"T1553.002", name:"程式碼簽章", en:"Code Signing", common:true},
+      {id:"T1553.003", name:"SIP 與信任提供者劫持", en:"SIP and Trust Provider Hijacking", common:false},
+      {id:"T1553.004", name:"安裝根憑證", en:"Install Root Certificate", common:true},
+      {id:"T1553.005", name:"標記網頁來源繞過", en:"Mark-of-the-Web Bypass", common:true},
+      {id:"T1553.006", name:"修改程式碼簽章原則", en:"Code Signing Policy Modification", common:false},
     ]},
-    {id:"T1092", name:"透過卸除式媒體通訊", common:false, subs:[]},
-    {id:"T1095", name:"非應用層協定", common:true, subs:[]},
-    {id:"T1102", name:"Web 服務", common:true, subs:[
-      {id:"T1102.001", name:"死信箱解析", common:true},
-      {id:"T1102.002", name:"雙向通訊", common:true},
-      {id:"T1102.003", name:"單向通訊", common:true},
+    {id:"T1556", name:"竄改驗證流程", en:"Modify Authentication Process", common:true, subs:[
+      {id:"T1556.001", name:"網域控制站驗證", en:"Domain Controller Authentication", common:true},
+      {id:"T1556.002", name:"密碼篩選器 DLL", en:"Password Filter DLL", common:true},
+      {id:"T1556.003", name:"可插拔驗證模組（PAM）", en:"Pluggable Authentication Modules", common:false},
+      {id:"T1556.004", name:"網通設備驗證", en:"Network Device Authentication", common:true},
+      {id:"T1556.005", name:"可逆加密", en:"Reversible Encryption", common:false},
+      {id:"T1556.006", name:"多重要素驗證", en:"Multi-Factor Authentication", common:true},
+      {id:"T1556.007", name:"混合式身分", en:"Hybrid Identity", common:false},
+      {id:"T1556.008", name:"網路提供者 DLL", en:"Network Provider DLL", common:false},
+      {id:"T1556.009", name:"條件式存取原則", en:"Conditional Access Policies", common:false},
     ]},
-    {id:"T1104", name:"多階段通道", common:false, subs:[]},
-    {id:"T1105", name:"入口工具轉移", common:true, subs:[]},
-    {id:"T1132", name:"資料編碼", common:true, subs:[
-      {id:"T1132.001", name:"標準編碼", common:true},
-      {id:"T1132.002", name:"非標準編碼", common:true},
+    {id:"T1578", name:"竄改雲端運算基礎架構", en:"Modify Cloud Compute Infrastructure", common:false, subs:[
+      {id:"T1578.001", name:"建立快照", en:"Create Snapshot", common:false},
+      {id:"T1578.002", name:"建立雲端執行個體", en:"Create Cloud Instance", common:false},
+      {id:"T1578.003", name:"刪除雲端執行個體", en:"Delete Cloud Instance", common:false},
+      {id:"T1578.004", name:"還原雲端執行個體", en:"Revert Cloud Instance", common:false},
+      {id:"T1578.005", name:"修改雲端運算組態", en:"Modify Cloud Compute Configurations", common:false},
     ]},
-    {id:"T1205", name:"流量訊號", common:false, subs:[
-      {id:"T1205.001", name:"埠敲門", common:false},
-      {id:"T1205.002", name:"通訊端過濾器", common:false},
+    {id:"T1599", name:"跨越網路邊界", en:"Network Boundary Bridging", common:false, subs:[
+      {id:"T1599.001", name:"穿越網路位址轉譯", en:"Network Address Translation Traversal", common:false},
     ]},
-    {id:"T1219", name:"遠端存取軟體", common:false, subs:[
-      {id:"T1219.001", name:"IDE 通道", common:false},
-      {id:"T1219.002", name:"遠端桌面軟體", common:false},
-      {id:"T1219.003", name:"遠端存取硬體", common:false},
+    {id:"T1600", name:"削弱加密強度", en:"Weaken Encryption", common:false, subs:[
+      {id:"T1600.001", name:"縮減金鑰空間", en:"Reduce Key Space", common:false},
+      {id:"T1600.002", name:"停用加密硬體", en:"Disable Crypto Hardware", common:false},
     ]},
-    {id:"T1568", name:"動態解析", common:false, subs:[
-      {id:"T1568.001", name:"快速通量 DNS", common:false},
-      {id:"T1568.002", name:"網域產生演算法", common:false},
-      {id:"T1568.003", name:"DNS 計算", common:false},
+    {id:"T1601", name:"竄改系統映像檔", en:"Modify System Image", common:false, subs:[
+      {id:"T1601.001", name:"修補系統映像檔", en:"Patch System Image", common:false},
+      {id:"T1601.002", name:"降版系統映像檔", en:"Downgrade System Image", common:false},
     ]},
-    {id:"T1571", name:"非標準連接埠", common:false, subs:[]},
-    {id:"T1572", name:"協定隧道", common:false, subs:[]},
-    {id:"T1573", name:"加密通道", common:true, subs:[
-      {id:"T1573.001", name:"對稱加密", common:true},
-      {id:"T1573.002", name:"非對稱加密", common:true},
+    {id:"T1647", name:"竄改 plist 檔案", en:"Plist File Modification", common:false, subs:[]},
+    {id:"T1666", name:"竄改雲端資源階層", en:"Modify Cloud Resource Hierarchy", common:false, subs:[]},
+    {id:"T1685", name:"停用或竄改防護工具", en:"Disable or Modify Tools", common:true, subs:[
+      {id:"T1685.001", name:"停用或竄改 Windows 事件記錄", en:"Disable or Modify Windows Event Log", common:true},
+      {id:"T1685.002", name:"停用或竄改雲端日誌", en:"Disable or Modify Cloud Log", common:true},
+      {id:"T1685.003", name:"竄改或偽造工具介面", en:"Modify or Spoof Tool UI", common:false},
+      {id:"T1685.004", name:"停用或竄改 Linux 稽核日誌", en:"Disable or Modify Linux Audit System Log", common:false},
+      {id:"T1685.005", name:"清除 Windows 事件記錄", en:"Clear Windows Event Logs", common:true},
+      {id:"T1685.006", name:"清除 Linux 或 Mac 系統日誌", en:"Clear Linux or Mac System Logs", common:true},
     ]},
-    {id:"T1659", name:"內容注入", common:false, subs:[]},
-    {id:"T1665", name:"隱匿基礎設施", common:false, subs:[]},
+    {id:"T1686", name:"停用或竄改系統防火牆", en:"Disable or Modify System Firewall", common:true, subs:[
+      {id:"T1686.001", name:"雲端防火牆", en:"Cloud Firewall", common:true},
+      {id:"T1686.002", name:"網通設備防火牆", en:"Network Device Firewall", common:true},
+      {id:"T1686.003", name:"Windows 主機防火牆", en:"Windows Host Firewall", common:true},
+    ]},
+    {id:"T1687", name:"利用漏洞削弱防禦", en:"Exploitation for Defense Impairment", common:false, subs:[]},
+    {id:"T1688", name:"安全模式開機", en:"Safe Mode Boot", common:false, subs:[]},
+    {id:"T1689", name:"降版攻擊", en:"Downgrade Attack", common:false, subs:[]},
+    {id:"T1690", name:"阻止命令歷史記錄", en:"Prevent Command History Logging", common:true, subs:[]},
   ]},
-  {id:"TA0010", name:"資料外洩", techs:[
-    {id:"T1011", name:"替代網路媒介外洩", common:false, subs:[
-      {id:"T1011.001", name:"藍牙外洩", common:false},
+  {id:"TA0006", name:"憑證存取", en:"Credential Access", techs:[
+    {id:"T1003", name:"作業系統憑證傾印", en:"OS Credential Dumping", common:true, subs:[
+      {id:"T1003.001", name:"LSASS 記憶體", en:"LSASS Memory", common:true},
+      {id:"T1003.002", name:"安全帳戶管理員", en:"Security Account Manager", common:true},
+      {id:"T1003.003", name:"NTDS", en:"NTDS", common:true},
+      {id:"T1003.004", name:"LSA 機密", en:"LSA Secrets", common:true},
+      {id:"T1003.005", name:"快取的網域憑證", en:"Cached Domain Credentials", common:false},
+      {id:"T1003.006", name:"DCSync", en:"DCSync", common:false},
+      {id:"T1003.007", name:"proc 檔案系統", en:"Proc Filesystem", common:false},
+      {id:"T1003.008", name:"/etc/passwd 與 /etc/shadow", en:"/etc/passwd and /etc/shadow", common:false},
     ]},
-    {id:"T1020", name:"自動化外洩", common:true, subs:[
-      {id:"T1020.001", name:"流量複製", common:true},
+    {id:"T1040", name:"網路嗅探", en:"Network Sniffing", common:true, subs:[]},
+    {id:"T1056", name:"輸入擷取", en:"Input Capture", common:true, subs:[
+      {id:"T1056.001", name:"鍵盤側錄", en:"Keylogging", common:true},
+      {id:"T1056.002", name:"GUI 輸入擷取", en:"GUI Input Capture", common:true},
+      {id:"T1056.003", name:"網頁入口擷取", en:"Web Portal Capture", common:true},
+      {id:"T1056.004", name:"憑證 API 掛鉤", en:"Credential API Hooking", common:true},
     ]},
-    {id:"T1029", name:"排程傳輸", common:true, subs:[]},
-    {id:"T1030", name:"資料傳輸大小限制", common:true, subs:[]},
-    {id:"T1041", name:"透過 C2 通道外洩資料", common:true, subs:[]},
-    {id:"T1048", name:"透過替代協定外洩", common:true, subs:[
-      {id:"T1048.001", name:"對稱加密非 C2", common:true},
-      {id:"T1048.002", name:"非對稱加密非 C2", common:true},
-      {id:"T1048.003", name:"未加密非 C2", common:true},
+    {id:"T1110", name:"暴力破解", en:"Brute Force", common:true, subs:[
+      {id:"T1110.001", name:"密碼猜測", en:"Password Guessing", common:true},
+      {id:"T1110.002", name:"密碼破解", en:"Password Cracking", common:true},
+      {id:"T1110.003", name:"密碼噴灑", en:"Password Spraying", common:true},
+      {id:"T1110.004", name:"憑證填充", en:"Credential Stuffing", common:true},
     ]},
-    {id:"T1052", name:"實體媒體外洩", common:true, subs:[
-      {id:"T1052.001", name:"USB 外洩", common:true},
+    {id:"T1111", name:"攔截多重要素驗證", en:"Multi-Factor Authentication Interception", common:false, subs:[]},
+    {id:"T1187", name:"強制驗證", en:"Forced Authentication", common:false, subs:[]},
+    {id:"T1212", name:"利用漏洞取得憑證", en:"Exploitation for Credential Access", common:false, subs:[]},
+    {id:"T1528", name:"竊取應用程式存取權杖", en:"Steal Application Access Token", common:false, subs:[]},
+    {id:"T1539", name:"竊取 Web 工作階段 Cookie", en:"Steal Web Session Cookie", common:true, subs:[]},
+    {id:"T1552", name:"不安全的憑證", en:"Unsecured Credentials", common:true, subs:[
+      {id:"T1552.001", name:"檔案中的憑證", en:"Credentials In Files", common:true},
+      {id:"T1552.002", name:"登錄機碼中的憑證", en:"Credentials in Registry", common:true},
+      {id:"T1552.003", name:"Shell 歷史紀錄", en:"Shell History", common:false},
+      {id:"T1552.004", name:"私密金鑰", en:"Private Keys", common:true},
+      {id:"T1552.005", name:"雲端執行個體中繼資料 API", en:"Cloud Instance Metadata API", common:true},
+      {id:"T1552.006", name:"群組原則偏好設定", en:"Group Policy Preferences", common:false},
+      {id:"T1552.007", name:"容器 API", en:"Container API", common:false},
+      {id:"T1552.008", name:"聊天訊息", en:"Chat Messages", common:false},
     ]},
-    {id:"T1537", name:"傳送資料至雲端帳號", common:true, subs:[]},
-    {id:"T1567", name:"透過 Web 服務外洩", common:true, subs:[
-      {id:"T1567.001", name:"透過程式碼儲存庫", common:true},
-      {id:"T1567.002", name:"透過雲端儲存", common:true},
-      {id:"T1567.003", name:"外傳至文字寄存網站", common:true},
-      {id:"T1567.004", name:"經 Webhook 外傳", common:true},
+    {id:"T1555", name:"密碼儲存區憑證", en:"Credentials from Password Stores", common:true, subs:[
+      {id:"T1555.001", name:"Keychain", en:"Keychain", common:true},
+      {id:"T1555.002", name:"securityd 記憶體", en:"Securityd Memory", common:false},
+      {id:"T1555.003", name:"瀏覽器儲存的憑證", en:"Credentials from Web Browsers", common:true},
+      {id:"T1555.004", name:"Windows 認證管理員", en:"Windows Credential Manager", common:true},
+      {id:"T1555.005", name:"密碼管理員", en:"Password Managers", common:true},
+      {id:"T1555.006", name:"雲端機密管理服務", en:"Cloud Secrets Management Stores", common:false},
+    ]},
+    {id:"T1556", name:"竄改驗證流程", en:"Modify Authentication Process", common:true, subs:[
+      {id:"T1556.001", name:"網域控制站驗證", en:"Domain Controller Authentication", common:true},
+      {id:"T1556.002", name:"密碼篩選器 DLL", en:"Password Filter DLL", common:true},
+      {id:"T1556.003", name:"可插拔驗證模組（PAM）", en:"Pluggable Authentication Modules", common:false},
+      {id:"T1556.004", name:"網通設備驗證", en:"Network Device Authentication", common:true},
+      {id:"T1556.005", name:"可逆加密", en:"Reversible Encryption", common:false},
+      {id:"T1556.006", name:"多重要素驗證", en:"Multi-Factor Authentication", common:true},
+      {id:"T1556.007", name:"混合式身分", en:"Hybrid Identity", common:false},
+      {id:"T1556.008", name:"網路提供者 DLL", en:"Network Provider DLL", common:false},
+      {id:"T1556.009", name:"條件式存取原則", en:"Conditional Access Policies", common:false},
+    ]},
+    {id:"T1557", name:"中間人攻擊", en:"Adversary-in-the-Middle", common:false, subs:[
+      {id:"T1557.001", name:"名稱解析毒化與 SMB 轉送", en:"Name Resolution Poisoning and SMB Relay", common:false},
+      {id:"T1557.002", name:"ARP 快取毒化", en:"ARP Cache Poisoning", common:false},
+      {id:"T1557.003", name:"DHCP 偽冒", en:"DHCP Spoofing", common:false},
+      {id:"T1557.004", name:"偽基地台（Evil Twin）", en:"Evil Twin", common:false},
+    ]},
+    {id:"T1558", name:"竊取或偽造 Kerberos 票證", en:"Steal or Forge Kerberos Tickets", common:false, subs:[
+      {id:"T1558.001", name:"黃金票證", en:"Golden Ticket", common:false},
+      {id:"T1558.002", name:"白銀票證", en:"Silver Ticket", common:false},
+      {id:"T1558.003", name:"Kerberoasting", en:"Kerberoasting", common:false},
+      {id:"T1558.004", name:"AS-REP Roasting", en:"AS-REP Roasting", common:false},
+      {id:"T1558.005", name:"Ccache 檔案", en:"Ccache Files", common:false},
+    ]},
+    {id:"T1606", name:"偽造網頁憑證", en:"Forge Web Credentials", common:false, subs:[
+      {id:"T1606.001", name:"網頁 Cookie", en:"Web Cookies", common:false},
+      {id:"T1606.002", name:"SAML 權杖", en:"SAML Tokens", common:false},
+    ]},
+    {id:"T1621", name:"多因素驗證請求產生", en:"Multi-Factor Authentication Request Generation", common:false, subs:[]},
+    {id:"T1649", name:"竊取或偽造驗證憑證", en:"Steal or Forge Authentication Certificates", common:false, subs:[]},
+  ]},
+  {id:"TA0007", name:"探索", en:"Discovery", techs:[
+    {id:"T1007", name:"系統服務探索", en:"System Service Discovery", common:false, subs:[]},
+    {id:"T1010", name:"應用程式視窗探索", en:"Application Window Discovery", common:false, subs:[]},
+    {id:"T1012", name:"查詢登錄檔", en:"Query Registry", common:false, subs:[]},
+    {id:"T1016", name:"系統網路組態探索", en:"System Network Configuration Discovery", common:true, subs:[
+      {id:"T1016.001", name:"網際網路連線探索", en:"Internet Connection Discovery", common:true},
+      {id:"T1016.002", name:"Wi-Fi 探索", en:"Wi-Fi Discovery", common:true},
+    ]},
+    {id:"T1018", name:"遠端系統探索", en:"Remote System Discovery", common:false, subs:[]},
+    {id:"T1033", name:"系統擁有者／使用者探索", en:"System Owner/User Discovery", common:true, subs:[]},
+    {id:"T1040", name:"網路嗅探", en:"Network Sniffing", common:false, subs:[]},
+    {id:"T1046", name:"網路服務探測", en:"Network Service Discovery", common:false, subs:[]},
+    {id:"T1049", name:"系統網路連線探索", en:"System Network Connections Discovery", common:false, subs:[]},
+    {id:"T1057", name:"程序探索", en:"Process Discovery", common:true, subs:[]},
+    {id:"T1069", name:"權限群組探索", en:"Permission Groups Discovery", common:false, subs:[
+      {id:"T1069.001", name:"本機群組", en:"Local Groups", common:false},
+      {id:"T1069.002", name:"網域群組", en:"Domain Groups", common:false},
+      {id:"T1069.003", name:"雲端群組", en:"Cloud Groups", common:false},
+    ]},
+    {id:"T1082", name:"系統資訊探索", en:"System Information Discovery", common:true, subs:[]},
+    {id:"T1083", name:"檔案與目錄探索", en:"File and Directory Discovery", common:true, subs:[]},
+    {id:"T1087", name:"帳號探索", en:"Account Discovery", common:true, subs:[
+      {id:"T1087.001", name:"本機帳號", en:"Local Account", common:true},
+      {id:"T1087.002", name:"網域帳號", en:"Domain Account", common:true},
+      {id:"T1087.003", name:"電子郵件帳號", en:"Email Account", common:true},
+      {id:"T1087.004", name:"雲端帳號", en:"Cloud Account", common:true},
+    ]},
+    {id:"T1120", name:"周邊裝置探索", en:"Peripheral Device Discovery", common:false, subs:[]},
+    {id:"T1124", name:"系統時間探索", en:"System Time Discovery", common:false, subs:[]},
+    {id:"T1135", name:"網路共用探索", en:"Network Share Discovery", common:false, subs:[]},
+    {id:"T1201", name:"密碼原則探索", en:"Password Policy Discovery", common:false, subs:[]},
+    {id:"T1217", name:"瀏覽器資訊探索", en:"Browser Information Discovery", common:false, subs:[]},
+    {id:"T1482", name:"網域信任探索", en:"Domain Trust Discovery", common:false, subs:[]},
+    {id:"T1497", name:"虛擬化／沙箱規避", en:"Virtualization/Sandbox Evasion", common:true, subs:[
+      {id:"T1497.001", name:"系統檢查", en:"System Checks", common:true},
+      {id:"T1497.002", name:"依使用者活動判斷沙箱", en:"User Activity Based Checks", common:true},
+      {id:"T1497.003", name:"時間式規避", en:"Time Based Checks", common:true},
+    ]},
+    {id:"T1518", name:"軟體探索", en:"Software Discovery", common:true, subs:[
+      {id:"T1518.001", name:"資安軟體探索", en:"Security Software Discovery", common:true},
+      {id:"T1518.002", name:"備份軟體探索", en:"Backup Software Discovery", common:true},
+    ]},
+    {id:"T1526", name:"雲端服務探索", en:"Cloud Service Discovery", common:false, subs:[]},
+    {id:"T1538", name:"雲端服務儀表板", en:"Cloud Service Dashboard", common:false, subs:[]},
+    {id:"T1580", name:"雲端基礎架構探索", en:"Cloud Infrastructure Discovery", common:false, subs:[]},
+    {id:"T1613", name:"容器與資源探索", en:"Container and Resource Discovery", common:false, subs:[]},
+    {id:"T1614", name:"系統所在地探索", en:"System Location Discovery", common:false, subs:[
+      {id:"T1614.001", name:"系統語言探索", en:"System Language Discovery", common:false},
+    ]},
+    {id:"T1615", name:"群組原則探索", en:"Group Policy Discovery", common:false, subs:[]},
+    {id:"T1619", name:"雲端儲存物件探索", en:"Cloud Storage Object Discovery", common:false, subs:[]},
+    {id:"T1622", name:"偵錯器偵測規避", en:"Debugger Evasion", common:false, subs:[]},
+    {id:"T1652", name:"裝置驅動程式探索", en:"Device Driver Discovery", common:false, subs:[]},
+    {id:"T1654", name:"日誌列舉", en:"Log Enumeration", common:false, subs:[]},
+    {id:"T1673", name:"虛擬機探索", en:"Virtual Machine Discovery", common:false, subs:[]},
+    {id:"T1680", name:"本機儲存探索", en:"Local Storage Discovery", common:false, subs:[]},
+  ]},
+  {id:"TA0008", name:"橫向移動", en:"Lateral Movement", techs:[
+    {id:"T1021", name:"遠端服務", en:"Remote Services", common:true, subs:[
+      {id:"T1021.001", name:"遠端桌面", en:"Remote Desktop Protocol", common:true},
+      {id:"T1021.002", name:"SMB／Windows 管理員共用", en:"SMB/Windows Admin Shares", common:true},
+      {id:"T1021.003", name:"分散式元件物件模型", en:"Distributed Component Object Model", common:false},
+      {id:"T1021.004", name:"SSH", en:"SSH", common:true},
+      {id:"T1021.005", name:"VNC", en:"VNC", common:true},
+      {id:"T1021.006", name:"Windows 遠端管理", en:"Windows Remote Management", common:false},
+      {id:"T1021.007", name:"雲端服務", en:"Cloud Services", common:false},
+      {id:"T1021.008", name:"直連雲端虛擬機", en:"Direct Cloud VM Connections", common:false},
+    ]},
+    {id:"T1072", name:"軟體部署工具", en:"Software Deployment Tools", common:true, subs:[]},
+    {id:"T1080", name:"污染共用內容", en:"Taint Shared Content", common:true, subs:[]},
+    {id:"T1091", name:"透過可移除媒體複製", en:"Replication Through Removable Media", common:true, subs:[]},
+    {id:"T1210", name:"利用遠端服務漏洞", en:"Exploitation of Remote Services", common:true, subs:[]},
+    {id:"T1534", name:"內部魚叉式網釣", en:"Internal Spearphishing", common:true, subs:[]},
+    {id:"T1550", name:"替代認證materials", en:"Use Alternate Authentication Material", common:true, subs:[
+      {id:"T1550.001", name:"應用程式存取權杖", en:"Application Access Token", common:true},
+      {id:"T1550.002", name:"雜湊傳遞", en:"Pass the Hash", common:true},
+      {id:"T1550.003", name:"票證傳遞", en:"Pass the Ticket", common:true},
+      {id:"T1550.004", name:"網頁工作階段 Cookie", en:"Web Session Cookie", common:true},
+    ]},
+    {id:"T1563", name:"遠端服務工作階段綁架", en:"Remote Service Session Hijacking", common:false, subs:[
+      {id:"T1563.001", name:"SSH 綁架", en:"SSH Hijacking", common:false},
+      {id:"T1563.002", name:"RDP 綁架", en:"RDP Hijacking", common:false},
+    ]},
+    {id:"T1570", name:"橫向工具轉移", en:"Lateral Tool Transfer", common:true, subs:[]},
+  ]},
+  {id:"TA0009", name:"蒐集", en:"Collection", techs:[
+    {id:"T1005", name:"本機系統資料蒐集", en:"Data from Local System", common:true, subs:[]},
+    {id:"T1025", name:"自卸除式媒體取得資料", en:"Data from Removable Media", common:false, subs:[]},
+    {id:"T1039", name:"網路共用磁碟蒐集", en:"Data from Network Shared Drive", common:false, subs:[]},
+    {id:"T1056", name:"輸入擷取", en:"Input Capture", common:true, subs:[
+      {id:"T1056.001", name:"鍵盤側錄", en:"Keylogging", common:true},
+      {id:"T1056.002", name:"GUI 輸入擷取", en:"GUI Input Capture", common:true},
+      {id:"T1056.003", name:"網頁入口擷取", en:"Web Portal Capture", common:true},
+      {id:"T1056.004", name:"憑證 API 掛鉤", en:"Credential API Hooking", common:true},
+    ]},
+    {id:"T1074", name:"資料暫存", en:"Data Staged", common:true, subs:[
+      {id:"T1074.001", name:"本機資料暫存", en:"Local Data Staging", common:true},
+      {id:"T1074.002", name:"遠端資料暫存", en:"Remote Data Staging", common:true},
+    ]},
+    {id:"T1113", name:"螢幕擷取", en:"Screen Capture", common:true, subs:[]},
+    {id:"T1114", name:"郵件蒐集", en:"Email Collection", common:true, subs:[
+      {id:"T1114.001", name:"本機郵件蒐集", en:"Local Email Collection", common:true},
+      {id:"T1114.002", name:"遠端郵件蒐集", en:"Remote Email Collection", common:true},
+      {id:"T1114.003", name:"郵件轉寄規則", en:"Email Forwarding Rule", common:true},
+    ]},
+    {id:"T1115", name:"剪貼簿資料", en:"Clipboard Data", common:true, subs:[]},
+    {id:"T1119", name:"自動化蒐集", en:"Automated Collection", common:true, subs:[]},
+    {id:"T1123", name:"音訊擷取", en:"Audio Capture", common:false, subs:[]},
+    {id:"T1125", name:"視訊擷取", en:"Video Capture", common:false, subs:[]},
+    {id:"T1185", name:"瀏覽器工作階段劫持", en:"Browser Session Hijacking", common:false, subs:[]},
+    {id:"T1213", name:"資訊儲存庫中的資料", en:"Data from Information Repositories", common:false, subs:[
+      {id:"T1213.001", name:"Confluence", en:"Confluence", common:false},
+      {id:"T1213.002", name:"SharePoint", en:"Sharepoint", common:false},
+      {id:"T1213.003", name:"程式碼儲存庫", en:"Code Repositories", common:false},
+      {id:"T1213.004", name:"客戶關係管理系統", en:"Customer Relationship Management Software", common:false},
+      {id:"T1213.005", name:"通訊軟體", en:"Messaging Applications", common:false},
+      {id:"T1213.006", name:"資料庫", en:"Databases", common:false},
+    ]},
+    {id:"T1530", name:"自雲端儲存取得資料", en:"Data from Cloud Storage", common:false, subs:[]},
+    {id:"T1557", name:"中間人攻擊", en:"Adversary-in-the-Middle", common:false, subs:[
+      {id:"T1557.001", name:"名稱解析毒化與 SMB 轉送", en:"Name Resolution Poisoning and SMB Relay", common:false},
+      {id:"T1557.002", name:"ARP 快取毒化", en:"ARP Cache Poisoning", common:false},
+      {id:"T1557.003", name:"DHCP 偽冒", en:"DHCP Spoofing", common:false},
+      {id:"T1557.004", name:"偽基地台（Evil Twin）", en:"Evil Twin", common:false},
+    ]},
+    {id:"T1560", name:"封存蒐集資料", en:"Archive Collected Data", common:true, subs:[
+      {id:"T1560.001", name:"透過工具封存", en:"Archive via Utility", common:true},
+      {id:"T1560.002", name:"透過程式庫封存", en:"Archive via Library", common:true},
+      {id:"T1560.003", name:"自訂方式封存", en:"Archive via Custom Method", common:true},
+    ]},
+    {id:"T1602", name:"自組態儲存庫取得資料", en:"Data from Configuration Repository", common:false, subs:[
+      {id:"T1602.001", name:"SNMP（MIB 傾印）", en:"SNMP (MIB Dump)", common:false},
+      {id:"T1602.002", name:"網通設備組態傾印", en:"Network Device Configuration Dump", common:false},
     ]},
   ]},
-  {id:"TA0040", name:"影響", techs:[
-    {id:"T1485", name:"資料銷毀", common:true, subs:[
-      {id:"T1485.001", name:"生命週期刪除", common:true},
+  {id:"TA0011", name:"命令與控制", en:"Command and Control", techs:[
+    {id:"T1001", name:"資料混淆", en:"Data Obfuscation", common:true, subs:[
+      {id:"T1001.001", name:"填充垃圾資料", en:"Junk Data", common:true},
+      {id:"T1001.002", name:"隱寫術", en:"Steganography", common:true},
+      {id:"T1001.003", name:"偽裝成正常協定或服務", en:"Protocol or Service Impersonation", common:true},
     ]},
-    {id:"T1486", name:"加密資料以勒索", common:true, subs:[]},
-    {id:"T1489", name:"服務停止", common:true, subs:[]},
-    {id:"T1490", name:"抑制系統復原", common:true, subs:[]},
-    {id:"T1491", name:"污損", common:true, subs:[
-      {id:"T1491.001", name:"內部污損", common:true},
-      {id:"T1491.002", name:"對外污損", common:true},
+    {id:"T1008", name:"備援通道", en:"Fallback Channels", common:false, subs:[]},
+    {id:"T1071", name:"應用層協定", en:"Application Layer Protocol", common:true, subs:[
+      {id:"T1071.001", name:"Web 協定", en:"Web Protocols", common:true},
+      {id:"T1071.002", name:"檔案傳輸協定", en:"File Transfer Protocols", common:true},
+      {id:"T1071.003", name:"郵件協定", en:"Mail Protocols", common:true},
+      {id:"T1071.004", name:"DNS", en:"DNS", common:true},
+      {id:"T1071.005", name:"發布／訂閱協定", en:"Publish/Subscribe Protocols", common:false},
     ]},
-    {id:"T1495", name:"韌體破壞", common:false, subs:[]},
-    {id:"T1496", name:"資源劫持", common:false, subs:[
-      {id:"T1496.001", name:"運算資源劫持", common:false},
-      {id:"T1496.002", name:"頻寬劫持", common:false},
-      {id:"T1496.003", name:"簡訊灌發牟利", common:false},
-      {id:"T1496.004", name:"雲端服務劫持", common:false},
+    {id:"T1090", name:"代理", en:"Proxy", common:true, subs:[
+      {id:"T1090.001", name:"內部代理", en:"Internal Proxy", common:true},
+      {id:"T1090.002", name:"外部代理", en:"External Proxy", common:true},
+      {id:"T1090.003", name:"多重跳板", en:"Multi-hop Proxy", common:true},
+      {id:"T1090.004", name:"網域前置", en:"Domain Fronting", common:true},
     ]},
-    {id:"T1498", name:"網路阻斷服務", common:false, subs:[
-      {id:"T1498.001", name:"直接洪水攻擊", common:false},
-      {id:"T1498.002", name:"反射放大攻擊", common:false},
+    {id:"T1092", name:"透過卸除式媒體通訊", en:"Communication Through Removable Media", common:false, subs:[]},
+    {id:"T1095", name:"非應用層協定", en:"Non-Application Layer Protocol", common:true, subs:[]},
+    {id:"T1102", name:"Web 服務", en:"Web Service", common:true, subs:[
+      {id:"T1102.001", name:"死信箱解析", en:"Dead Drop Resolver", common:true},
+      {id:"T1102.002", name:"雙向通訊", en:"Bidirectional Communication", common:true},
+      {id:"T1102.003", name:"單向通訊", en:"One-Way Communication", common:true},
     ]},
-    {id:"T1499", name:"端點阻斷服務", common:false, subs:[
-      {id:"T1499.001", name:"作業系統資源耗盡洪水攻擊", common:false},
-      {id:"T1499.002", name:"服務耗盡洪水", common:false},
-      {id:"T1499.003", name:"應用程式資源耗盡洪水攻擊", common:false},
-      {id:"T1499.004", name:"利用應用程式或系統漏洞癱瘓服務", common:false},
+    {id:"T1104", name:"多階段通道", en:"Multi-Stage Channels", common:false, subs:[]},
+    {id:"T1105", name:"入口工具轉移", en:"Ingress Tool Transfer", common:true, subs:[]},
+    {id:"T1132", name:"資料編碼", en:"Data Encoding", common:true, subs:[
+      {id:"T1132.001", name:"標準編碼", en:"Standard Encoding", common:true},
+      {id:"T1132.002", name:"非標準編碼", en:"Non-Standard Encoding", common:true},
     ]},
-    {id:"T1529", name:"系統關機或重新開機", common:true, subs:[]},
-    {id:"T1531", name:"帳號存取移除", common:false, subs:[]},
-    {id:"T1561", name:"磁碟抹除", common:true, subs:[
-      {id:"T1561.001", name:"磁碟內容抹除", common:true},
-      {id:"T1561.002", name:"磁碟結構抹除", common:true},
+    {id:"T1205", name:"流量訊號", en:"Traffic Signaling", common:false, subs:[
+      {id:"T1205.001", name:"埠敲門", en:"Port Knocking", common:false},
+      {id:"T1205.002", name:"通訊端過濾器", en:"Socket Filters", common:false},
     ]},
-    {id:"T1565", name:"資料操弄", common:false, subs:[
-      {id:"T1565.001", name:"儲存資料操弄", common:false},
-      {id:"T1565.002", name:"傳輸中資料操弄", common:false},
-      {id:"T1565.003", name:"竄改執行期資料", common:false},
+    {id:"T1219", name:"遠端存取軟體", en:"Remote Access Tools", common:false, subs:[
+      {id:"T1219.001", name:"IDE 通道", en:"IDE Tunneling", common:false},
+      {id:"T1219.002", name:"遠端桌面軟體", en:"Remote Desktop Software", common:false},
+      {id:"T1219.003", name:"遠端存取硬體", en:"Remote Access Hardware", common:false},
     ]},
-    {id:"T1657", name:"金融竊取", common:true, subs:[]},
-    {id:"T1667", name:"郵件轟炸", common:false, subs:[]},
+    {id:"T1568", name:"動態解析", en:"Dynamic Resolution", common:false, subs:[
+      {id:"T1568.001", name:"快速通量 DNS", en:"Fast Flux DNS", common:false},
+      {id:"T1568.002", name:"網域產生演算法", en:"Domain Generation Algorithms", common:false},
+      {id:"T1568.003", name:"DNS 計算", en:"DNS Calculation", common:false},
+    ]},
+    {id:"T1571", name:"非標準連接埠", en:"Non-Standard Port", common:false, subs:[]},
+    {id:"T1572", name:"協定隧道", en:"Protocol Tunneling", common:false, subs:[]},
+    {id:"T1573", name:"加密通道", en:"Encrypted Channel", common:true, subs:[
+      {id:"T1573.001", name:"對稱加密", en:"Symmetric Cryptography", common:true},
+      {id:"T1573.002", name:"非對稱加密", en:"Asymmetric Cryptography", common:true},
+    ]},
+    {id:"T1659", name:"內容注入", en:"Content Injection", common:false, subs:[]},
+    {id:"T1665", name:"隱匿基礎設施", en:"Hide Infrastructure", common:false, subs:[]},
+  ]},
+  {id:"TA0010", name:"資料外洩", en:"Exfiltration", techs:[
+    {id:"T1011", name:"替代網路媒介外洩", en:"Exfiltration Over Other Network Medium", common:false, subs:[
+      {id:"T1011.001", name:"藍牙外洩", en:"Exfiltration Over Bluetooth", common:false},
+    ]},
+    {id:"T1020", name:"自動化外洩", en:"Automated Exfiltration", common:true, subs:[
+      {id:"T1020.001", name:"流量複製", en:"Traffic Duplication", common:true},
+    ]},
+    {id:"T1029", name:"排程傳輸", en:"Scheduled Transfer", common:true, subs:[]},
+    {id:"T1030", name:"資料傳輸大小限制", en:"Data Transfer Size Limits", common:true, subs:[]},
+    {id:"T1041", name:"透過 C2 通道外洩資料", en:"Exfiltration Over C2 Channel", common:true, subs:[]},
+    {id:"T1048", name:"透過替代協定外洩", en:"Exfiltration Over Alternative Protocol", common:true, subs:[
+      {id:"T1048.001", name:"對稱加密非 C2", en:"Exfiltration Over Symmetric Encrypted Non-C2 Protocol", common:true},
+      {id:"T1048.002", name:"非對稱加密非 C2", en:"Exfiltration Over Asymmetric Encrypted Non-C2 Protocol", common:true},
+      {id:"T1048.003", name:"未加密非 C2", en:"Exfiltration Over Unencrypted Non-C2 Protocol", common:true},
+    ]},
+    {id:"T1052", name:"實體媒體外洩", en:"Exfiltration Over Physical Medium", common:true, subs:[
+      {id:"T1052.001", name:"USB 外洩", en:"Exfiltration over USB", common:true},
+    ]},
+    {id:"T1537", name:"傳送資料至雲端帳號", en:"Transfer Data to Cloud Account", common:true, subs:[]},
+    {id:"T1567", name:"透過 Web 服務外洩", en:"Exfiltration Over Web Service", common:true, subs:[
+      {id:"T1567.001", name:"透過程式碼儲存庫", en:"Exfiltration to Code Repository", common:true},
+      {id:"T1567.002", name:"透過雲端儲存", en:"Exfiltration to Cloud Storage", common:true},
+      {id:"T1567.003", name:"外傳至文字寄存網站", en:"Exfiltration to Text Storage Sites", common:true},
+      {id:"T1567.004", name:"經 Webhook 外傳", en:"Exfiltration Over Webhook", common:true},
+    ]},
+  ]},
+  {id:"TA0040", name:"影響", en:"Impact", techs:[
+    {id:"T1485", name:"資料銷毀", en:"Data Destruction", common:true, subs:[
+      {id:"T1485.001", name:"生命週期刪除", en:"Lifecycle-Triggered Deletion", common:true},
+    ]},
+    {id:"T1486", name:"加密資料以勒索", en:"Data Encrypted for Impact", common:true, subs:[]},
+    {id:"T1489", name:"服務停止", en:"Service Stop", common:true, subs:[]},
+    {id:"T1490", name:"抑制系統復原", en:"Inhibit System Recovery", common:true, subs:[]},
+    {id:"T1491", name:"污損", en:"Defacement", common:true, subs:[
+      {id:"T1491.001", name:"內部污損", en:"Internal Defacement", common:true},
+      {id:"T1491.002", name:"對外污損", en:"External Defacement", common:true},
+    ]},
+    {id:"T1495", name:"韌體破壞", en:"Firmware Corruption", common:false, subs:[]},
+    {id:"T1496", name:"資源劫持", en:"Resource Hijacking", common:false, subs:[
+      {id:"T1496.001", name:"運算資源劫持", en:"Compute Hijacking", common:false},
+      {id:"T1496.002", name:"頻寬劫持", en:"Bandwidth Hijacking", common:false},
+      {id:"T1496.003", name:"簡訊灌發牟利", en:"SMS Pumping", common:false},
+      {id:"T1496.004", name:"雲端服務劫持", en:"Cloud Service Hijacking", common:false},
+    ]},
+    {id:"T1498", name:"網路阻斷服務", en:"Network Denial of Service", common:false, subs:[
+      {id:"T1498.001", name:"直接洪水攻擊", en:"Direct Network Flood", common:false},
+      {id:"T1498.002", name:"反射放大攻擊", en:"Reflection Amplification", common:false},
+    ]},
+    {id:"T1499", name:"端點阻斷服務", en:"Endpoint Denial of Service", common:false, subs:[
+      {id:"T1499.001", name:"作業系統資源耗盡洪水攻擊", en:"OS Exhaustion Flood", common:false},
+      {id:"T1499.002", name:"服務耗盡洪水", en:"Service Exhaustion Flood", common:false},
+      {id:"T1499.003", name:"應用程式資源耗盡洪水攻擊", en:"Application Exhaustion Flood", common:false},
+      {id:"T1499.004", name:"利用應用程式或系統漏洞癱瘓服務", en:"Application or System Exploitation", common:false},
+    ]},
+    {id:"T1529", name:"系統關機或重新開機", en:"System Shutdown/Reboot", common:true, subs:[]},
+    {id:"T1531", name:"帳號存取移除", en:"Account Access Removal", common:false, subs:[]},
+    {id:"T1561", name:"磁碟抹除", en:"Disk Wipe", common:true, subs:[
+      {id:"T1561.001", name:"磁碟內容抹除", en:"Disk Content Wipe", common:true},
+      {id:"T1561.002", name:"磁碟結構抹除", en:"Disk Structure Wipe", common:true},
+    ]},
+    {id:"T1565", name:"資料操弄", en:"Data Manipulation", common:false, subs:[
+      {id:"T1565.001", name:"儲存資料操弄", en:"Stored Data Manipulation", common:false},
+      {id:"T1565.002", name:"傳輸中資料操弄", en:"Transmitted Data Manipulation", common:false},
+      {id:"T1565.003", name:"竄改執行期資料", en:"Runtime Data Manipulation", common:false},
+    ]},
+    {id:"T1657", name:"金融竊取", en:"Financial Theft", common:true, subs:[]},
+    {id:"T1667", name:"郵件轟炸", en:"Email Bombing", common:false, subs:[]},
   ]},
 ];
 
@@ -2859,16 +2876,33 @@ const ATTACK_REVOKED = {
   "T1672": "T1684.002",
 };
 
-/* 案件系統的 TTP 選擇器沿用同一份來源：母技術與子技術一併列出 */
-const ATTACK = ATTACK_FULL.map(t=>({tac:`${t.id} ${t.name}`,
-  techs:t.techs.flatMap(x=>[[x.id,x.name],...x.subs.map(sb=>[sb.id, x.name+'：'+sb.name])])}));
+/* 案件系統的 TTP 選擇器沿用同一份來源：母技術與子技術一併列出。
+   中英並列——分析員要拿編號與名稱去 attack.mitre.org 對照，只有中文很難找。 */
+const ATTACK = ATTACK_FULL.map(t=>({tac:`${t.id} ${t.name} ${t.en}`,
+  techs:t.techs.flatMap(x=>[
+    [x.id, x.name, x.en],
+    ...x.subs.map(sb=>[sb.id, x.name+'：'+sb.name, x.en+': '+sb.en])])}));
 const TECH_INDEX = (()=>{ const m={};
   ATTACK_FULL.forEach(t=>t.techs.forEach(x=>{
-    if(!m[x.id]) m[x.id]={id:x.id, name:x.name, common:x.common, tacticId:t.id, tacticName:t.name, isSub:false};
-    x.subs.forEach(sb=>{ if(!m[sb.id]) m[sb.id]={id:sb.id, name:x.name+'：'+sb.name, common:sb.common,
-      tacticId:t.id, tacticName:t.name, isSub:true, parent:x.id}; });
+    if(!m[x.id]) m[x.id]={id:x.id, name:x.name, en:x.en, common:x.common,
+      tacticId:t.id, tacticName:t.name, tacticEn:t.en, isSub:false};
+    x.subs.forEach(sb=>{ if(!m[sb.id]) m[sb.id]={id:sb.id,
+      name:x.name+'：'+sb.name, en:x.en+': '+sb.en, common:sb.common,
+      tacticId:t.id, tacticName:t.name, tacticEn:t.en, isSub:true, parent:x.id}; });
   }));
   return m; })();
+
+/** 純文字情境（提示泡泡、PDF、CSV）用的中英並列名稱。 */
+const techLabel = idOrObj => {
+  const t = typeof idOrObj === 'string' ? TECH_INDEX[idOrObj] : idOrObj;
+  if(!t) return String(idOrObj);
+  return t.en && t.en !== t.name ? `${t.name}　${t.en}` : t.name;
+};
+/** 介面情境：英文另外包一層，可用樣式區隔。 */
+const techNameNodes = t => [
+  el('span',{class:'ttp-zh'}, t && t.name ? t.name : '—'),
+  t && t.en && t.en !== t.name ? el('span',{class:'ttp-en'}, t.en) : null,
+];
 /**
  * 把已作廢的技術編號換成現行編號。
  *
@@ -4403,8 +4437,9 @@ function exportCasePdf(c) {
       } : null,
       (d.ttps || []).length ? {
         heading: 'MITRE ATT&CK TTP',
-        body: printTable(['戰術', '技術編號', '技術名稱'],
-          d.ttps.map(t => [t.tac, t.id, t.name])),
+        body: printTable(['戰術', '技術編號', '技術名稱', 'Technique (EN)'],
+          d.ttps.map(t => [t.tac, t.id,
+            TECH_INDEX[t.id]?.name || t.name, TECH_INDEX[t.id]?.en || ''])),
       } : null,
       (d.shots || []).length ? {
         heading: '附圖',
@@ -4522,8 +4557,8 @@ function exportIntelPdf(x) {
       } : null,
       (x.ttps || []).length ? {
         heading: 'MITRE ATT&CK TTP',
-        body: printTable(['技術編號', '技術名稱'],
-          x.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+        body: printTable(['技術編號', '技術名稱', 'Technique (EN)'],
+          x.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）', TECH_INDEX[t]?.en || ''])),
       } : null,
     ],
   });
@@ -4564,8 +4599,8 @@ function exportAptPdf(a) {
       a.note ? { heading: '組織描述', body: a.note } : null,
       (a.ttps || []).length ? {
         heading: '使用的 MITRE ATT&CK 技術',
-        body: printTable(['技術編號', '技術名稱'],
-          a.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+        body: printTable(['技術編號', '技術名稱', 'Technique (EN)'],
+          a.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）', TECH_INDEX[t]?.en || ''])),
       } : null,
     ],
   });
@@ -7166,7 +7201,8 @@ function renderTtps(){
   const host=$('#ttp-list'); if(!host)return; host.innerHTML='';
   if(!S.form.ttps.length){ host.append(el('p',{style:'font-size:12.5px;color:var(--ink-3)'},'尚未挑選任何技術。')); return; }
   S.form.ttps.forEach((t,i)=>host.append(el('div',{class:'ttp-row'},
-    el('span',{class:'ttp-id'},t.id), el('span',{},t.name),
+    el('span',{class:'ttp-id'},t.id),
+    el('span',{class:'ttp-nm'}, ...techNameNodes(TECH_INDEX[t.id]||t)),
     el('button',{class:'iconbtn', style:'width:24px;height:24px;margin-left:auto', title:'移除',
       onclick:()=>{S.form.ttps.splice(i,1); renderTtps();}, html:svgIcon(I.close)}))));
 }
@@ -7280,15 +7316,18 @@ function openPicker(){
     body.innerHTML='';
     let hits=0;
     ATTACK.forEach(g=>{
-      const techs=g.techs.filter(([id,n])=>!q||(id+n+g.tac).toLowerCase().includes(q.toLowerCase()));
+      // 中英文與編號都能搜：分析員記得的可能是任何一種
+      const techs=g.techs.filter(([id,n,en])=>!q
+        ||(id+n+(en||'')+g.tac).toLowerCase().includes(q.toLowerCase()));
       if(!techs.length)return; hits+=techs.length;
       body.append(el('div',{class:'tac-group'},
         el('div',{class:'tac-name'},g.tac),
-        ...techs.map(([id,name])=>el('button',{class:'tech','aria-pressed':String(sel.has(id)),
+        ...techs.map(([id,name,en])=>el('button',{class:'tech','aria-pressed':String(sel.has(id)),
           onclick:e=>{ sel.has(id)?sel.delete(id):sel.add(id);
             e.currentTarget.setAttribute('aria-pressed',String(sel.has(id))); }},
           el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
-          el('span',{class:'tid'},id), el('span',{class:'tname'},name)))));
+          el('span',{class:'tid'},id),
+          el('span',{class:'tname'}, ...techNameNodes({name, en}))))));
     });
     if(!hits) body.append(el('p',{class:'empty'},'查無符合的戰術或技術。'));
   };
@@ -7298,10 +7337,11 @@ function openPicker(){
       el('h3',{},'挑選 MITRE ATT&CK 技術'),
       el('button',{class:'iconbtn', onclick:closeOverlay, html:svgIcon(I.close), title:'關閉'})),
     el('div',{style:'padding:12px 18px 0'},
-      el('input',{class:'inp', placeholder:'搜尋戰術、技術名稱或編號（例：T1059、憑證）', oninput:e=>draw(e.target.value)})),
+      el('input',{class:'inp', placeholder:'搜尋戰術、技術名稱或編號，中英文皆可（例：T1059、憑證、PowerShell）', oninput:e=>draw(e.target.value)})),
     body,
     el('div',{class:'modal-foot'},
-      el('span',{class:'note', style:'font-size:11.5px;color:var(--ink-3);align-self:center'},'原型收錄 6 個戰術 · 正式版介接完整 ATT&CK Enterprise 矩陣'),
+      el('span',{class:'note', style:'font-size:11.5px;color:var(--ink-3);align-self:center'},
+        `完整 ATT&CK Enterprise ${ATTACK_VERSION} · ${ATTACK_FULL.length} 個戰術`),
       el('span',{class:'spacer'}),
       el('button',{class:'btn', onclick:closeOverlay},'取消'),
       el('button',{class:'btn btn-primary', onclick:()=>{
@@ -7413,6 +7453,12 @@ const TOPO_NOTES=[
 ];
 
 const INTEL_NOTES=[
+  ['技術名稱中英並列','所有 ATT&CK 技術與戰術都同時顯示中文與官方英文原名——' +
+    '分析員要拿名稱去 attack.mitre.org 對照、或與英文的廠商報告比對，只有中文反而難找。' +
+    '挑選視窗、已選清單、熱圖提示、情資與獵補計畫的 TTP 列、TTP 篩選器都已並列；' +
+    '匯出的 PDF 另有獨立的英文欄位。**搜尋同時比對中文、英文與編號**，' +
+    '輸入 PowerShell、憑證或 T1059.001 都找得到同一項。' +
+    '英文名直接取自官方 STIX 資料，不另行翻譯或改寫，確保與官網字面一致。'],
   ['獵補計畫任何分析員都可編輯','威脅獵補計畫是全隊一起推進的工作——假說由一個人提出，' +
     '抽象分析、所需資料、資料缺口與調查結果常由網路、主機、惡意程式分析員各自補上，' +
     '綁在建立者或單一職務上反而擋住正常的協作。因此**任何分析員都能編輯任何一份獵補計畫**，' +
@@ -10447,8 +10493,8 @@ function paintTtpFilter(kind){
   if(mode) mode.textContent = n>1?`已選 ${n} 項 · 符合任一即列出`:'可多選，符合任一即列出';
   host.innerHTML='';
   const list=ttpsInUse(kind).filter(([t])=>{
-    const info=TECH_INDEX[t]||{name:''};
-    return !q||(t+info.name).toLowerCase().includes(q);
+    const info=TECH_INDEX[t]||{name:'',en:''};
+    return !q||(t+info.name+(info.en||'')).toLowerCase().includes(q);
   });
   if(!list.length){ host.append(el('p',{class:'hint', style:'padding:8px 4px'},'查無符合的技術。')); return; }
   list.forEach(([t,c])=>{
@@ -10460,7 +10506,7 @@ function paintTtpFilter(kind){
         S.iPage[kind]=1; refreshTtpUI(kind); }},
       el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
       el('span',{class:'tagopt-name'},t),
-      el('span',{class:'tagopt-sub'},info.name),
+      el('span',{class:'tagopt-sub', title:techLabel(info)}, ...techNameNodes(info)),
       el('span',{class:'tagopt-n'},String(c))));
   });
 }
@@ -10691,7 +10737,7 @@ function heatCell(sv2, x, y, w, h, tech, layers, opts){
   const cut=isSub?12:(row.subs&&row.subs.length?9:11);
   nm.textContent=tech.name.length>cut?tech.name.slice(0,cut-1)+'…':tech.name; g2.append(nm);
   const ttl=sv('title');
-  ttl.textContent=`${tech.id} ${tech.name}`+(layers.length
+  ttl.textContent=`${tech.id} ${techLabel(tech)}`+(layers.length
     ? '\n'+layers.map(L=>'• '+L.label+' — '+L.detail).join('\n') : '\n（尚未標註）');
   g2.append(ttl);
   return g2;
@@ -10930,10 +10976,11 @@ function paintMarkList(){
   let n=0;
   ATTACK_FULL.forEach(t=>{
     const flat=t.techs.flatMap(x=>[{...x, sub:false},
-      ...x.subs.map(sb=>({...sb, sub:true, name:x.name+'：'+sb.name}))]);
-    const hits=flat.filter(x=>!q||(x.id+x.name).toLowerCase().includes(q));
+      ...x.subs.map(sb=>({...sb, sub:true, name:x.name+'：'+sb.name, en:x.en+': '+sb.en}))]);
+    // 搜尋同時比對中英文與編號——分析員可能記得的是哪一種都有可能
+    const hits=flat.filter(x=>!q||(x.id+x.name+(x.en||'')).toLowerCase().includes(q));
     if(!hits.length)return;
-    host.append(el('div',{class:'mk-tac'},t.id+' '+t.name));
+    host.append(el('div',{class:'mk-tac'},`${t.id} ${t.name} ${t.en||''}`));
     hits.forEach(x=>{
       n++;
       const m=marks.get(x.id);
@@ -10967,7 +11014,7 @@ function cellPanel(layers){
       el('span',{class:'tp-ico', html:`<svg viewBox="0 0 40 40" width="22" height="22" color="var(--accent)">${TOPO_ICON.grid||''}</svg>`}),
       el('div',{style:'min-width:0'},
         el('div',{class:'tp-title mono'},tech.id),
-        el('div',{class:'tp-sub'},`${tech.name} · ${tac.id} ${tac.name}`)),
+        el('div',{class:'tp-sub'},`${techLabel(tech)} · ${tac.id} ${tac.name} ${tac.en||''}`)),
       el('button',{class:'iconbtn', onclick:()=>{S.mPick=null; render();}, html:svgIcon(I.close), title:'關閉'})),
     el('div',{class:'tp-sec'},
       el('div',{class:'eyebrow'},`圖層組成 ${ls.length} 層`),
@@ -11020,8 +11067,9 @@ function techRow(tid){
   const t=TECH_INDEX[tid]||{id:tid, name:'（未收錄的技術）', tacticName:'—'};
   return el('div',{class:'ttp-row'},
     el('span',{class:'ttp-id'},t.id),
-    el('span',{},t.name),
-    el('span',{class:'ttp-tac'},t.tacticName||''));
+    el('span',{class:'ttp-nm'}, ...techNameNodes(t)),
+    el('span',{class:'ttp-tac'}, t.tacticName
+      ? `${t.tacticName}${t.tacticEn?` ${t.tacticEn}`:''}` : ''));
 }
 
 function viewIntelDetail(){
@@ -11403,9 +11451,10 @@ function renderIntelTtps(){
   if(!S.iform.ttps.length){
     host.append(el('p',{style:'font-size:12.5px;color:var(--ink-3)'},'尚未挑選任何技術。')); return; }
   S.iform.ttps.forEach((tid,i)=>{
-    const t=TECH_INDEX[tid]||{id:tid,name:'（未收錄）',tacticName:''};
+    const t=TECH_INDEX[tid]||{id:tid,name:'（未收錄）',en:'',tacticName:''};
     host.append(el('div',{class:'ttp-row'},
-      el('span',{class:'ttp-id'},t.id), el('span',{},t.name),
+      el('span',{class:'ttp-id'},t.id),
+      el('span',{class:'ttp-nm'}, ...techNameNodes(t)),
       el('span',{class:'ttp-tac'},t.tacticName||''),
       el('button',{class:'iconbtn', style:'width:24px;height:24px;margin-left:6px', title:'移除',
         onclick:()=>{S.iform.ttps.splice(i,1); renderIntelTtps();}, html:svgIcon(I.close)})));
@@ -11444,17 +11493,19 @@ function openIntelTtpPicker(){
   const draw=(q='')=>{
     body.innerHTML=''; let hits=0;
     ATTACK_FULL.forEach(t=>{
-      const flat=t.techs.flatMap(x=>[{id:x.id,name:x.name,sub:false},
-        ...x.subs.map(sb=>({id:sb.id,name:x.name+'：'+sb.name,sub:true}))]);
-      const techs=flat.filter(x=>!q||(x.id+x.name+t.name).toLowerCase().includes(q.toLowerCase()));
+      const flat=t.techs.flatMap(x=>[{id:x.id,name:x.name,en:x.en,sub:false},
+        ...x.subs.map(sb=>({id:sb.id,name:x.name+'：'+sb.name,en:x.en+': '+sb.en,sub:true}))]);
+      const techs=flat.filter(x=>!q||(x.id+x.name+(x.en||'')+t.name+(t.en||''))
+        .toLowerCase().includes(q.toLowerCase()));
       if(!techs.length)return; hits+=techs.length;
       body.append(el('div',{class:'tac-group'},
-        el('div',{class:'tac-name'},`${t.id} ${t.name}`),
+        el('div',{class:'tac-name'},`${t.id} ${t.name} ${t.en||''}`),
         ...techs.map(x=>el('button',{class:'tech'+(x.sub?' sub':''),'aria-pressed':String(sel.has(x.id)),
           onclick:e=>{ sel.has(x.id)?sel.delete(x.id):sel.add(x.id);
             e.currentTarget.setAttribute('aria-pressed',String(sel.has(x.id))); }},
           el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
-          el('span',{class:'tid'},x.id), el('span',{class:'tname'},x.name)))));
+          el('span',{class:'tid'},x.id),
+          el('span',{class:'tname'}, ...techNameNodes(x))))));
     });
     if(!hits) body.append(el('p',{class:'empty'},'查無符合的技術。'));
   };

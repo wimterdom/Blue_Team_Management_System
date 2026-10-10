@@ -118,7 +118,9 @@ cross-system jump can be reversed with one click back to where you were.
 
 - **MITRE ATT&CK Enterprise** (currently v19.2) is generated from MITRE's own STIX
   release by `scripts/update-attack.mjs`, not hand-maintained — 15 tactics, 254
-  techniques, 618 sub-techniques, all named in Traditional Chinese. 149 revoked-ID
+  techniques, 618 sub-techniques, each carrying both a Traditional Chinese name and
+  MITRE's own English one, since analysts cross-reference attack.mitre.org and
+  English vendor reporting. Search matches Chinese, English or ID interchangeably. 149 revoked-ID
   mappings ship with it, so a report written against an older ATT&CK still lands on
   the right cell after MITRE renumbers something
 - **IEEE MAC address registry** (MA-L / MA-M / MA-S, 54,170 assignments) resolves

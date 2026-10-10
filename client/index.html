@@ -3639,16 +3639,33 @@ const TACTICS = [
    其餘收錄但預設隱藏，情資分析員可用眼睛圖示逐項開關。
    ============================================================ */
 /*__BTMS_ATTACK_DATA__*/
-/* 案件系統的 TTP 選擇器沿用同一份來源：母技術與子技術一併列出 */
-const ATTACK = ATTACK_FULL.map(t=>({tac:`${t.id} ${t.name}`,
-  techs:t.techs.flatMap(x=>[[x.id,x.name],...x.subs.map(sb=>[sb.id, x.name+'：'+sb.name])])}));
+/* 案件系統的 TTP 選擇器沿用同一份來源：母技術與子技術一併列出。
+   中英並列——分析員要拿編號與名稱去 attack.mitre.org 對照，只有中文很難找。 */
+const ATTACK = ATTACK_FULL.map(t=>({tac:`${t.id} ${t.name} ${t.en}`,
+  techs:t.techs.flatMap(x=>[
+    [x.id, x.name, x.en],
+    ...x.subs.map(sb=>[sb.id, x.name+'：'+sb.name, x.en+': '+sb.en])])}));
 const TECH_INDEX = (()=>{ const m={};
   ATTACK_FULL.forEach(t=>t.techs.forEach(x=>{
-    if(!m[x.id]) m[x.id]={id:x.id, name:x.name, common:x.common, tacticId:t.id, tacticName:t.name, isSub:false};
-    x.subs.forEach(sb=>{ if(!m[sb.id]) m[sb.id]={id:sb.id, name:x.name+'：'+sb.name, common:sb.common,
-      tacticId:t.id, tacticName:t.name, isSub:true, parent:x.id}; });
+    if(!m[x.id]) m[x.id]={id:x.id, name:x.name, en:x.en, common:x.common,
+      tacticId:t.id, tacticName:t.name, tacticEn:t.en, isSub:false};
+    x.subs.forEach(sb=>{ if(!m[sb.id]) m[sb.id]={id:sb.id,
+      name:x.name+'：'+sb.name, en:x.en+': '+sb.en, common:sb.common,
+      tacticId:t.id, tacticName:t.name, tacticEn:t.en, isSub:true, parent:x.id}; });
   }));
   return m; })();
+
+/** 純文字情境（提示泡泡、PDF、CSV）用的中英並列名稱。 */
+const techLabel = idOrObj => {
+  const t = typeof idOrObj === 'string' ? TECH_INDEX[idOrObj] : idOrObj;
+  if(!t) return String(idOrObj);
+  return t.en && t.en !== t.name ? `${t.name}　${t.en}` : t.name;
+};
+/** 介面情境：英文另外包一層，可用樣式區隔。 */
+const techNameNodes = t => [
+  el('span',{class:'ttp-zh'}, t && t.name ? t.name : '—'),
+  t && t.en && t.en !== t.name ? el('span',{class:'ttp-en'}, t.en) : null,
+];
 /**
  * 把已作廢的技術編號換成現行編號。
  *
@@ -5489,7 +5506,8 @@ function renderTtps(){
   const host=$('#ttp-list'); if(!host)return; host.innerHTML='';
   if(!S.form.ttps.length){ host.append(el('p',{style:'font-size:12.5px;color:var(--ink-3)'},'尚未挑選任何技術。')); return; }
   S.form.ttps.forEach((t,i)=>host.append(el('div',{class:'ttp-row'},
-    el('span',{class:'ttp-id'},t.id), el('span',{},t.name),
+    el('span',{class:'ttp-id'},t.id),
+    el('span',{class:'ttp-nm'}, ...techNameNodes(TECH_INDEX[t.id]||t)),
     el('button',{class:'iconbtn', style:'width:24px;height:24px;margin-left:auto', title:'移除',
       onclick:()=>{S.form.ttps.splice(i,1); renderTtps();}, html:svgIcon(I.close)}))));
 }
@@ -5603,15 +5621,18 @@ function openPicker(){
     body.innerHTML='';
     let hits=0;
     ATTACK.forEach(g=>{
-      const techs=g.techs.filter(([id,n])=>!q||(id+n+g.tac).toLowerCase().includes(q.toLowerCase()));
+      // 中英文與編號都能搜：分析員記得的可能是任何一種
+      const techs=g.techs.filter(([id,n,en])=>!q
+        ||(id+n+(en||'')+g.tac).toLowerCase().includes(q.toLowerCase()));
       if(!techs.length)return; hits+=techs.length;
       body.append(el('div',{class:'tac-group'},
         el('div',{class:'tac-name'},g.tac),
-        ...techs.map(([id,name])=>el('button',{class:'tech','aria-pressed':String(sel.has(id)),
+        ...techs.map(([id,name,en])=>el('button',{class:'tech','aria-pressed':String(sel.has(id)),
           onclick:e=>{ sel.has(id)?sel.delete(id):sel.add(id);
             e.currentTarget.setAttribute('aria-pressed',String(sel.has(id))); }},
           el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
-          el('span',{class:'tid'},id), el('span',{class:'tname'},name)))));
+          el('span',{class:'tid'},id),
+          el('span',{class:'tname'}, ...techNameNodes({name, en}))))));
     });
     if(!hits) body.append(el('p',{class:'empty'},'查無符合的戰術或技術。'));
   };
@@ -5621,10 +5642,11 @@ function openPicker(){
       el('h3',{},'挑選 MITRE ATT&CK 技術'),
       el('button',{class:'iconbtn', onclick:closeOverlay, html:svgIcon(I.close), title:'關閉'})),
     el('div',{style:'padding:12px 18px 0'},
-      el('input',{class:'inp', placeholder:'搜尋戰術、技術名稱或編號（例：T1059、憑證）', oninput:e=>draw(e.target.value)})),
+      el('input',{class:'inp', placeholder:'搜尋戰術、技術名稱或編號，中英文皆可（例：T1059、憑證、PowerShell）', oninput:e=>draw(e.target.value)})),
     body,
     el('div',{class:'modal-foot'},
-      el('span',{class:'note', style:'font-size:11.5px;color:var(--ink-3);align-self:center'},'原型收錄 6 個戰術 · 正式版介接完整 ATT&CK Enterprise 矩陣'),
+      el('span',{class:'note', style:'font-size:11.5px;color:var(--ink-3);align-self:center'},
+        `完整 ATT&CK Enterprise ${ATTACK_VERSION} · ${ATTACK_FULL.length} 個戰術`),
       el('span',{class:'spacer'}),
       el('button',{class:'btn', onclick:closeOverlay},'取消'),
       el('button',{class:'btn btn-primary', onclick:()=>{
@@ -5736,6 +5758,12 @@ const TOPO_NOTES=[
 ];
 
 const INTEL_NOTES=[
+  ['技術名稱中英並列','所有 ATT&CK 技術與戰術都同時顯示中文與官方英文原名——' +
+    '分析員要拿名稱去 attack.mitre.org 對照、或與英文的廠商報告比對，只有中文反而難找。' +
+    '挑選視窗、已選清單、熱圖提示、情資與獵補計畫的 TTP 列、TTP 篩選器都已並列；' +
+    '匯出的 PDF 另有獨立的英文欄位。**搜尋同時比對中文、英文與編號**，' +
+    '輸入 PowerShell、憑證或 T1059.001 都找得到同一項。' +
+    '英文名直接取自官方 STIX 資料，不另行翻譯或改寫，確保與官網字面一致。'],
   ['獵補計畫任何分析員都可編輯','威脅獵補計畫是全隊一起推進的工作——假說由一個人提出，' +
     '抽象分析、所需資料、資料缺口與調查結果常由網路、主機、惡意程式分析員各自補上，' +
     '綁在建立者或單一職務上反而擋住正常的協作。因此**任何分析員都能編輯任何一份獵補計畫**，' +
@@ -8770,8 +8798,8 @@ function paintTtpFilter(kind){
   if(mode) mode.textContent = n>1?`已選 ${n} 項 · 符合任一即列出`:'可多選，符合任一即列出';
   host.innerHTML='';
   const list=ttpsInUse(kind).filter(([t])=>{
-    const info=TECH_INDEX[t]||{name:''};
-    return !q||(t+info.name).toLowerCase().includes(q);
+    const info=TECH_INDEX[t]||{name:'',en:''};
+    return !q||(t+info.name+(info.en||'')).toLowerCase().includes(q);
   });
   if(!list.length){ host.append(el('p',{class:'hint', style:'padding:8px 4px'},'查無符合的技術。')); return; }
   list.forEach(([t,c])=>{
@@ -8783,7 +8811,7 @@ function paintTtpFilter(kind){
         S.iPage[kind]=1; refreshTtpUI(kind); }},
       el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
       el('span',{class:'tagopt-name'},t),
-      el('span',{class:'tagopt-sub'},info.name),
+      el('span',{class:'tagopt-sub', title:techLabel(info)}, ...techNameNodes(info)),
       el('span',{class:'tagopt-n'},String(c))));
   });
 }
@@ -9014,7 +9042,7 @@ function heatCell(sv2, x, y, w, h, tech, layers, opts){
   const cut=isSub?12:(row.subs&&row.subs.length?9:11);
   nm.textContent=tech.name.length>cut?tech.name.slice(0,cut-1)+'…':tech.name; g2.append(nm);
   const ttl=sv('title');
-  ttl.textContent=`${tech.id} ${tech.name}`+(layers.length
+  ttl.textContent=`${tech.id} ${techLabel(tech)}`+(layers.length
     ? '\n'+layers.map(L=>'• '+L.label+' — '+L.detail).join('\n') : '\n（尚未標註）');
   g2.append(ttl);
   return g2;
@@ -9253,10 +9281,11 @@ function paintMarkList(){
   let n=0;
   ATTACK_FULL.forEach(t=>{
     const flat=t.techs.flatMap(x=>[{...x, sub:false},
-      ...x.subs.map(sb=>({...sb, sub:true, name:x.name+'：'+sb.name}))]);
-    const hits=flat.filter(x=>!q||(x.id+x.name).toLowerCase().includes(q));
+      ...x.subs.map(sb=>({...sb, sub:true, name:x.name+'：'+sb.name, en:x.en+': '+sb.en}))]);
+    // 搜尋同時比對中英文與編號——分析員可能記得的是哪一種都有可能
+    const hits=flat.filter(x=>!q||(x.id+x.name+(x.en||'')).toLowerCase().includes(q));
     if(!hits.length)return;
-    host.append(el('div',{class:'mk-tac'},t.id+' '+t.name));
+    host.append(el('div',{class:'mk-tac'},`${t.id} ${t.name} ${t.en||''}`));
     hits.forEach(x=>{
       n++;
       const m=marks.get(x.id);
@@ -9290,7 +9319,7 @@ function cellPanel(layers){
       el('span',{class:'tp-ico', html:`<svg viewBox="0 0 40 40" width="22" height="22" color="var(--accent)">${TOPO_ICON.grid||''}</svg>`}),
       el('div',{style:'min-width:0'},
         el('div',{class:'tp-title mono'},tech.id),
-        el('div',{class:'tp-sub'},`${tech.name} · ${tac.id} ${tac.name}`)),
+        el('div',{class:'tp-sub'},`${techLabel(tech)} · ${tac.id} ${tac.name} ${tac.en||''}`)),
       el('button',{class:'iconbtn', onclick:()=>{S.mPick=null; render();}, html:svgIcon(I.close), title:'關閉'})),
     el('div',{class:'tp-sec'},
       el('div',{class:'eyebrow'},`圖層組成 ${ls.length} 層`),
@@ -9343,8 +9372,9 @@ function techRow(tid){
   const t=TECH_INDEX[tid]||{id:tid, name:'（未收錄的技術）', tacticName:'—'};
   return el('div',{class:'ttp-row'},
     el('span',{class:'ttp-id'},t.id),
-    el('span',{},t.name),
-    el('span',{class:'ttp-tac'},t.tacticName||''));
+    el('span',{class:'ttp-nm'}, ...techNameNodes(t)),
+    el('span',{class:'ttp-tac'}, t.tacticName
+      ? `${t.tacticName}${t.tacticEn?` ${t.tacticEn}`:''}` : ''));
 }
 
 function viewIntelDetail(){
@@ -9726,9 +9756,10 @@ function renderIntelTtps(){
   if(!S.iform.ttps.length){
     host.append(el('p',{style:'font-size:12.5px;color:var(--ink-3)'},'尚未挑選任何技術。')); return; }
   S.iform.ttps.forEach((tid,i)=>{
-    const t=TECH_INDEX[tid]||{id:tid,name:'（未收錄）',tacticName:''};
+    const t=TECH_INDEX[tid]||{id:tid,name:'（未收錄）',en:'',tacticName:''};
     host.append(el('div',{class:'ttp-row'},
-      el('span',{class:'ttp-id'},t.id), el('span',{},t.name),
+      el('span',{class:'ttp-id'},t.id),
+      el('span',{class:'ttp-nm'}, ...techNameNodes(t)),
       el('span',{class:'ttp-tac'},t.tacticName||''),
       el('button',{class:'iconbtn', style:'width:24px;height:24px;margin-left:6px', title:'移除',
         onclick:()=>{S.iform.ttps.splice(i,1); renderIntelTtps();}, html:svgIcon(I.close)})));
@@ -9767,17 +9798,19 @@ function openIntelTtpPicker(){
   const draw=(q='')=>{
     body.innerHTML=''; let hits=0;
     ATTACK_FULL.forEach(t=>{
-      const flat=t.techs.flatMap(x=>[{id:x.id,name:x.name,sub:false},
-        ...x.subs.map(sb=>({id:sb.id,name:x.name+'：'+sb.name,sub:true}))]);
-      const techs=flat.filter(x=>!q||(x.id+x.name+t.name).toLowerCase().includes(q.toLowerCase()));
+      const flat=t.techs.flatMap(x=>[{id:x.id,name:x.name,en:x.en,sub:false},
+        ...x.subs.map(sb=>({id:sb.id,name:x.name+'：'+sb.name,en:x.en+': '+sb.en,sub:true}))]);
+      const techs=flat.filter(x=>!q||(x.id+x.name+(x.en||'')+t.name+(t.en||''))
+        .toLowerCase().includes(q.toLowerCase()));
       if(!techs.length)return; hits+=techs.length;
       body.append(el('div',{class:'tac-group'},
-        el('div',{class:'tac-name'},`${t.id} ${t.name}`),
+        el('div',{class:'tac-name'},`${t.id} ${t.name} ${t.en||''}`),
         ...techs.map(x=>el('button',{class:'tech'+(x.sub?' sub':''),'aria-pressed':String(sel.has(x.id)),
           onclick:e=>{ sel.has(x.id)?sel.delete(x.id):sel.add(x.id);
             e.currentTarget.setAttribute('aria-pressed',String(sel.has(x.id))); }},
           el('span',{class:'box', html:`<svg viewBox="0 0 24 24">${I.check}</svg>`}),
-          el('span',{class:'tid'},x.id), el('span',{class:'tname'},x.name)))));
+          el('span',{class:'tid'},x.id),
+          el('span',{class:'tname'}, ...techNameNodes(x))))));
     });
     if(!hits) body.append(el('p',{class:'empty'},'查無符合的技術。'));
   };

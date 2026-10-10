@@ -41,8 +41,9 @@ function exportCasePdf(c) {
       } : null,
       (d.ttps || []).length ? {
         heading: 'MITRE ATT&CK TTP',
-        body: printTable(['戰術', '技術編號', '技術名稱'],
-          d.ttps.map(t => [t.tac, t.id, t.name])),
+        body: printTable(['戰術', '技術編號', '技術名稱', 'Technique (EN)'],
+          d.ttps.map(t => [t.tac, t.id,
+            TECH_INDEX[t.id]?.name || t.name, TECH_INDEX[t.id]?.en || ''])),
       } : null,
       (d.shots || []).length ? {
         heading: '附圖',
@@ -160,8 +161,8 @@ function exportIntelPdf(x) {
       } : null,
       (x.ttps || []).length ? {
         heading: 'MITRE ATT&CK TTP',
-        body: printTable(['技術編號', '技術名稱'],
-          x.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+        body: printTable(['技術編號', '技術名稱', 'Technique (EN)'],
+          x.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）', TECH_INDEX[t]?.en || ''])),
       } : null,
     ],
   });
@@ -202,8 +203,8 @@ function exportAptPdf(a) {
       a.note ? { heading: '組織描述', body: a.note } : null,
       (a.ttps || []).length ? {
         heading: '使用的 MITRE ATT&CK 技術',
-        body: printTable(['技術編號', '技術名稱'],
-          a.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）'])),
+        body: printTable(['技術編號', '技術名稱', 'Technique (EN)'],
+          a.ttps.map(t => [t, TECH_INDEX[t]?.name || '（未收錄）', TECH_INDEX[t]?.en || ''])),
       } : null,
     ],
   });
