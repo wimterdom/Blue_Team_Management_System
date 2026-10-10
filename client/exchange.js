@@ -325,8 +325,11 @@ async function svgToSvgFile(svg, filename, { background = null } = {}) {
 
 /** 逐節點把實際呈現的顏色與字型寫成行內屬性，脫離文件後才畫得出來。 */
 function inlinePaint(src, dst) {
+  // stop-color 不能漏：漸層停點常以 CSS 變數指定，沒解析出來的話
+  // 匯出的檔案裡會留下 var(--…)，在本頁以外一律畫成黑的。
   const PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap',
     'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity',
+    'stop-color', 'stop-opacity',
     'font-family', 'font-size', 'font-weight', 'text-anchor', 'letter-spacing'];
   const a = [src, ...src.querySelectorAll('*')];
   const b = [dst, ...dst.querySelectorAll('*')];

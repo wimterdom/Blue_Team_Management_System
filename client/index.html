@@ -3235,11 +3235,24 @@ Object.entries(MITIGATIONS).forEach(([k,v])=>{ if(DETAIL[k]) DETAIL[k].mitigatio
 /* 其餘案件給一則依判定結果而異的預設，避免欄位空白 */
 CASES.forEach(c=>{
   const d=DETAIL[c.id]; if(!d || d.mitigation) return;
+  // 用樣板字面值放真正的換行：單引號字串裡的 \\n 會變成反斜線加 n，
+  // Markdown 解析不到換行，畫面上就直接把 \\n 當文字印出來。
   d.mitigation = c.verdict==='惡意行為'
-    ? '## 已完成\\n\\n- 依案件始末所述之處置執行完畢\\n\\n## 建議\\n\\n- 針對本案的攻擊手法檢視同類資產是否有相同曝險\\n- 將本案的 IOC 與 TTP 納入既有偵測規則'
+    ? `## 已完成
+
+- 依案件始末所述之處置執行完畢
+
+## 建議
+
+- 針對本案的攻擊手法檢視同類資產是否有相同曝險
+- 將本案的 IOC 與 TTP 納入既有偵測規則`
     : c.verdict==='未判定'
-    ? '## 待處置\\n\\n調查尚未完成，處置方式待判定後補列。'
-    : '## 結論\\n\\n本案判定非惡意行為，無須處置。惟建議檢視觸發本次告警的偵測規則，評估是否需調整門檻以降低誤報。';
+    ? `## 待處置
+
+調查尚未完成，處置方式待判定後補列。`
+    : `## 結論
+
+本案判定非惡意行為，無須處置。惟建議檢視觸發本次告警的偵測規則，評估是否需調整門檻以降低誤報。`;
 });
 
 /* ============================================================
@@ -4777,7 +4790,11 @@ function viewDetail(){
           el('h3',{},'附圖'),
           d.shots.length
             ? el('div',{},
-                el('p',{style:'font-size:12px;color:var(--ink-3)'},`${d.shots.length} 張 · 上傳者 ${u.name}`),
+                el('div',{class:'shots-head'},
+                  el('p',{style:'font-size:12px;color:var(--ink-3)'},`${d.shots.length} 張 · 上傳者 ${u.name}`),
+                  el('button',{class:'btn btn-sm', title:'逐張下載這筆報告的全部附圖',
+                    onclick:()=>downloadAllShots(d.shots, c.id)},
+                    el('span',{html:svgIcon(I.download)}),'下載全部')),
                 el('div',{class:'shots'}, ...d.shots.map((sh,i)=>el('button',{class:'shot',
                   title:`放大檢視：${sh.cap}`, onclick:()=>openLightbox(d.shots, i)},
                   sh.url ? el('img',{class:'thumb', src:sh.url, alt:sh.cap, style:'object-fit:cover'})
@@ -4869,7 +4886,7 @@ function openLightbox(shots, idx){
       el('div',{class:'lb-title', id:'lb-title'}),
       el('div',{class:'lb-dim', id:'lb-dim'}),
       el('button',{class:'lb-btn', title:'下載這張附圖','aria-label':'下載附圖',
-        onclick:e=>{e.stopPropagation(); downloadShot(LB.shots[LB.i]);},
+        onclick:e=>{e.stopPropagation(); downloadShot(LB.shots[LB.i], LB.i);},
         html:svgIcon(I.download)}),
       el('button',{class:'lb-btn', title:'關閉（Esc）','aria-label':'關閉',
         onclick:closeLightbox, html:svgIcon(I.close)})),
@@ -6135,7 +6152,11 @@ function viewReq(){
           el('h3',{},'附圖'),
           d.shots && d.shots.length
             ? el('div',{},
-                el('p',{style:'font-size:12px;color:var(--ink-3)'},`${d.shots.length} 張 · 點擊可放大檢視`),
+                el('div',{class:'shots-head'},
+                  el('p',{style:'font-size:12px;color:var(--ink-3)'},`${d.shots.length} 張 · 點擊可放大檢視`),
+                  el('button',{class:'btn btn-sm', title:'逐張下載這張請求表的全部附圖',
+                    onclick:()=>downloadAllShots(d.shots, r.id)},
+                    el('span',{html:svgIcon(I.download)}),'下載全部')),
                 el('div',{class:'shots'}, ...d.shots.map((sh,i)=>el('button',{class:'shot',
                   title:`放大檢視：${sh.cap}`, onclick:()=>openLightbox(d.shots,i)},
                   sh.url ? el('img',{class:'thumb', src:sh.url, alt:sh.cap, style:'object-fit:cover'})

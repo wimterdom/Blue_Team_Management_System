@@ -723,15 +723,62 @@ function commitAssetImport(items) {
  * 展示版的附圖是 data URL，直接轉成 blob。兩種情形都走同一個 saveBlob，
  * 所以沙箱環境下的替代交付方式也一併適用。
  */
-async function downloadShot(shot) {
-  if (!shot || !shot.url) return toast('這張附圖沒有實際檔案，無法下載');
+const shotBase = shot =>
+  (shot.cap || shot.name || '附圖').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+
+/** MIME → 副檔名。image/svg+xml 這種帶後綴的只取前半。 */
+const extFor = mime => (String(mime || '').split('/')[1] || 'png')
+  .split('+')[0].replace('jpeg', 'jpg').slice(0, 5) || 'png';
+
+/**
+ * 把示意圖畫到畫面外，取得一個 live 的 <svg> 供匯出。
+ *
+ * 示意圖是用 CSS 變數上色的，svgToPng 要靠 getComputedStyle 才解析得出顏色，
+ * 而 getComputedStyle 對不在文件樹裡的節點量不到值——所以得真的掛進 DOM，
+ * 只是擺在看不見的地方。
+ */
+async function withPlaceholderSvg(shot, i, fn) {
+  const host = el('div', {
+    style: 'position:fixed; left:-10000px; top:0; width:960px; height:500px;'
+      + ' pointer-events:none',
+    html: thumbSVG(shot.kind || 'log', i, true),
+  });
+  document.body.append(host);
+  try {
+    return await fn(host.querySelector('svg'));
+  } finally {
+    host.remove();
+  }
+}
+
+/**
+ * 下載附圖。
+ *
+ * 有實際檔案就抓檔案；沒有的話，畫面上看到的是以 thumbSVG 畫出來的示意圖，
+ * 那也是真的可以輸出的內容——看得到卻載不下來最惱人。檔名標明「示意圖」，
+ * 免得被誤認成真的截圖。
+ */
+async function downloadShot(shot, idx = 0) {
+  if (!shot) return toast('找不到這張附圖');
+
+  if (!shot.url) {
+    try {
+      await withPlaceholderSvg(shot, idx, svg =>
+        svgToPng(svg, `${shotBase(shot)}（示意圖）.png`, { scale: 6 }));
+    } catch (e) {
+      toast('示意圖輸出失敗：' + e.message);
+    }
+    return;
+  }
+
   try {
     const res = await fetch(shot.url, { credentials: 'same-origin' });
     if (!res.ok) throw new Error(`伺服器回應 ${res.status}`);
     const blob = await res.blob();
-    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
-    const base = (shot.cap || shot.name || '附圖').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
-    saveBlob(blob, /\.[a-z0-9]+$/i.test(base) ? base : `${base}.${ext}`);
+    // 副檔名一律由實際內容決定，不沿用原檔名的那個。展示版會把上傳的圖
+    // 重新編碼成 WebP（localStorage 塞不下原圖），沿用的話會存出一個
+    // 內容是 WebP、副檔名卻寫 .png 的檔案。
+    saveBlob(blob, `${shotBase(shot).replace(/\.[a-z0-9]{1,5}$/i, '')}.${extFor(blob.type)}`);
   } catch (e) {
     toast('附圖下載失敗：' + e.message);
   }
@@ -746,14 +793,16 @@ function downloadDoc(f) {
 
 /** 一次下載某筆紀錄的全部附圖。 */
 async function downloadAllShots(shots, label) {
-  const real = (shots || []).filter(s => s.url);
-  if (!real.length) return toast('這筆紀錄沒有可下載的附圖');
-  for (const s of real) {
-    await downloadShot(s);
+  const list = shots || [];
+  if (!list.length) return toast('這筆紀錄沒有附圖');
+  for (let i = 0; i < list.length; i += 1) {
+    await downloadShot(list[i], i);
     // 逐張確認，避免一次彈出一堆存檔提示
     await new Promise(r => setTimeout(r, 300));
   }
-  toast(`已送出 ${real.length} 張附圖${label ? `（${label}）` : ''}`);
+  const ph = list.filter(s => !s.url).length;
+  toast(`已送出 ${list.length} 張附圖${label ? `（${label}）` : ''}`
+    + (ph ? `，其中 ${ph} 張為示意圖` : ''));
 }
 
 /* ============================================================

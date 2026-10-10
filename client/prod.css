@@ -177,3 +177,9 @@
 .arc-stored > div:first-child{flex:1}
 .arc-parts{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px}
 .arc-parts .btn{display:inline-flex; gap:5px; align-items:baseline}
+
+/* 附圖區標題列：張數說明與「下載全部」分列兩端 */
+.shots-head{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  margin-bottom:9px; flex-wrap:wrap}
+.shots-head p{margin:0}
+.shots-head .btn{display:inline-flex; align-items:center; gap:6px}
