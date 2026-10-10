@@ -5230,6 +5230,34 @@ function commitAssetImport(items) {
 const shotBase = shot =>
   (shot.cap || shot.name || '附圖').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
 
+/**
+ * 取得附圖的位元組。
+ *
+ * data: URL 一定要自己解碼，**不能用 fetch**。Artifact 沙箱的 CSP 沒有把
+ * data: 列進 connect-src，fetch 一個 data URL 會直接 TypeError: Failed to
+ * fetch——展示版的附圖正是存成 data URL，所以走 fetch 的話在 Artifact 上
+ * 100% 下載失敗（在沒有 CSP 的本機測試則完全看不出來）。
+ */
+async function shotBlob(url) {
+  if (url.startsWith('data:')) {
+    const comma = url.indexOf(',');
+    if (comma < 0) throw new Error('附圖資料格式不正確');
+    const head = url.slice(5, comma);
+    const mime = head.split(';')[0] || 'application/octet-stream';
+    const body = url.slice(comma + 1);
+    if (!/;base64/i.test(head)) {
+      return new Blob([decodeURIComponent(body)], { type: mime });
+    }
+    const bin = atob(body);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) u8[i] = bin.charCodeAt(i);
+    return new Blob([u8], { type: mime });
+  }
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (!res.ok) throw new Error(`伺服器回應 ${res.status}`);
+  return res.blob();
+}
+
 /** MIME → 副檔名。image/svg+xml 這種帶後綴的只取前半。 */
 const extFor = mime => (String(mime || '').split('/')[1] || 'png')
   .split('+')[0].replace('jpeg', 'jpg').slice(0, 5) || 'png';
@@ -5276,9 +5304,7 @@ async function downloadShot(shot, idx = 0) {
   }
 
   try {
-    const res = await fetch(shot.url, { credentials: 'same-origin' });
-    if (!res.ok) throw new Error(`伺服器回應 ${res.status}`);
-    const blob = await res.blob();
+    const blob = await shotBlob(shot.url);
     // 副檔名一律由實際內容決定，不沿用原檔名的那個。展示版會把上傳的圖
     // 重新編碼成 WebP（localStorage 塞不下原圖），沿用的話會存出一個
     // 內容是 WebP、副檔名卻寫 .png 的檔案。
