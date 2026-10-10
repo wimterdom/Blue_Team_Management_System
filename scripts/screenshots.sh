@@ -19,7 +19,7 @@ H="${SHOT_H:-980}"
 # 截圖用的實例不走強制改密，否則每張都得先過一次改密畫面
 PW="Shot0nly-$(openssl rand -hex 6)"
 
-ALL=(login cases caseDetail requests assets assetImport topology intel matrix audit light)
+ALL=(login cases caseDetail requests assets assetImport topology intel matrix audit archive archiveRestore light)
 SHOTS=("${@:-${ALL[@]}}")
 [[ $# -gt 0 ]] && SHOTS=("$@")
 
@@ -60,12 +60,17 @@ except OSError:
 stub = '<script>window.EventSource=function(){return{close(){},addEventListener(){},set onerror(v){}};};</script>\n'
 cfg = ('<script>window.__SHOT=%s;window.__SHOT_PW=%s;window.__SHOT_NMAP=%s;</script>\n'
        % (json.dumps(shot), json.dumps(pw), json.dumps(nmap)))
+# 截圖腳本是獨立模組，看不到 app 模組的頂層繫結。需要 STORE 的畫面
+# （例如封存還原，得先產生一份封存檔當輸入）靠這個把手取用。
+handle = '\n/* 截圖把手 */\nwindow.__T_STORE = STORE;\n'
+i = src.rindex('</script>')
+src = src[:i] + handle + src[i:]
 probe = open(f'{root}/tests/shots.js', encoding='utf-8').read()
 open(f'{root}/public/__shot.html', 'w', encoding='utf-8').write(src + stub + cfg + probe)
 PYEOF
 
   "$CHROME" --headless --disable-gpu --hide-scrollbars \
-    --window-size="$W,$H" --virtual-time-budget=25000 \
+    --window-size="$W,$H" --virtual-time-budget="${SHOT_BUDGET:-25000}" \
     --screenshot="$OUT/$name.png" "http://127.0.0.1:$PORT/__shot.html" 2>/dev/null
 
   if [[ -f "$OUT/$name.png" ]]; then

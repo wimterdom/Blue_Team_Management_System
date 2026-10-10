@@ -320,3 +320,285 @@ async function refreshOui(checkOnly) {
     btns.forEach(b => { b.disabled = false; });
   }
 }
+
+/* ============================================================
+   專案封存與還原（僅系統管理員）
+   ============================================================ */
+
+const COLL_LABEL = {
+  cases: '調查報告', case_detail: '報告內容', requests: '請求表',
+  request_detail: '請求表內容', assets: '資產', asset_detail: '資產內容',
+  sensors: '感測器佈署', apts: 'APT 組織報告', intels: '情資報告',
+  hunts: '威脅獵補計畫', ttp_marks: 'TTP 標註',
+};
+
+const mb = n => (n / 1048576).toFixed(2) + ' MB';
+
+/** 目前專案的規模，還原預覽時與封存檔並列比較。 */
+let ARC_NOW = {};
+
+function viewArchive() {
+  const page = el('div', { class: 'wrap', style: 'max-width:900px' },
+    el('div', { class: 'pagehead' },
+      el('div', {},
+        el('div', { class: 'eyebrow' }, '系統管理'),
+        el('h1', {}, '專案封存'),
+        el('p', { class: 'lead' },
+          '把五套系統的全部資料與附件打包成一個 zip。' +
+          '裡面同時放了給人看的 Markdown 樹狀目錄，與給機器看的 manifest.json——' +
+          '前者不需要本系統也讀得懂，後者是還原時實際讀的那一份。'))),
+    el('div', { id: 'arc-body' },
+      el('p', { class: 'hint', style: 'padding:14px 0' }, '載入中…')));
+  setTimeout(loadArchiveView, 0);
+  return page;
+}
+
+async function loadArchiveView() {
+  const host = $('#arc-body');
+  if (!host) return;
+  let st = null;
+  let err = null;
+  try { st = await STORE.archive.status(); } catch (e) { err = e; }
+
+  if (!st) {
+    // 兩種「做不到」要分清楚：展示版沒有後端，與帳號權限不足。
+    // 一律顯示前者會讓分析員以為是系統壞了。
+    const demo = STORE.mode !== 'server';
+    host.innerHTML = '';
+    host.append(el('section', { class: 'card sec' },
+      el('h3', {}, demo ? '此環境無法使用' : '需要系統管理員權限'),
+      el('p', { style: 'font-size:12.5px;color:var(--ink-2);line-height:1.75;margin-top:6px' },
+        demo
+          ? '封存需要伺服器端讀取附件的實體檔案並重建資料庫，展示版沒有後端可做。'
+            + '請在正式部署環境操作。'
+          : '專案封存與還原會一次動到全部資料，僅限系統管理員執行。'
+            + '若你需要封存，請洽系統管理員。'),
+      err && STORE.mode === 'server' && !/權限|403/.test(err.message)
+        ? el('p', { class: 'hint', style: 'margin-top:8px' }, err.message)
+        : null));
+    return;
+  }
+
+  ARC_NOW = st;   // 還原預覽要拿它跟封存檔的筆數並列比較
+  const total = Object.values(st.counts).reduce((a, b) => a + b, 0);
+  const rows = Object.entries(COLL_LABEL)
+    .filter(([k]) => st.counts[k])
+    .map(([k, label]) => [label, String(st.counts[k])]);
+
+  host.innerHTML = '';
+  host.append(
+    /* ---- 封存 ---- */
+    el('section', { class: 'card sec' },
+      el('h3', {}, '封存目前專案'),
+      el('div', { class: 'arc-grid' },
+        el('div', {},
+          el('div', { class: 'eyebrow', style: 'margin-bottom:7px' }, '將被封存的資料'),
+          el('table', { class: 'tbl spec-tbl' },
+            el('tbody', {}, ...rows.map(r => el('tr', {},
+              el('td', {}, r[0]),
+              el('td', { style: 'text-align:right' }, el('span', { class: 'tnum' }, r[1]))))))),
+        el('div', {},
+          el('div', { class: 'meta' },
+            row('紀錄總數', el('span', { class: 'tnum' }, String(total))),
+            row('附件', el('span', { class: 'tnum' }, String(st.attachments)),
+              st.attachmentBytes ? mb(st.attachmentBytes) : null),
+            row('帳號', el('span', { class: 'tnum' }, String(st.users)), '不含密碼'),
+            st.lastRestore
+              ? row('上次還原', el('span', { class: 'mono', style: 'font-size:11.5px' },
+                  String(st.lastRestore.at).replace('T', ' ').slice(0, 16)))
+              : null))),
+      el('div', { class: 'field full', style: 'margin-top:14px' },
+        el('label', { for: 'arc-note' }, '備註（寫進封存的 README，方便日後辨識）'),
+        el('input', { class: 'inp', id: 'arc-note', maxlength: '500',
+          placeholder: '例：2026 第四季結案封存' })),
+      el('div', { style: 'display:flex;gap:9px;align-items:center;margin-top:13px;flex-wrap:wrap' },
+        el('button', { class: 'btn btn-primary', id: 'arc-go', onclick: () => doArchive() },
+          el('span', { html: svgIcon(I.download) }), '產生封存檔並下載'),
+        el('span', { class: 'hint', id: 'arc-msg' },
+          '資料量大時需要幾秒，請勿重複點擊'))),
+
+    /* ---- 還原 ---- */
+    el('section', { class: 'card sec', style: 'margin-top:14px' },
+      el('h3', {}, '匯入封存檔還原'),
+      el('div', { class: 'arc-warn' },
+        el('span', { html: svgIcon(I.shield) }),
+        el('div', {},
+          el('b', {}, '還原會清空目前所有業務資料'),
+          el('div', { style: 'margin-top:4px;line-height:1.7' },
+            '五套系統的紀錄與附件都會被封存檔的內容取代，這個動作沒有復原鍵。' +
+            '系統會先問你要不要把目前的專案也封存一份。'),
+          el('div', { style: 'margin-top:4px;line-height:1.7;color:var(--ink-3)' },
+            '帳號不會被清除——封存檔裡有而目前沒有的帳號，會以「停用、無密碼、' +
+            '一般分析員」補建，只為了讓報告的作者資訊對得上。'))),
+      el('div', { class: 'dropzone', style: 'margin-top:13px', id: 'arc-drop',
+        onclick: () => $('#arc-file').click(),
+        ondragover: e => { e.preventDefault(); e.currentTarget.dataset.over = '1'; },
+        ondragleave: e => { delete e.currentTarget.dataset.over; },
+        ondrop: e => {
+          e.preventDefault();
+          delete e.currentTarget.dataset.over;
+          const f = e.dataTransfer.files[0];
+          if (f) inspectArchiveFile(f);
+        } },
+        el('span', { html: svgIcon(I.upload) }),
+        el('div', {},
+          el('div', { style: 'font-size:13px;font-weight:600' }, '選擇或拖曳封存 zip'),
+          el('div', { style: 'font-size:11.5px;color:var(--ink-3);margin-top:3px' },
+            '先讀取內容讓你確認，不會立刻動到資料')),
+        el('input', { type: 'file', id: 'arc-file', accept: '.zip,application/zip',
+          style: 'display:none',
+          onchange: e => { const f = e.target.files[0]; if (f) inspectArchiveFile(f); } })),
+      el('div', { id: 'arc-preview' })));
+}
+
+async function doArchive() {
+  const btn = $('#arc-go');
+  const msg = $('#arc-msg');
+  btn.disabled = true;
+  msg.textContent = '封存中…';
+  try {
+    const { blob, filename } = await STORE.archive.build($('#arc-note')?.value || '');
+    await saveBlob(blob, filename);
+    msg.textContent = `已產生 ${filename}（${mb(blob.size)}）`;
+    return true;
+  } catch (e) {
+    msg.textContent = '封存失敗：' + e.message;
+    return false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/** 先讀內容給人確認，這一步不動任何資料。 */
+async function inspectArchiveFile(file) {
+  const host = $('#arc-preview');
+  host.innerHTML = '';
+  host.append(el('p', { class: 'hint', style: 'padding:10px 0' }, '讀取封存檔…'));
+
+  let info;
+  try {
+    info = await STORE.archive.inspect(file);
+  } catch (e) {
+    host.innerHTML = '';
+    host.append(el('p', { class: 'login-err' }, '讀取失敗：' + e.message));
+    return;
+  }
+
+  const total = Object.values(info.counts).reduce((a, b) => a + b, 0);
+  host.innerHTML = '';
+  host.append(
+    el('div', { class: 'imp-sum' },
+      el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--data)' }),
+        `紀錄 ${total}`),
+      el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--good)' }),
+        `附件 ${info.attachments}`),
+      el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--ink-3)' }),
+        `帳號 ${info.users}`),
+      el('span', { class: 'hint', style: 'margin-left:auto' }, info.filename)),
+    el('div', { class: 'meta', style: 'margin-top:10px' },
+      row('封存時間', el('span', { class: 'mono', style: 'font-size:12px' },
+        String(info.exportedAt).replace('T', ' ').slice(0, 16))),
+      row('封存者', el('span', {}, info.exportedBy || '—')),
+      info.note ? row('備註', el('span', {}, info.note)) : null),
+    el('div', { class: 'tablewrap', style: 'margin-top:10px' },
+      el('table', { class: 'tbl' },
+        el('thead', {}, el('tr', {},
+          el('th', {}, '資料'), el('th', { style: 'text-align:right' }, '封存檔'),
+          el('th', { style: 'text-align:right' }, '目前'))),
+        el('tbody', {}, ...Object.entries(COLL_LABEL).map(([k, label]) => el('tr', {},
+          el('td', {}, label),
+          el('td', { style: 'text-align:right' },
+            el('span', { class: 'tnum' }, String(info.counts[k] || 0))),
+          el('td', { style: 'text-align:right;color:var(--ink-3)' },
+            el('span', { class: 'tnum' }, String(ARC_NOW.counts?.[k] || 0)))))))),
+    el('div', { style: 'display:flex;gap:9px;align-items:center;margin-top:14px;flex-wrap:wrap' },
+      el('button', { class: 'btn btn-danger', onclick: () => confirmRestore(file, info) },
+        el('span', { html: svgIcon(I.exchange) }), '以這份封存取代目前專案'),
+      el('span', { class: 'hint' }, '下一步會先問你要不要封存目前的資料')));
+}
+
+/**
+ * 還原前的確認。
+ *
+ * 規格要求「匯入前須詢問是否先封存目前專案」，所以這裡是兩段式：
+ * 先問封存，再要求手動輸入確認字樣。把目前資料清掉這種事，
+ * 不該只隔著一個「確定」按鈕。
+ */
+function confirmRestore(file, info) {
+  const body = el('div', {},
+    el('div', { class: 'arc-warn' },
+      el('span', { html: svgIcon(I.shield) }),
+      el('div', {},
+        el('b', {}, '目前專案的所有業務資料將被清空'),
+        el('div', { style: 'margin-top:4px;line-height:1.7' },
+          `並以 ${info.filename}（封存於 `
+          + String(info.exportedAt).replace('T', ' ').slice(0, 16) + '）的內容取代。'))),
+
+    el('div', { style: 'margin-top:14px' },
+      el('div', { class: 'eyebrow', style: 'margin-bottom:7px' }, '要先封存目前的專案嗎？'),
+      el('label', { class: 'radio' },
+        el('input', { type: 'radio', name: 'arc-pre', value: 'yes', checked: '' }),
+        el('span', { class: 'mark' }), '先封存目前專案並下載，再進行還原（建議）'),
+      el('label', { class: 'radio', style: 'margin-top:5px' },
+        el('input', { type: 'radio', name: 'arc-pre', value: 'no' }),
+        el('span', { class: 'mark' }), '不用，直接還原')),
+
+    el('div', { class: 'field full', style: 'margin-top:14px' },
+      el('label', { for: 'arc-confirm' },
+        '請輸入 ', el('code', {}, 'REPLACE'), ' 以確認'),
+      el('input', { class: 'inp mono', id: 'arc-confirm', autocomplete: 'off',
+        placeholder: 'REPLACE',
+        oninput: e => { $('#arc-do').disabled = e.target.value.trim() !== 'REPLACE'; } })),
+    el('p', { id: 'arc-run', class: 'hint', style: 'margin-top:10px' }));
+
+  const modal = el('div', { class: 'modal', style: 'max-width:600px' },
+    el('div', { class: 'modal-head' },
+      el('h3', {}, '確認還原'),
+      el('button', { class: 'iconbtn', onclick: closeOverlay, html: svgIcon(I.close), title: '關閉' })),
+    el('div', { class: 'modal-body' }, body),
+    el('div', { class: 'modal-foot' },
+      el('span', { class: 'spacer' }),
+      el('button', { class: 'btn', onclick: closeOverlay }, '取消'),
+      el('button', { class: 'btn btn-danger', id: 'arc-do', disabled: true,
+        onclick: () => runRestore(file) },
+        el('span', { html: svgIcon(I.exchange) }), '清空並還原')));
+
+  const ov = $('#overlay');
+  ov.innerHTML = '';
+  ov.append(el('div', { class: 'scrim', onclick: e => { if (e.target === e.currentTarget) closeOverlay(); } }, modal));
+  setTimeout(() => $('#arc-confirm')?.focus(), 0);
+}
+
+async function runRestore(file) {
+  const msg = $('#arc-run');
+  const btn = $('#arc-do');
+  const pre = document.querySelector('input[name="arc-pre"]:checked')?.value === 'yes';
+  btn.disabled = true;
+
+  if (pre) {
+    msg.textContent = '正在封存目前的專案…';
+    // 先封存失敗就停手——使用者要的是「先留一份」，沒留到就不該往下走
+    const ok = await doArchive();
+    if (!ok) {
+      msg.textContent = '目前專案封存失敗，已中止還原。請確認後再試，'
+        + '或改選「不用，直接還原」。';
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  msg.textContent = '還原中，請勿關閉頁面…';
+  try {
+    const r = await STORE.archive.restore(file);
+    const n = Object.values(r.result.restored).reduce((a, b) => a + b, 0);
+    closeOverlay();
+    await STORE.load();
+    S.route = 'dashboard';
+    render();
+    toast(`還原完成：寫入 ${n} 筆紀錄、${r.result.attachments} 個附件`
+      + (r.result.usersAdded.length ? `，補建 ${r.result.usersAdded.length} 個停用帳號` : ''));
+  } catch (e) {
+    msg.textContent = '還原失敗：' + e.message;
+    btn.disabled = false;
+  }
+}

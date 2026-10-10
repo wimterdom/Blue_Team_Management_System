@@ -151,3 +151,19 @@
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block}
 .vis-name .ttp-en{margin-left:0; line-height:1.4}
 .vis-head .ttp-en{margin-left:6px}
+
+/* ---- 專案封存 ---- */
+.arc-grid{display:grid; grid-template-columns:1.35fr 1fr; gap:22px; margin-top:10px}
+@media (max-width:760px){ .arc-grid{grid-template-columns:1fr} }
+/* 全域 table 帶 min-width:940px（寬表格橫向捲動用）。放進兩欄版面會把
+   grid 軌道撐爆，把右欄擠出卡片外，這裡一併取消。 */
+.arc-grid > *{min-width:0}
+.arc-grid table,#arc-preview table{min-width:0}
+.arc-warn{
+  display:flex; gap:11px; padding:13px 15px; border-radius:8px;
+  background:color-mix(in srgb, var(--critical) 10%, var(--surface-2));
+  border:1px solid color-mix(in srgb, var(--critical) 32%, var(--rule));
+  font-size:12.5px; line-height:1.6; color:var(--ink-2);
+}
+.arc-warn > span svg{width:17px; height:17px; stroke:var(--critical); fill:none; stroke-width:1.8; flex:none}
+.arc-warn b{color:var(--ink)}

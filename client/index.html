@@ -4034,6 +4034,9 @@ function openUserMenu(e){
     (STORE.mode==='server' && me.perm==='admin')
       ? el('button',{class:'mi', onclick:()=>go('datasrc')}, el('span',{html:svgIcon(I.exchange)}),'外部資料來源')
       : null,
+    (STORE.mode==='server' && me.perm==='admin')
+      ? el('button',{class:'mi', onclick:()=>go('archive')}, el('span',{html:svgIcon(I.download)}),'專案封存')
+      : null,
     STORE.mode==='server'
       ? el('button',{class:'mi', onclick:()=>go('pwchange')}, el('span',{html:svgIcon(I.key)}),'變更密碼')
       : null,
@@ -9912,6 +9915,7 @@ function render(){
   if(S.route==='pwchange'){ app.append(viewPwChange()); applyTheme(); return; }
   if(S.route==='audit'){ app.append(viewAudit()); applyTheme(); return; }
   if(S.route==='datasrc'){ app.append(viewDataSources()); applyTheme(); return; }
+  if(S.route==='archive'){ app.append(viewArchive()); applyTheme(); return; }
   const bb=backBar();
   if(bb){ const holder=el('div',{class:'wrap', style:'padding-bottom:0'}, bb); app.append(holder); }
   if(S.route==='users'){ app.append(viewUsers()); }

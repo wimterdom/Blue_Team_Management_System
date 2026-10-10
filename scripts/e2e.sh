@@ -46,7 +46,7 @@ handle = (
     "  get CASES(){return CASES}, get DETAIL(){return DETAIL},\n"
     "  get HUNTS(){return HUNTS}, get INTELS(){return INTELS}, get APTS(){return APTS},\n"
     "  get TTP_MARKS(){return TTP_MARKS}, canEditIntel,\n"
-    "  get S(){return S}, get STORE(){return STORE},\n"
+    "  get S(){return S}, get STORE(){return STORE}, render, go,\n"
     "  buildXlsx, buildCsv, parseCsv, assetCsvTemplate, validateAssetRows,\n"
     "  commitAssetImport, ASSET_COLUMNS, assetCellValue, svgToPng, printDoc,\n"
     "  analystTtps, ttpLayers, get ATTACK_FULL(){return ATTACK_FULL},\n"

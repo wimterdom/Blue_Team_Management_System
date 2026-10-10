@@ -104,6 +104,39 @@ const SHOTS = {
     top();
   },
 
+  async archive() {
+    await login();
+    await click(byText('button', /系統管理員/));
+    await sleep(300);
+    await click($$('.mi').find(m => /專案封存/.test(m.textContent)));
+    await sleep(1800);
+    top();
+  },
+
+  /** 還原前的確認：先問要不要封存目前專案，再要求手動輸入 REPLACE。 */
+  async archiveRestore() {
+    await login();
+    await click(byText('button', /系統管理員/));
+    await sleep(300);
+    await click($$('.mi').find(m => /專案封存/.test(m.textContent)));
+    await sleep(1600);
+
+    // 拿系統自己產生的封存檔餵進真正的檔案輸入，拍到的才是實際畫面
+    const { blob, filename } = await window.__T_STORE.archive.build('2026 第三季結案封存');
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], filename, { type: 'application/zip' }));
+    const input = $('#arc-file');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+    await sleep(2600);
+
+    await click(byText('#arc-preview button', /以這份封存取代/));
+    await sleep(900);
+    $('#arc-confirm').value = 'REPLACE';
+    $('#arc-confirm').dispatchEvent(new Event('input'));
+    await sleep(300);
+  },
+
   async light() {
     await login();
     // 切到日間模式：主題鈕循環 系統 → 日間 → 夜間

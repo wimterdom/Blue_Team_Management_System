@@ -90,6 +90,18 @@ against attack.mitre.org.
 
 ![ATT&CK matrix](docs/screenshots/matrix.png)
 
+### Project archive — administrators only
+
+Packs all five subsystems, images included, into one zip: a Markdown tree for
+people and a `manifest.json` for the machine.
+
+![Project archive](docs/screenshots/archive.png)
+
+Restoring replaces everything currently in the system, so it asks whether to
+archive the present project first and requires `REPLACE` to be typed out.
+
+![Restore confirmation](docs/screenshots/archiveRestore.png)
+
 ### Audit log
 
 Every login, create, update and delete, with the before/after values of changed
@@ -217,6 +229,29 @@ cross-system jump can be reversed with one click back to where you were.
   sits on top for well-known vendors — the API returns both, and which one was used.
   Administrators can check for upstream updates and refresh the local copy from the
   "外部資料來源" page
+
+**Archiving and restoring** (administrators only)
+
+- One zip holds everything the five subsystems have produced, images included.
+  Inside it, each subsystem is a folder and each record a `index.md` with its
+  attachments beside it — readable in any text editor, in a Git repository or on
+  a burned disc, without this system
+- The same zip also carries `manifest.json`, the structured form, and **that is
+  what a restore reads**. Markdown is a typeset presentation; parsing it back
+  into fields would be brittle and would lose data, so the two coexist and the
+  archive's own README says which is which. Editing the Markdown by hand does
+  not change what a restore produces
+- A restore clears every business record first, so the system asks whether to
+  archive the current project beforehand and requires the word `REPLACE` to be
+  typed. A malformed archive is rejected before anything is deleted, and the
+  whole replacement runs in one SQLite transaction
+- Accounts are never cleared — removing the current administrator would lock
+  everyone out. Accounts present in the archive but missing locally are recreated
+  **disabled, with no password and analyst permissions**, purely so authorship on
+  old reports resolves to a name. An archive can therefore never grant anyone
+  administrative access to this installation
+- Archives contain no passwords or password hashes
+- Every export, inspection and restore is written to the audit log
 
 **Interface**
 

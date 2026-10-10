@@ -298,6 +298,40 @@ function ServerStore() {
       actions: () => call('/audit/actions'),
     },
 
+    /* ---- 專案封存 ---- */
+    archive: {
+      status: () => call('/archive/status'),
+      /** 回傳 Blob，由呼叫端交給 saveBlob。 */
+      async build(note) {
+        const res = await fetch('/api/v1/archive', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'content-type': 'application/json', 'x-btms-csrf': csrf },
+          body: JSON.stringify({ note }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e?.error?.message || `伺服器回應 ${res.status}`);
+        }
+        const cd = res.headers.get('content-disposition') || '';
+        const m = /filename\*=UTF-8''([^;]+)/.exec(cd);
+        return {
+          blob: await res.blob(),
+          filename: m ? decodeURIComponent(m[1]) : `專案封存-${stampSlug()}.zip`,
+        };
+      },
+      inspect(file) {
+        const fd = new FormData();
+        fd.append('file', file, file.name);
+        return call('/archive/inspect', { method: 'POST', body: fd, raw: true });
+      },
+      restore(file) {
+        const fd = new FormData();
+        fd.append('confirm', 'REPLACE');
+        fd.append('file', file, file.name);
+        return call('/archive/restore', { method: 'POST', body: fd, raw: true });
+      },
+    },
+
     /* ---- MAC 配發廠商（IEEE OUI）---- */
     oui: {
       lookup: mac => call('/oui?mac=' + encodeURIComponent(mac)).then(r => r.match),
@@ -447,6 +481,14 @@ function DemoStore() {
     audit: {
       async list() { return { total: 0, items: [] }; },
       async actions() { return { actions: [] }; },
+    },
+
+    /* 封存需要伺服器端讀取附件實體檔案與重建資料庫，展示版沒有後端可做。 */
+    archive: {
+      async status() { return null; },
+      async build() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
+      async inspect() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
+      async restore() { throw new Error('專案封存需要伺服器，展示版無法使用'); },
     },
 
     /* 展示版帶的是 OUI 子集（每家廠商數個前綴），足以試出功能；

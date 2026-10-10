@@ -34,6 +34,7 @@ import attachmentRoutes from './routes/attachments.js';
 import auditRoutes from './routes/audit.js';
 import eventRoutes from './routes/events.js';
 import ouiRoutes from './routes/oui.js';
+import archiveRoutes from './routes/archive.js';
 import healthRoutes from './routes/health.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -174,6 +175,7 @@ export async function buildServer() {
       await api.register(attachmentRoutes);
       await api.register(eventRoutes);
       await api.register(ouiRoutes);
+      await api.register(archiveRoutes);
       await api.register(userRoutes);
       await api.register(auditRoutes);
 
