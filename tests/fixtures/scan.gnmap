@@ -1,0 +1,6 @@
+# Nmap 7.95 scan initiated Sat Oct 10 10:05:00 2026 as: nmap -sV -oG scan.gnmap 10.32.8.0/28
+Host: 10.32.8.5 (TPE-PRN-01.corp.local)	Status: Up
+Host: 10.32.8.5 (TPE-PRN-01.corp.local)	Ports: 9100/open/tcp//jetdirect///, 631/open/tcp//ipp//CUPS 2.4/	Ignored State: closed (997)
+Host: 10.32.8.9 ()	Status: Up
+Host: 10.32.8.9 ()	Ports: 22/open/tcp//ssh//OpenSSH 8.9/, 3389/closed/tcp//ms-wbt-server///
+# Nmap done at Sat Oct 10 10:06:10 2026 -- 16 IP addresses (2 hosts up) scanned in 70.2 seconds

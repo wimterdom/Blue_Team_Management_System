@@ -10,10 +10,13 @@ timelines an analyst writes down are visible to the rest of the team immediately
 Deploys as a single Docker image — the target host needs nothing but Ubuntu and
 Docker. No external managed services.
 
+![Investigation dashboard](docs/screenshots/cases.png)
+
 ---
 
 ## Contents
 
+- [Screenshots](#screenshots)
 - [What it does](#what-it-does)
 - [Architecture](#architecture)
 - [Requirements](#requirements)
@@ -25,6 +28,87 @@ Docker. No external managed services.
 - [Development](#development)
 - [Documentation](#documentation)
 - [License](#license)
+
+---
+
+## Screenshots
+
+All shots are of a running instance with the demo dataset loaded
+(`BTMS_SEED_DEMO=true`), captured by `scripts/screenshots.sh` — rerun it after a
+UI change rather than taking them by hand.
+
+### 獵補案件簿 — investigation reports
+
+Dashboard statistics are computed from the database on every request; the case
+list and the 14-day trend both key off **case occurrence time**, not record
+creation time.
+
+![Case dashboard](docs/screenshots/cases.png)
+
+A report carries the incident narrative in Markdown, the connection records,
+IOCs, ATT&CK techniques, figures and the remediation advice. Everything exports
+to PDF.
+
+![Investigation report](docs/screenshots/caseDetail.png)
+
+### 請求管理系統 — RFI / CR
+
+![Request management](docs/screenshots/requests.png)
+
+### 資產管理系統 — asset inventory
+
+Hosts and network devices, with vendor country of origin flagged for supply-chain
+review.
+
+![Asset inventory](docs/screenshots/assets.png)
+
+Imports take CSV or an nmap scan directly. Here an `nmap -oX` report has been
+converted and is waiting for confirmation — each row marked create or update,
+with anything that failed validation listed and skipped. Nothing is written until
+you accept.
+
+![nmap import preview](docs/screenshots/assetImport.png)
+
+### 主機標定系統 — host targeting
+
+Attack flows are numbered in sequence across the topology, compromised hosts are
+marked, and sensors are placed down to the switch port. Exports to PNG or SVG.
+
+![Network topology](docs/screenshots/topology.png)
+
+### 情資管理系統 — threat intelligence
+
+The risk score shows its own working: how the ratio, weighted importance and the
+critical-asset floor each contributed, which hosts are affected, and the formula
+itself.
+
+![Threat intelligence](docs/screenshots/intel.png)
+
+The full ATT&CK matrix, generated from MITRE's own STIX release. Every technique
+carries both its Chinese and English name so findings can be cross-referenced
+against attack.mitre.org.
+
+![ATT&CK matrix](docs/screenshots/matrix.png)
+
+### Audit log
+
+Every login, create, update and delete, with the before/after values of changed
+fields. Administrators only.
+
+![Audit log](docs/screenshots/audit.png)
+
+### Themes
+
+Light, dark and follow-system.
+
+![Light theme](docs/screenshots/light.png)
+
+### Sign-in
+
+No credentials are shown or pre-filled. Accounts are created by an administrator;
+there is no self-service sign-up.
+
+![Sign-in](docs/screenshots/login.png)
 
 ---
 
@@ -544,6 +628,16 @@ emitting a half-translated table.
 
 `npm run dev` runs with `--watch`, so server changes restart automatically.
 Changes under `client/` need `npm run build:client` to take effect.
+
+Regenerate the README screenshots after a UI change (requires Chrome):
+
+```bash
+./scripts/screenshots.sh              # all of them
+./scripts/screenshots.sh intel matrix # just these
+```
+
+It boots a throwaway instance with the demo dataset, drives each screen in
+headless Chrome and writes `docs/screenshots/`.
 
 End-to-end test (requires Chrome):
 

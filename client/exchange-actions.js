@@ -486,7 +486,7 @@ function openAssetImport() {
 
     el('div', { id: 'csv-result' }));
 
-  openModal('匯入資產（CSV）', body, 760);
+  openModal('匯入資產（CSV）', body, 880);
 }
 
 function showTemplateSpec() {
@@ -562,6 +562,16 @@ function nmapRowsToCsv(rows) {
     rows.map(r => IMPORTABLE.map(c => r.values[c.key] ?? '')));
 }
 
+/**
+ * 把一串節點接到容器上，略過 null。
+ *
+ * el() 會自動濾掉 null 子節點，但 Node.append() 不會——它把 null 轉成
+ * 字串「null」直接印在畫面上。條件式區塊要用這個，不要直接 append。
+ */
+function appendAll(host, ...nodes) {
+  for (const n of nodes.flat()) if (n != null && n !== false) host.append(n);
+}
+
 function renderImportPreview(host, result, filename, converted) {
   const { items, unknown } = result;
   const bad = items.filter(x => x.errors.length);
@@ -570,7 +580,7 @@ function renderImportPreview(host, result, filename, converted) {
   const updates = ok.filter(x => x.mode === 'update').length;
   const warns = ok.filter(x => x.warnings.length).length;
 
-  host.append(
+  appendAll(host,
     el('div', { class: 'imp-sum' },
       el('span', { class: 'chip' }, el('i', { class: 'dot', style: 'background:var(--good)' }),
         `可新建 ${creates}`),

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<nmaprun scanner="nmap" args="nmap -sS -sV -O -oX scan.xml 10.32.7.0/24" start="1791600000" version="7.95">
+<host starttime="1791600001" endtime="1791600050">
+<status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.32.7.61" addrtype="ipv4"/>
+<address addr="B0:83:FE:AA:BB:01" addrtype="mac" vendor="Dell Inc."/>
+<hostnames><hostname name="TPE-WEB-11.corp.local" type="PTR"/><hostname name="tpe-web-11" type="user"/></hostnames>
+<ports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ssh" product="OpenSSH" version="9.6p1 Ubuntu 3ubuntu13" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="nginx" version="1.24.0" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="443"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="https" product="nginx" version="1.24.0" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="3306"><state state="closed" reason="reset" reason_ttl="64"/><service name="mysql" method="table" conf="3"/></port>
+</ports>
+<os><osmatch name="Linux 5.15 - 6.8" accuracy="96" line="1"/><osmatch name="Linux 4.15" accuracy="88" line="2"/></os>
+</host>
+<host starttime="1791600002" endtime="1791600060">
+<status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="10.32.7.62" addrtype="ipv4"/>
+<address addr="2001:db8:32:7::62" addrtype="ipv6"/>
+<address addr="00:23:89:11:22:33" addrtype="mac" vendor="Hangzhou H3C Technologies"/>
+<hostnames><hostname name="TPE-SW-LAB.corp.local" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="60"/><service name="ssh" product="Comware SSH" method="probed" conf="8"/></port>
+<port protocol="tcp" portid="161"><state state="open" reason="syn-ack" reason_ttl="60"/><service name="snmp" method="table" conf="3"/></port>
+</ports>
+<os><osmatch name="H3C Comware 7" accuracy="92" line="3"/></os>
+</host>
+<host>
+<status state="down" reason="no-response" reason_ttl="0"/>
+<address addr="10.32.7.99" addrtype="ipv4"/>
+</host>
+<host starttime="1791600003" endtime="1791600070">
+<status state="up" reason="syn-ack" reason_ttl="128"/>
+<address addr="10.32.7.44" addrtype="ipv4"/>
+<address addr="18:69:45:CC:DD:EE" addrtype="mac" vendor="TP-Link Systems"/>
+<hostnames></hostnames>
+<ports>
+<port protocol="tcp" portid="445"><state state="open" reason="syn-ack" reason_ttl="128"/><service name="microsoft-ds" product="Windows Server 2019 microsoft-ds" method="probed" conf="10"/></port>
+</ports>
+<os><osmatch name="Microsoft Windows Server 2019" accuracy="94" line="4"/></os>
+</host>
+<runstats><finished time="1791600080" timestr="Sat Oct 10 10:01:20 2026" elapsed="80.12"/><hosts up="3" down="1" total="4"/></runstats>
+</nmaprun>

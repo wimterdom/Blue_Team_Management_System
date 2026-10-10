@@ -13,5 +13,7 @@ data
 tests
 *.md
 !docs/*.md
+# 截圖只給 README 看，不需要進映像檔（約 2 MB）
+docs/screenshots
 public/__probe.html
 .DS_Store

@@ -8,10 +8,13 @@
 單一 Docker 映像檔即可部署——目標主機只需要裝好 Ubuntu 與 Docker，
 不依賴任何外部託管服務。
 
+![獵補案件簿總覽](screenshots/cases.png)
+
 ---
 
 ## 目錄
 
+- [系統畫面](#系統畫面)
 - [系統介紹](#系統介紹)
 - [系統架構](#系統架構)
 - [系統需求](#系統需求)
@@ -22,6 +25,77 @@
 - [API](#api)
 - [開發](#開發)
 - [授權](#授權)
+
+---
+
+## 系統畫面
+
+以下都是載入示範資料（`BTMS_SEED_DEMO=true`）的實際執行畫面，
+由 `scripts/screenshots.sh` 產生——介面改版後重跑即可，不必手動截圖。
+
+### 獵補案件簿
+
+儀表板統計由資料庫即時彙算；案件清單與近 14 日趨勢都依**案發時間**落日，
+而非紀錄建立時間。
+
+![獵補案件簿總覽](screenshots/cases.png)
+
+一份報告含 Markdown 撰寫的案件始末、連線紀錄、IOC、ATT&CK 技術、附圖與
+處置建議，整份可匯出 PDF。
+
+![調查報告](screenshots/caseDetail.png)
+
+### 請求管理系統
+
+![請求管理](screenshots/requests.png)
+
+### 資產管理系統
+
+主機與網通設備清冊，製造商國別會特別標註以供供應鏈檢視。
+
+![資產總覽](screenshots/assets.png)
+
+匯入可直接吃 CSV 或 nmap 掃描報告。下圖是 `nmap -oX` 的報告轉換後等待確認的狀態——
+逐列標出將新建還是更新，驗證沒過的會列出並略過。**按下確認之前不會寫入任何資料。**
+
+![nmap 匯入預覽](screenshots/assetImport.png)
+
+### 主機標定系統
+
+攻擊流向依流程編號標註、受害主機加框，感測器可指定到網通設備的某一個 port。
+可匯出 PNG 或 SVG。
+
+![網路拓撲圖](screenshots/topology.png)
+
+### 情資管理系統
+
+風險分數會把計算過程攤開：受害比例、重要性加權與關鍵資產地板各貢獻多少分、
+哪些主機受害、公式本身長什麼樣。
+
+![情資總覽](screenshots/intel.png)
+
+完整的 ATT&CK 矩陣，由 MITRE 官方 STIX 資料產生。每項技術都有中文與英文名稱，
+方便與 attack.mitre.org 對照。
+
+![ATT&CK 矩陣](screenshots/matrix.png)
+
+### 稽核紀錄
+
+所有登入、建立、修改與刪除都留痕，含異動欄位的前後值，僅系統管理員可檢視。
+
+![稽核紀錄](screenshots/audit.png)
+
+### 佈景
+
+日間、夜間與跟隨系統三種。
+
+![日間模式](screenshots/light.png)
+
+### 登入
+
+不顯示也不預填任何帳密。帳號一律由管理員建立，沒有自助註冊。
+
+![登入頁](screenshots/login.png)
 
 ---
 
@@ -494,6 +568,16 @@ node scripts/update-oui.mjs --check      # 官方有更動時以離開碼 10 回
 兩者的 `--check` 都以離開碼 10 表示「官方有更新」，便於排程或 CI 判斷。
 技術的中文名稱集中在 `seed/attack-zh.json`，官方新增而尚未翻譯者，
 產生器會列出清單，不會默默產出半套。
+
+介面改版後重新產生 README 的截圖（需要 Chrome）：
+
+```bash
+./scripts/screenshots.sh              # 全部重拍
+./scripts/screenshots.sh intel matrix # 只拍指定的幾張
+```
+
+它會以全新資料庫加示範資料啟動一個暫時的實例，用 headless Chrome
+逐一拍攝並寫入 `docs/screenshots/`。
 
 端對端測試（需要 Chrome）：
 
